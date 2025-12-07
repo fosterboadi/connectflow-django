@@ -28,17 +28,9 @@
 
 ## 2. Challenges & Solutions
 
-### Challenge 1: Frontend Choice
+### Challenge: Frontend Choice
 **Problem:** Should I use React or Django templates?  
 **Solution:** Chose Django templates for simpler learning curve and better understanding of Django MVC.
-
-### Challenge 2: Understanding Scope
-**Problem:** Original project had 85% features - hard to know where to start.  
-**Solution:** Created detailed requirements checklist, broke into 8-week phases.
-
-### Challenge 3: Slow Package Install
-**Problem:** pip install took 60+ seconds.  
-**Solution:** Used proper wait times, monitored progress, completed successfully.
 
 ---
 
