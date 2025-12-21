@@ -53,16 +53,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Security settings
 SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
 
-# HTTPS/SSL settings
-SECURE_SSL_REDIRECT = True
+# HTTPS/SSL settings - Render handles SSL at proxy level
+SECURE_SSL_REDIRECT = False  # Render already redirects to HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Trust Render's proxy
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Disabled HSTS for now to prevent issues during setup
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
 
 # CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
