@@ -29,3 +29,149 @@ input:focus, textarea:focus, select:focus {
     ring: 2px;
     ring-color: #4f46e5;
 }
+
+/* PWA Install Button */
+#pwa-install-btn {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4F46E5;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    cursor: pointer;
+    z-index: 1000;
+    font-weight: 600;
+    border: none;
+    animation: pulse 2s infinite;
+}
+
+#pwa-install-btn:hover {
+    background: #4338CA;
+    transform: scale(1.05);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(79, 70, 229, 0.6);
+    }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    /* Better touch targets */
+    button, a, input[type="button"], input[type="submit"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Improve font sizing on mobile */
+    body {
+        font-size: 16px;
+    }
+    
+    /* Prevent zoom on input focus */
+    input, textarea, select {
+        font-size: 16px !important;
+    }
+    
+    /* Stack elements vertically on mobile */
+    .mobile-stack {
+        flex-direction: column !important;
+    }
+    
+    /* Full width on mobile */
+    .mobile-full {
+        width: 100% !important;
+    }
+    
+    /* Hide on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    /* Smaller padding on mobile */
+    .mobile-compact {
+        padding: 0.5rem !important;
+    }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .hide-tablet {
+        display: none !important;
+    }
+}
+
+/* Safe area for notched devices */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+        padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Prevent text selection on buttons */
+button, .btn {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve click/tap feedback */
+button:active, .btn:active {
+    transform: scale(0.98);
+}
+
+/* Loading spinner for PWA */
+.loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4F46E5;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Offline indicator */
+.offline-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #EF4444;
+    color: white;
+    padding: 8px;
+    text-align: center;
+    z-index: 9999;
+    display: none;
+}
+
+.offline-indicator.show {
+    display: block;
+}
+
+/* Better mobile chat experience */
+@media (max-width: 768px) {
+    .chat-container {
+        height: calc(100vh - 60px);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .message-input {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+

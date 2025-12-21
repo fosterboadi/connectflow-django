@@ -2,8 +2,24 @@
 <html lang="en" class="{% if user.is_authenticated and user.theme == 'DARK' %}dark{% endif %}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>{% block title %}ConnectFlow Pro{% endblock %}</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="ConnectFlow Pro - Team Collaboration Platform with Real-time Messaging">
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ConnectFlow">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'icons/icon-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{% static 'icons/icon-512x512.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-192x192.png' %}">
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,6 +51,16 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
+    <!-- Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator">
+        <span>⚠️ You are offline. Some features may not work.</span>
+    </div>
+    
+    <!-- PWA Install Button -->
+    <button id="pwa-install-btn" style="display: none;">
+        📱 Install App
+    </button>
+    
     <!-- Navigation Bar -->
     <nav class="bg-indigo-600 dark:bg-gray-800 text-white shadow-lg sticky top-0 z-[100]">
         <div class="container mx-auto px-4 py-3">
@@ -344,6 +370,68 @@
                 });
             });
         }
+    </script>
+    
+    <!-- Offline/Online Detection -->
+    <script>
+        const offlineIndicator = document.getElementById('offline-indicator');
+        
+        window.addEventListener('online', () => {
+            offlineIndicator.classList.remove('show');
+            console.log('✅ Back online');
+        });
+        
+        window.addEventListener('offline', () => {
+            offlineIndicator.classList.add('show');
+            console.log('⚠️ Offline mode');
+        });
+        
+        // Check initial state
+        if (!navigator.onLine) {
+            offlineIndicator.classList.add('show');
+        }
+    </script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('✅ Service Worker registered'))
+                    .catch(err => console.log('❌ Service Worker registration failed:', err));
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            const installBtn = document.getElementById('pwa-install-btn');
+            if (installBtn) {
+                installBtn.style.display = 'block';
+                installBtn.addEventListener('click', () => {
+                    installBtn.style.display = 'none';
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('✅ PWA installed');
+                        }
+                        deferredPrompt = null;
+                    });
+                });
+            }
+        });
+        
+        // Hide install button when app is already installed
+        window.addEventListener('appinstalled', () => {
+            const installBtn = document.getElementById('pwa-install-btn');
+            if (installBtn) {
+                installBtn.style.display = 'none';
+            }
+            console.log('✅ PWA was installed');
+        });
     </script>
     {% endblock %}
 </body>
