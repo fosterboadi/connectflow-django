@@ -29,6 +29,14 @@ services:
       - key: WEB_CONCURRENCY
         value: 2
 
+  # Redis (for Django Channels)
+  - type: redis
+    name: connectflow-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
 # PostgreSQL Database
 databases:
   - name: connectflow-db
@@ -36,12 +44,3 @@ databases:
     user: connectflow
     plan: free
     region: oregon
-
-# Redis (for Django Channels)
-services:
-  - type: redis
-    name: connectflow-redis
-    plan: free
-    region: oregon
-    maxmemoryPolicy: noeviction
-    ipAllowList: []
