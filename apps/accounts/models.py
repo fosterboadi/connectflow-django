@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
+import uuid
 
 
 class User(AbstractUser):
@@ -63,6 +64,17 @@ class User(AbstractUser):
         default='UTC',
         help_text=_("User's timezone")
     )
+
+    class Theme(models.TextChoices):
+        LIGHT = 'LIGHT', _('Light')
+        DARK = 'DARK', _('Dark')
+
+    theme = models.CharField(
+        max_length=10,
+        choices=Theme.choices,
+        default=Theme.LIGHT,
+        help_text=_("User's preferred theme")
+    )
     
     # Status and presence
     status = models.CharField(
@@ -114,3 +126,43 @@ class User(AbstractUser):
     def is_manager(self):
         """Check if user is a Department Head or Team Manager."""
         return self.role in [self.Role.DEPT_HEAD, self.Role.TEAM_MANAGER]
+
+
+class Notification(models.Model):
+    """
+    Notification model - tracks user alerts.
+    """
+    class NotificationType(models.TextChoices):
+        MESSAGE = 'MESSAGE', _('New Message')
+        MENTION = 'MENTION', _('Mention')
+        PROJECT = 'PROJECT', _('Project Update')
+        SYSTEM = 'SYSTEM', _('System Alert')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications')
+    notification_type = models.CharField(max_length=20, choices=NotificationType.choices, default=NotificationType.SYSTEM)
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    link = models.CharField(max_length=255, blank=True, null=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.notification_type} for {self.recipient.username}"
+
+    @classmethod
+    def notify(cls, recipient, title, content, notification_type='SYSTEM', sender=None, link=None):
+        """Create a notification record in the database."""
+        return cls.objects.create(
+            recipient=recipient,
+            sender=sender,
+            title=title,
+            content=content,
+            notification_type=notification_type,
+            link=link
+        )

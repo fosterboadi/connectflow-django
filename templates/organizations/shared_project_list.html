@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Shared Projects - ConnectFlow Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800">Shared Projects</h1>
+            <p class="text-gray-600 mt-2">Inter-organizational collaboration spaces</p>
+        </div>
+        
+        <div class="flex space-x-3">
+            <a href="{% url 'organizations:shared_project_join' %}" 
+               class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg transition font-medium">
+                Join with Code
+            </a>
+            {% if user.is_admin %}
+                <a href="{% url 'organizations:shared_project_create' %}" 
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition font-medium">
+                    + Create Project
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- My Projects -->
+        <div class="lg:col-span-2">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Participating Projects</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for project in my_projects %}
+                    <a href="{% url 'organizations:shared_project_detail' project.pk %}" 
+                       class="bg-white rounded-xl shadow-md overflow-hidden border border-indigo-100 hover:shadow-lg transition flex flex-col">
+                        <div class="p-6 flex-1">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded uppercase">
+                                    {% if project.host_organization == user.organization %}Hosting{% else %}Guest{% endif %}
+                                </span>
+                                <span class="text-xs text-gray-400">{{ project.members.count }} Members</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ project.name }}</h3>
+                            <p class="text-gray-600 text-sm line-clamp-2">{{ project.description }}</p>
+                        </div>
+                        <div class="bg-gray-50 px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+                            <div class="flex -space-x-2">
+                                {% for member in project.members.all|slice:":3" %}
+                                    {% if member.avatar %}
+                                        <img class="w-6 h-6 rounded-full border-2 border-white object-cover" src="{{ member.avatar.url }}" alt="">
+                                    {% else %}
+                                        <div class="w-6 h-6 rounded-full border-2 border-white bg-indigo-500 flex items-center justify-center text-[10px] text-white font-bold">
+                                            {{ member.username.0|upper }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if project.members.count > 3 %}
+                                    <div class="w-6 h-6 rounded-full border-2 border-white bg-gray-300 flex items-center justify-center text-[10px] text-gray-600 font-bold">
+                                        +{{ project.members.count|add:"-3" }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <span class="text-indigo-600 text-sm font-medium">View Project →</span>
+                        </div>
+                    </a>
+                {% empty %}
+                    <div class="col-span-full py-12 text-center bg-white rounded-xl border-2 border-dashed border-gray-300">
+                        <p class="text-gray-500 mb-4">You are not a member of any shared projects yet.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Organization Projects (Admins only) -->
+        {% if user.is_admin %}
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Org Overview</h2>
+            <div class="space-y-4">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-3">Hosted Projects</h3>
+                    {% for project in hosted_projects %}
+                        <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-50 last:border-0 last:mb-0 last:pb-0">
+                            <span class="text-sm font-medium">{{ project.name }}</span>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{ project.access_code }}</code>
+                        </div>
+                    {% empty %}
+                        <p class="text-xs text-gray-400 italic">None</p>
+                    {% endfor %}
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-700 mb-3">Guest Projects</h3>
+                    {% for project in guest_projects %}
+                        <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-50 last:border-0 last:mb-0 last:pb-0">
+                            <span class="text-sm font-medium">{{ project.name }}</span>
+                            <span class="text-xs text-gray-400">{{ project.host_organization.name }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="text-xs text-gray-400 italic">None</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,63 +1,306 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count
-from .models import Organization, Department, Team
-from .forms import DepartmentForm, TeamForm
+from django.db.models import Count, Q
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .models import Organization, Department, Team, SharedProject, ProjectFile, ProjectMeeting, ProjectTask, ProjectMilestone
+from .forms import (
+    DepartmentForm, TeamForm, InviteMemberForm, SharedProjectForm, JoinProjectForm,
+    ProjectFileForm, ProjectMeetingForm, ProjectTaskForm, ProjectMilestoneForm
+)
+
+
+@login_required
+def project_milestones(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return redirect('organizations:shared_project_list')
+    
+    if request.method == 'POST':
+        form = ProjectMilestoneForm(request.POST)
+        if form.is_valid():
+            milestone = form.save(commit=False)
+            milestone.project = project
+            milestone.save()
+            messages.success(request, 'Milestone added.')
+            return redirect('organizations:project_milestones', pk=pk)
+    else:
+        form = ProjectMilestoneForm()
+        
+    return render(request, 'organizations/project_milestones.html', {
+        'project': project,
+        'milestones': project.milestones.all(),
+        'form': form
+    })
+
+
+@login_required
+@require_POST
+def toggle_milestone(request, pk):
+    milestone = get_object_or_404(ProjectMilestone, pk=pk)
+    if request.user not in milestone.project.members.all():
+        return JsonResponse({'success': False}, status=403)
+        
+    from django.utils import timezone
+    milestone.is_completed = not milestone.is_completed
+    milestone.completed_at = timezone.now() if milestone.is_completed else None
+    milestone.save()
+    
+    return JsonResponse({
+        'success': True, 
+        'is_completed': milestone.is_completed,
+        'completed_at': milestone.completed_at.strftime('%Y-%m-%d %H:%M') if milestone.completed_at else None
+    })
+
+
+@login_required
+def project_files(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return redirect('organizations:shared_project_list')
+    
+    if request.method == 'POST':
+        form = ProjectFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            project_file = form.save(commit=False)
+            project_file.project = project
+            project_file.uploader = request.user
+            project_file.save()
+            messages.success(request, 'File uploaded successfully.')
+            return redirect('organizations:project_files', pk=pk)
+    else:
+        form = ProjectFileForm()
+        
+    return render(request, 'organizations/project_files.html', {
+        'project': project,
+        'files': project.files.all(),
+        'form': form
+    })
+
+
+@login_required
+def project_meetings(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return redirect('organizations:shared_project_list')
+    
+    if request.method == 'POST':
+        form = ProjectMeetingForm(request.POST)
+        if form.is_valid():
+            meeting = form.save(commit=False)
+            meeting.project = project
+            meeting.organizer = request.user
+            meeting.save()
+            messages.success(request, 'Meeting scheduled.')
+            return redirect('organizations:project_meetings', pk=pk)
+    else:
+        form = ProjectMeetingForm()
+        
+    return render(request, 'organizations/project_meetings.html', {
+        'project': project,
+        'meetings': project.meetings.all(),
+        'form': form
+    })
+
+
+@login_required
+def project_tasks(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return redirect('organizations:shared_project_list')
+    
+    if request.method == 'POST':
+        form = ProjectTaskForm(request.POST, project=project)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.project = project
+            task.creator = request.user
+            task.save()
+            messages.success(request, 'Task created.')
+            return redirect('organizations:project_tasks', pk=pk)
+    else:
+        form = ProjectTaskForm(project=project)
+        
+    return render(request, 'organizations/project_tasks.html', {
+        'project': project,
+        'tasks': project.tasks.all(),
+        'form': form
+    })
+
+
+@login_required
+def project_analytics(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return redirect('organizations:shared_project_list')
+    
+    task_stats = project.tasks.values('status').annotate(count=Count('id'))
+    context = {
+        'project': project,
+        'task_stats': task_stats,
+        'channel_count': project.channels.count(),
+        'member_count': project.members.count(),
+        'org_count': project.guest_organizations.count() + 1,
+    }
+    return render(request, 'organizations/project_analytics.html', context)
+
+
+@login_required
+def shared_project_list(request):
+    user = request.user
+    if not user.organization:
+        return redirect('accounts:dashboard')
+    
+    hosted_projects = SharedProject.objects.filter(host_organization=user.organization)
+    guest_projects = SharedProject.objects.filter(guest_organizations=user.organization)
+    my_projects = user.shared_projects.all()
+    
+    context = {
+        'hosted_projects': hosted_projects,
+        'guest_projects': guest_projects,
+        'my_projects': my_projects,
+    }
+    return render(request, 'organizations/shared_project_list.html', context)
+
+
+@login_required
+def shared_project_create(request):
+    user = request.user
+    if not user.is_admin:
+        messages.error(request, 'Only organization admins can create shared projects.')
+        return redirect('organizations:shared_project_list')
+    
+    if request.method == 'POST':
+        form = SharedProjectForm(request.POST, organization=user.organization)
+        if form.is_valid():
+            project = form.save(commit=False)
+            project.host_organization = user.organization
+            project.save()
+            form.save_m2m()
+            project.members.add(user)
+            
+            from apps.chat_channels.models import Channel
+            Channel.objects.create(
+                name='general',
+                organization=user.organization,
+                shared_project=project,
+                created_by=user
+            )
+            
+            messages.success(request, f'Project "{project.name}" created! Share code: {project.access_code}')
+            return redirect('organizations:shared_project_detail', pk=project.pk)
+    else:
+        form = SharedProjectForm(organization=user.organization)
+    
+    return render(request, 'organizations/shared_project_form.html', {'form': form, 'action': 'Create'})
+
+
+@login_required
+def shared_project_join(request):
+    user = request.user
+    # Note: Removed the strict is_admin check to allow members to join projects 
+    # their organization is already part of, or allow admins to link the whole org.
+    
+    if request.method == 'POST':
+        form = JoinProjectForm(request.POST)
+        if form.is_valid():
+            code = form.cleaned_data['access_code']
+            project = SharedProject.objects.filter(access_code=code).first()
+            if project:
+                # Case 1: User's org is the host
+                if project.host_organization == user.organization:
+                    if user in project.members.all():
+                        messages.info(request, 'You are already a member of this hosted project.')
+                    else:
+                        project.members.add(user)
+                        messages.success(request, f'You have joined the hosted project: {project.name}')
+                    return redirect('organizations:shared_project_detail', pk=project.pk)
+                
+                # Case 2: User's org is already a guest
+                elif user.organization in project.guest_organizations.all():
+                    if user in project.members.all():
+                        messages.info(request, 'You are already a member of this collaborative project.')
+                    else:
+                        project.members.add(user)
+                        messages.success(request, f'You have joined the project: {project.name}')
+                    return redirect('organizations:shared_project_detail', pk=project.pk)
+                
+                # Case 3: New organization joining (must be admin)
+                else:
+                    if user.is_admin:
+                        project.guest_organizations.add(user.organization)
+                        project.members.add(user)
+                        messages.success(request, f'Your organization has successfully joined project: {project.name}')
+                        return redirect('organizations:shared_project_detail', pk=project.pk)
+                    else:
+                        messages.error(request, 'Only organization admins can join new shared projects for the company.')
+            else:
+                messages.error(request, 'Invalid access code. Please check and try again.')
+    else:
+        form = JoinProjectForm()
+    return render(request, 'organizations/shared_project_join.html', {'form': form})
+
+
+@login_required
+def shared_project_detail(request, pk):
+    user = request.user
+    project = get_object_or_404(SharedProject, pk=pk)
+    
+    is_host = project.host_organization == user.organization
+    is_guest = user.organization in project.guest_organizations.all()
+    
+    if not (is_host or is_guest):
+        messages.error(request, 'You do not have access to this project.')
+        return redirect('organizations:shared_project_list')
+        
+    # Get milestones
+    milestones = project.milestones.all()
+    total_milestones = milestones.count()
+    completed_milestones = milestones.filter(is_completed=True).count()
+    completion_percentage = int((completed_milestones / total_milestones) * 100) if total_milestones > 0 else 0
+    
+    # Milestone form for the foldable management section
+    milestone_form = ProjectMilestoneForm()
+    
+    context = {
+        'project': project,
+        'channels': project.channels.all(),
+        'members': project.members.all().select_related('organization').order_by('organization__name'),
+        'milestones': milestones,
+        'completion_percentage': completion_percentage,
+        'milestone_form': milestone_form,
+        'is_admin': user.is_admin,
+        'is_member': user in project.members.all(),
+        'is_host': is_host,
+    }
+    return render(request, 'organizations/shared_project_detail.html', context)
 
 
 @login_required
 def organization_overview(request):
-    """Display organization structure overview."""
     user = request.user
-    
     if not user.organization:
-        messages.warning(request, 'You are not assigned to any organization.')
         return redirect('accounts:dashboard')
     
-    departments = Department.objects.filter(
-        organization=user.organization
-    ).prefetch_related('teams').annotate(
-        team_count=Count('teams')
-    )
-    
-    context = {
-        'organization': user.organization,
-        'departments': departments,
-    }
-    return render(request, 'organizations/overview.html', context)
+    departments = Department.objects.filter(organization=user.organization).prefetch_related('teams').annotate(team_count=Count('teams'))
+    return render(request, 'organizations/overview.html', {'organization': user.organization, 'departments': departments})
 
 
 @login_required
 def department_list(request):
-    """List all departments in user's organization."""
     user = request.user
-    
     if not user.organization:
-        messages.warning(request, 'You are not assigned to any organization.')
         return redirect('accounts:dashboard')
     
-    departments = Department.objects.filter(
-        organization=user.organization
-    ).select_related('head', 'organization').annotate(
-        team_count=Count('teams')
-    )
-    
-    context = {
-        'departments': departments,
-        'can_manage': user.is_admin or user.role == user.Role.DEPT_HEAD
-    }
-    return render(request, 'organizations/department_list.html', context)
+    departments = Department.objects.filter(organization=user.organization).select_related('head', 'organization').annotate(team_count=Count('teams'))
+    return render(request, 'organizations/department_list.html', {'departments': departments, 'can_manage': user.is_admin or user.role == user.Role.DEPT_HEAD})
 
 
 @login_required
 def department_create(request):
-    """Create a new department."""
     user = request.user
-    
-    # Only super admins can create departments
     if not user.is_admin:
-        messages.error(request, 'You do not have permission to create departments.')
         return redirect('organizations:department_list')
     
     if request.method == 'POST':
@@ -66,96 +309,60 @@ def department_create(request):
             department = form.save(commit=False)
             department.organization = user.organization
             department.save()
-            messages.success(request, f'Department "{department.name}" created successfully!')
             return redirect('organizations:department_list')
     else:
         form = DepartmentForm(organization=user.organization)
-    
-    context = {'form': form, 'action': 'Create'}
-    return render(request, 'organizations/department_form.html', context)
+    return render(request, 'organizations/department_form.html', {'form': form, 'action': 'Create'})
 
 
 @login_required
 def department_edit(request, pk):
-    """Edit an existing department."""
     user = request.user
     department = get_object_or_404(Department, pk=pk, organization=user.organization)
-    
-    # Only super admins or department heads can edit
     if not (user.is_admin or department.head == user):
-        messages.error(request, 'You do not have permission to edit this department.')
         return redirect('organizations:department_list')
     
     if request.method == 'POST':
         form = DepartmentForm(request.POST, instance=department, organization=user.organization)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Department "{department.name}" updated successfully!')
             return redirect('organizations:department_list')
     else:
         form = DepartmentForm(instance=department, organization=user.organization)
-    
-    context = {'form': form, 'action': 'Edit', 'department': department}
-    return render(request, 'organizations/department_form.html', context)
+    return render(request, 'organizations/department_form.html', {'form': form, 'action': 'Edit', 'department': department})
 
 
 @login_required
 def department_delete(request, pk):
-    """Delete a department."""
     user = request.user
     department = get_object_or_404(Department, pk=pk, organization=user.organization)
-    
-    # Only super admins can delete departments
     if not user.is_admin:
-        messages.error(request, 'You do not have permission to delete departments.')
         return redirect('organizations:department_list')
     
     if request.method == 'POST':
-        department_name = department.name
         department.delete()
-        messages.success(request, f'Department "{department_name}" deleted successfully!')
         return redirect('organizations:department_list')
-    
-    context = {'department': department}
-    return render(request, 'organizations/department_confirm_delete.html', context)
+    return render(request, 'organizations/department_confirm_delete.html', {'department': department})
 
 
 @login_required
 def team_list(request, department_pk=None):
-    """List teams, optionally filtered by department."""
     user = request.user
-    
     if not user.organization:
-        messages.warning(request, 'You are not assigned to any organization.')
         return redirect('accounts:dashboard')
     
-    teams = Team.objects.filter(
-        department__organization=user.organization
-    ).select_related('department', 'manager')
+    teams = Team.objects.filter(department__organization=user.organization).select_related('department', 'manager')
+    department = get_object_or_404(Department, pk=department_pk, organization=user.organization) if department_pk else None
+    if department: teams = teams.filter(department=department)
     
-    if department_pk:
-        department = get_object_or_404(Department, pk=department_pk, organization=user.organization)
-        teams = teams.filter(department=department)
-    else:
-        department = None
-    
-    context = {
-        'teams': teams,
-        'department': department,
-        'can_manage': user.is_admin or user.is_manager
-    }
-    return render(request, 'organizations/team_list.html', context)
+    return render(request, 'organizations/team_list.html', {'teams': teams, 'department': department, 'can_manage': user.is_admin or user.is_manager})
 
 
 @login_required
 def team_create(request, department_pk):
-    """Create a new team within a department."""
     user = request.user
     department = get_object_or_404(Department, pk=department_pk, organization=user.organization)
-    
-    # Only admins, department heads, and team managers can create teams
     if not (user.is_admin or user.is_manager):
-        messages.error(request, 'You do not have permission to create teams.')
         return redirect('organizations:team_list', department_pk=department_pk)
     
     if request.method == 'POST':
@@ -164,57 +371,67 @@ def team_create(request, department_pk):
             team = form.save(commit=False)
             team.department = department
             team.save()
-            form.save_m2m()  # Save many-to-many relationships
-            messages.success(request, f'Team "{team.name}" created successfully!')
-            return redirect('organizations:department_team_list', department_pk=department_pk)
+            form.save_m2m()
+            return redirect('organizations:team_list', department_pk=department_pk)
     else:
         form = TeamForm(department=department)
-    
-    context = {'form': form, 'action': 'Create', 'department': department}
-    return render(request, 'organizations/team_form.html', context)
+    return render(request, 'organizations/team_form.html', {'form': form, 'action': 'Create', 'department': department})
 
 
 @login_required
 def team_edit(request, pk):
-    """Edit an existing team."""
     user = request.user
     team = get_object_or_404(Team, pk=pk, department__organization=user.organization)
-    
-    # Only admins, department heads, or team manager can edit
     if not (user.is_admin or team.department.head == user or team.manager == user):
-        messages.error(request, 'You do not have permission to edit this team.')
         return redirect('organizations:team_list')
     
     if request.method == 'POST':
         form = TeamForm(request.POST, instance=team, department=team.department)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Team "{team.name}" updated successfully!')
             return redirect('organizations:team_list', department_pk=team.department.pk)
     else:
         form = TeamForm(instance=team, department=team.department)
-    
-    context = {'form': form, 'action': 'Edit', 'team': team, 'department': team.department}
-    return render(request, 'organizations/team_form.html', context)
+    return render(request, 'organizations/team_form.html', {'form': form, 'action': 'Edit', 'team': team, 'department': team.department})
 
 
 @login_required
 def team_delete(request, pk):
-    """Delete a team."""
     user = request.user
     team = get_object_or_404(Team, pk=pk, department__organization=user.organization)
-    
-    # Only admins and department heads can delete teams
     if not (user.is_admin or team.department.head == user):
-        messages.error(request, 'You do not have permission to delete teams.')
         return redirect('organizations:team_list')
     
     if request.method == 'POST':
-        team_name = team.name
-        department_pk = team.department.pk
+        dept_pk = team.department.pk
         team.delete()
-        messages.success(request, f'Team "{team_name}" deleted successfully!')
-        return redirect('organizations:team_list_by_dept', department_pk=department_pk)
+        return redirect('organizations:team_list', department_pk=dept_pk)
+    return render(request, 'organizations/team_confirm_delete.html', {'team': team})
+
+
+@login_required
+def invite_member(request):
+    user = request.user
+    if not (user.is_admin or user.is_manager):
+        return redirect('organizations:overview')
+
+    if request.method == 'POST':
+        form = InviteMemberForm(request.POST, organization=user.organization)
+        if form.is_valid():
+            messages.success(request, f"Please ask them to register with code: {user.organization.code}")
+            return redirect('organizations:invite_member')
+    else:
+        form = InviteMemberForm(organization=user.organization)
+    return render(request, 'organizations/invite_member.html', {'form': form})
+
+
+@login_required
+def member_directory(request):
+    user = request.user
+    if not user.organization:
+        return redirect('accounts:dashboard')
     
-    context = {'team': team}
-    return render(request, 'organizations/team_confirm_delete.html', context)
+    members = user.organization.members.all().order_by('first_name', 'last_name')
+    q = request.GET.get('q')
+    if q: members = members.filter(Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(username__icontains=q) | Q(role__icontains=q))
+    return render(request, 'organizations/member_directory.html', {'members': members, 'search_query': q})

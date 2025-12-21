@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .models import Channel, Message, MessageReaction
-from .forms import ChannelForm, MessageForm
+from .models import Channel, Message, MessageReaction, Attachment
+from .forms import ChannelForm, MessageForm, BreakoutRoomForm
 
 
 @login_required
@@ -29,6 +29,7 @@ def channel_list(request):
     team_channels = channels.filter(channel_type=Channel.ChannelType.TEAM)
     project_channels = channels.filter(channel_type=Channel.ChannelType.PROJECT)
     private_channels = channels.filter(channel_type=Channel.ChannelType.PRIVATE, members=user)
+    direct_messages = channels.filter(channel_type=Channel.ChannelType.DIRECT, members=user)
     
     context = {
         'official_channels': official_channels,
@@ -36,9 +37,144 @@ def channel_list(request):
         'team_channels': team_channels,
         'project_channels': project_channels,
         'private_channels': private_channels,
+        'direct_messages': direct_messages,
         'can_create': user.is_admin or user.is_manager
     }
     return render(request, 'chat_channels/channel_list.html', context)
+
+
+@login_required
+def start_direct_message(request, user_id):
+    """Start or get a direct message channel with another user."""
+    user = request.user
+    # Need to import User here or at top
+    from apps.accounts.models import User
+    other_user = get_object_or_404(User, id=user_id, organization=user.organization)
+    
+    if user == other_user:
+        messages.error(request, "You cannot start a direct message with yourself.")
+        return redirect('chat_channels:channel_list')
+    
+    # Check if a direct message channel already exists between these two users
+    channel = Channel.objects.filter(
+        channel_type=Channel.ChannelType.DIRECT,
+        organization=user.organization,
+        members=user
+    ).filter(members=other_user).first()
+    
+    if not channel:
+        # Create a new direct message channel
+        # Use a unique but deterministic name
+        ids = sorted([str(user.id), str(other_user.id)])
+        channel_name = f"dm-{ids[0][:8]}-{ids[1][:8]}"
+        channel = Channel.objects.create(
+            name=channel_name,
+            channel_type=Channel.ChannelType.DIRECT,
+            organization=user.organization,
+            is_private=True
+        )
+        channel.members.add(user, other_user)
+    
+    return redirect('chat_channels:channel_detail', pk=channel.pk)
+
+
+@login_required
+def breakout_create(request, channel_id):
+    """Create a breakout room from a parent channel."""
+    user = request.user
+    parent_channel = get_object_or_404(Channel, pk=channel_id, organization=user.organization)
+    
+    # Check permission to create (must be member of parent channel)
+    if not parent_channel.can_user_view(user):
+        messages.error(request, 'You do not have permission to create a breakout room here.')
+        return redirect('chat_channels:channel_detail', pk=channel_id)
+
+    if request.method == 'POST':
+        form = BreakoutRoomForm(request.POST, parent_channel=parent_channel)
+        if form.is_valid():
+            breakout = form.save(commit=False)
+            breakout.channel_type = Channel.ChannelType.BREAKOUT
+            breakout.organization = user.organization
+            breakout.parent_channel = parent_channel
+            breakout.created_by = user
+            breakout.is_private = True  # Breakout rooms are implicitly private to invitees
+            breakout.save()
+            
+            form.save_m2m()
+            # Ensure creator is a member
+            breakout.members.add(user)
+            
+            messages.success(request, f'Breakout room "{breakout.name}" started!')
+            return redirect('chat_channels:channel_detail', pk=breakout.pk)
+    else:
+        form = BreakoutRoomForm(parent_channel=parent_channel)
+    
+    context = {
+        'form': form,
+        'parent_channel': parent_channel,
+        'action': 'Start Breakout Room'
+    }
+    return render(request, 'chat_channels/breakout_form.html', context)
+
+
+@login_required
+def breakout_close(request, pk):
+    """Close and archive a breakout room."""
+    user = request.user
+    channel = get_object_or_404(Channel, pk=pk, organization=user.organization, channel_type=Channel.ChannelType.BREAKOUT)
+    
+    # Only creator or admin can close
+    if not (user.is_admin or channel.created_by == user):
+        messages.error(request, 'You do not have permission to close this room.')
+        return redirect('chat_channels:channel_detail', pk=pk)
+    
+    if request.method == 'POST':
+        channel.is_active = False
+        channel.is_archived = True
+        channel.read_only = True
+        channel.save()
+        messages.success(request, 'Breakout room closed and archived.')
+        
+        # Redirect to parent channel if exists
+        if channel.parent_channel:
+            return redirect('chat_channels:channel_detail', pk=channel.parent_channel.pk)
+        return redirect('chat_channels:channel_list')
+        
+    return render(request, 'chat_channels/breakout_confirm_close.html', {'channel': channel})
+
+
+@login_required
+def project_channel_create(request, project_id):
+    """Create a new channel within a shared project."""
+    user = request.user
+    from apps.organizations.models import SharedProject
+    project = get_object_or_404(SharedProject, pk=project_id)
+    
+    # Check permission (must be project member and admin of their org)
+    if user not in project.members.all() or not user.is_admin:
+        messages.error(request, 'You do not have permission to create channels for this project.')
+        return redirect('organizations:shared_project_detail', pk=project_id)
+    
+    if request.method == 'POST':
+        form = ChannelForm(request.POST, organization=user.organization, shared_project=project)
+        if form.is_valid():
+            channel = form.save(commit=False)
+            channel.organization = user.organization
+            channel.shared_project = project
+            channel.created_by = user
+            channel.save()
+            form.save_m2m()
+            
+            # Ensure creator is a member
+            channel.members.add(user)
+            
+            messages.success(request, f'Channel "#{channel.name}" created for project!')
+            return redirect('organizations:shared_project_detail', pk=project_id)
+    else:
+        form = ChannelForm(organization=user.organization, shared_project=project)
+    
+    context = {'form': form, 'action': 'Create Project Channel', 'project': project}
+    return render(request, 'chat_channels/channel_form.html', context)
 
 
 @login_required
@@ -87,11 +223,30 @@ def channel_detail(request, pk):
         return redirect('chat_channels:channel_list')
     
     # Get messages (excluding deleted and replies - they'll be shown with parent)
-    channel_messages = Message.objects.filter(
+    messages_query = Message.objects.filter(
         channel=channel,
         is_deleted=False,
         parent_message__isnull=True
-    ).select_related('sender').prefetch_related('reactions', 'replies').order_by('created_at')
+    ).select_related('sender').prefetch_related('reactions', 'replies', 'attachments')
+    
+    # Handle search
+    search_query = request.GET.get('q')
+    if search_query:
+        messages_query = messages_query.filter(
+            Q(content__icontains=search_query) |
+            Q(sender__first_name__icontains=search_query) |
+            Q(sender__last_name__icontains=search_query) |
+            Q(sender__username__icontains=search_query)
+        )
+    
+    channel_messages = messages_query.order_by('created_at')
+    
+    # Get active breakout rooms for this channel
+    breakout_rooms = Channel.objects.filter(
+        parent_channel=channel,
+        is_active=True,
+        channel_type=Channel.ChannelType.BREAKOUT
+    )
     
     # Handle message posting
     if request.method == 'POST':
@@ -100,7 +255,31 @@ def channel_detail(request, pk):
             message = form.save(commit=False)
             message.channel = channel
             message.sender = user
+            
+            # If voice message with no content, set placeholder
+            if message.voice_message and not message.content.strip():
+                message.content = ''  # Empty string for voice-only messages
+            
+            # Save the message first
             message.save()
+            
+            # Handle multiple attachments
+            attachments = request.FILES.getlist('attachments')
+            for attachment_file in attachments:
+                Attachment.objects.create(message=message, file=attachment_file)
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message_id': str(message.id),
+                    'content': message.content,
+                    'sender_name': user.get_full_name(),
+                    'sender_avatar': user.avatar.url if user.avatar else None,
+                    'timestamp': message.created_at.strftime('%b %d, %I:%M %p'),
+                    'voice_message_url': message.voice_message.url if message.voice_message else None,
+                    'voice_duration': message.voice_duration
+                })
+            
             return redirect('chat_channels:channel_detail', pk=pk)
     else:
         form = MessageForm()
@@ -108,7 +287,9 @@ def channel_detail(request, pk):
     context = {
         'channel': channel,
         'messages': channel_messages,
+        'breakout_rooms': breakout_rooms,
         'form': form,
+        'search_query': search_query,
         'can_edit': user.is_admin or channel.created_by == user,
         'is_member': user in channel.members.all(),
         'can_post': channel.can_user_post(user) if hasattr(channel, 'can_user_post') else user in channel.members.all()
@@ -165,6 +346,35 @@ def channel_delete(request, pk):
     
     context = {'channel': channel}
     return render(request, 'chat_channels/channel_confirm_delete.html', context)
+
+
+@login_required
+@require_POST
+def message_edit(request, pk):
+    """Edit an existing message."""
+    user = request.user
+    message = get_object_or_404(Message, pk=pk)
+    
+    # Only sender can edit
+    if message.sender != user:
+        return JsonResponse({'success': False, 'error': 'You can only edit your own messages.'}, status=403)
+    
+    new_content = request.POST.get('content')
+    if not new_content:
+        return JsonResponse({'success': False, 'error': 'Content cannot be empty.'}, status=400)
+    
+    message.content = new_content
+    message.is_edited = True
+    message.save()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'content': message.content,
+            'message_id': str(message.id)
+        })
+    
+    return redirect('chat_channels:channel_detail', pk=message.channel.pk)
 
 
 @login_required

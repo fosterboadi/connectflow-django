@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Breadcrumbs -->
+    <nav class="flex mb-6 text-sm text-gray-500 font-medium">
+        <a href="{% url 'organizations:shared_project_list' %}" class="hover:text-indigo-600 transition">Shared Projects</a>
+        <span class="mx-2">/</span>
+        <a href="{% url 'organizations:shared_project_detail' project.pk %}" class="hover:text-indigo-600 transition">{{ project.name }}</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-800">Analytics</span>
+    </nav>
+
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Project Insights & Analytics</h1>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Total Members</p>
+            <p class="text-4xl font-black text-indigo-600">{{ member_count }}</p>
+            <p class="text-xs text-gray-500 mt-2">Across {{ org_count }} organizations</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Active Channels</p>
+            <p class="text-4xl font-black text-blue-600">{{ channel_count }}</p>
+            <p class="text-xs text-gray-500 mt-2">Collaboration spaces</p>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Task Progress</p>
+            {% with total=project.tasks.count %}
+                {% if total > 0 %}
+                    {% for stat in task_stats %}
+                        {% if stat.status == 'COMPLETED' %}
+                            <p class="text-4xl font-black text-green-600">{{ stat.count }}</p>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-4xl font-black text-gray-300">0</p>
+                {% endif %}
+                <p class="text-xs text-gray-500 mt-2">Completed out of {{ total }}</p>
+            {% endwith %}
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Resource Count</p>
+            <p class="text-4xl font-black text-pink-600">{{ project.files.count }}</p>
+            <p class="text-xs text-gray-500 mt-2">Files & Documents</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Task Status Breakdown -->
+        <div class="bg-white p-8 rounded-2xl shadow-md border border-gray-100">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Task Status Distribution</h3>
+            <div class="space-y-4">
+                {% for stat in task_stats %}
+                    <div>
+                        <div class="flex justify-between text-sm font-bold mb-1 uppercase tracking-tighter">
+                            <span>{{ stat.status }}</span>
+                            <span>{{ stat.count }}</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div class="bg-indigo-600 h-2 rounded-full" style="width: {% widthratio stat.count project.tasks.count 100 %}%"></div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-center text-gray-400 italic py-10">No task data available</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Organization Contribution Placeholder -->
+        <div class="bg-white p-8 rounded-2xl shadow-md border border-gray-100">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Inter-Org Collaboration Level</h3>
+            <div class="flex items-center justify-center h-48 bg-indigo-50 rounded-xl border-2 border-dashed border-indigo-100">
+                <div class="text-center">
+                    <svg class="w-12 h-12 text-indigo-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <p class="text-indigo-300 font-bold text-sm">Detailed collaboration maps coming soon</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

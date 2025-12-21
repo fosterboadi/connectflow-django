@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from .models import Channel, Message
-from apps.organizations.models import Department, Team
+from apps.organizations.models import Department, Team, SharedProject
 
 User = get_user_model()
 
@@ -11,7 +11,7 @@ class ChannelForm(forms.ModelForm):
     
     class Meta:
         model = Channel
-        fields = ['name', 'description', 'channel_type', 'department', 'team', 'members', 'is_private', 'read_only']
+        fields = ['name', 'description', 'channel_type', 'department', 'team', 'members', 'is_private', 'read_only', 'shared_project']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
@@ -40,26 +40,39 @@ class ChannelForm(forms.ModelForm):
             }),
             'read_only': forms.CheckboxInput(attrs={
                 'class': 'w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500'
+            }),
+            'shared_project': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
             })
         }
     
-    def __init__(self, *args, organization=None, **kwargs):
+    def __init__(self, *args, organization=None, shared_project=None, **kwargs):
         super().__init__(*args, **kwargs)
         
         if organization:
             # Filter departments and teams by organization
             self.fields['department'].queryset = Department.objects.filter(organization=organization)
             self.fields['team'].queryset = Team.objects.filter(department__organization=organization)
-            self.fields['members'].queryset = User.objects.filter(organization=organization)
+            
+            if shared_project:
+                # Members can be anyone from the shared project
+                self.fields['members'].queryset = shared_project.members.all()
+                self.fields['shared_project'].queryset = SharedProject.objects.filter(id=shared_project.id)
+                self.fields['shared_project'].initial = shared_project
+            else:
+                self.fields['members'].queryset = User.objects.filter(organization=organization)
+                self.fields['shared_project'].queryset = SharedProject.objects.filter(host_organization=organization)
         else:
             self.fields['department'].queryset = Department.objects.none()
             self.fields['team'].queryset = Team.objects.none()
             self.fields['members'].queryset = User.objects.none()
+            self.fields['shared_project'].queryset = SharedProject.objects.none()
         
         # Make fields optional
         self.fields['department'].required = False
         self.fields['team'].required = False
         self.fields['members'].required = False
+        self.fields['shared_project'].required = False
 
 
 class MessageForm(forms.ModelForm):
@@ -67,16 +80,12 @@ class MessageForm(forms.ModelForm):
     
     class Meta:
         model = Message
-        fields = ['content', 'file', 'voice_message', 'voice_duration', 'parent_message']
+        fields = ['content', 'voice_message', 'voice_duration', 'parent_message']
         widgets = {
             'content': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none',
+                'class': 'w-full px-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white',
                 'placeholder': 'Type your message... (Shift+Enter for new line)',
                 'rows': 3
-            }),
-            'file': forms.FileInput(attrs={
-                'class': 'hidden',
-                'id': 'file-upload'
             }),
             'voice_message': forms.HiddenInput(attrs={'id': 'voice-message-input'}),
             'voice_duration': forms.HiddenInput(attrs={'id': 'voice-duration-input'}),
@@ -86,7 +95,47 @@ class MessageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['content'].required = False
-        self.fields['file'].required = False
         self.fields['voice_message'].required = False
         self.fields['voice_duration'].required = False
         self.fields['parent_message'].required = False
+
+
+class BreakoutRoomForm(forms.ModelForm):
+    """Form for creating breakout rooms."""
+    
+    class Meta:
+        model = Channel
+        fields = ['name', 'description', 'members']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'e.g., Quick sync, Brainstorming'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'Topic of discussion...',
+                'rows': 3
+            }),
+            'members': forms.SelectMultiple(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'size': '5'
+            }),
+        }
+    
+    def __init__(self, *args, parent_channel=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        if parent_channel:
+            organization = parent_channel.organization
+            qs = User.objects.filter(organization=organization)
+            
+            if parent_channel.channel_type == Channel.ChannelType.TEAM and parent_channel.team:
+                qs = qs.filter(teams=parent_channel.team)
+            elif parent_channel.channel_type == Channel.ChannelType.DEPARTMENT and parent_channel.department:
+                 qs = qs.filter(teams__department=parent_channel.department).distinct()
+            elif parent_channel.channel_type == Channel.ChannelType.PRIVATE:
+                qs = parent_channel.members.all()
+            elif parent_channel.channel_type == Channel.ChannelType.DIRECT:
+                 qs = parent_channel.members.all()
+
+            self.fields['members'].queryset = qs

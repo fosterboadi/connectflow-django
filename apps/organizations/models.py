@@ -199,3 +199,147 @@ class Team(models.Model):
     def organization(self):
         """Get the organization through the department."""
         return self.department.organization
+
+
+class SharedProject(models.Model):
+    """
+    SharedProject model - connects multiple organizations for collaboration.
+    """
+    
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    
+    name = models.CharField(
+        max_length=200,
+        help_text=_("Project name")
+    )
+    
+    description = models.TextField(
+        blank=True,
+        help_text=_("Project description")
+    )
+    
+    host_organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='hosted_projects',
+        help_text=_("Organization that owns this project")
+    )
+    
+    guest_organizations = models.ManyToManyField(
+        Organization,
+        related_name='guest_projects',
+        blank=True,
+        help_text=_("Organizations invited to collaborate")
+    )
+    
+    members = models.ManyToManyField(
+        'accounts.User',
+        related_name='shared_projects',
+        blank=True,
+        help_text=_("Selected members from all organizations involved")
+    )
+    
+    access_code = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text=_("Code for other organizations to join")
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'shared_projects'
+        verbose_name = _('Shared Project')
+        verbose_name_plural = _('Shared Projects')
+        ordering = ['-created_at']
+    
+    def save(self, *args, **kwargs):
+        if not self.access_code:
+            import secrets
+            import string
+            # Generate a readable but secure code: PROJECT-XXXX-XXXX
+            alphabet = string.ascii_uppercase + string.digits
+            code = ''.join(secrets.choice(alphabet) for _ in range(8))
+            self.access_code = f"PROJ-{code[:4]}-{code[4:]}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.name} (Hosted by {self.host_organization.name})"
+
+
+class ProjectFile(models.Model):
+    """Files shared specifically within a shared project."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='files')
+    uploader = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
+    file = models.FileField(upload_to='projects/files/%Y/%m/%d/')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class ProjectMeeting(models.Model):
+    """Meetings scheduled for a shared project."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='meetings')
+    organizer = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    meeting_link = models.URLField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['start_time']
+
+
+class ProjectTask(models.Model):
+    """Tasks assigned within a shared project."""
+    class TaskStatus(models.TextChoices):
+        TODO = 'TODO', _('To Do')
+        IN_PROGRESS = 'IN_PROGRESS', _('In Progress')
+        COMPLETED = 'COMPLETED', _('Completed')
+        ON_HOLD = 'ON_HOLD', _('On Hold')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='tasks')
+    creator = models.ForeignKey('accounts.User', on_delete=models.CASCADE, related_name='created_tasks')
+    assigned_to = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_tasks')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.TODO)
+    due_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['due_date', 'created_at']
+
+
+class ProjectMilestone(models.Model):
+    """Key milestones for a shared project to track progress."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='milestones')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    target_date = models.DateField()
+    is_completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['target_date']
+
+    def __str__(self):
+        return f"{self.title} - {self.project.name}"

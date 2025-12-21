@@ -215,3 +215,24 @@ class UserLoginForm(forms.Form):
             'placeholder': 'Password'
         })
     )
+
+
+class ProfileSettingsForm(forms.ModelForm):
+    """Form for updating user profile settings."""
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'avatar']
+        widgets = {
+            'first_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            }),
+            'avatar': forms.ClearableFileInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            }),
+        }

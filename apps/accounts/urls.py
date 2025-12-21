@@ -9,4 +9,7 @@ urlpatterns = [
     path('login/', views.LoginView.as_view(), name='login'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('profile/', views.ProfileSettingsView.as_view(), name='profile_settings'),
+    path('toggle-theme/', views.toggle_theme, name='toggle_theme'),
+    path('notifications/mark-read/', views.mark_notifications_as_read, name='mark_notifications_read'),
 ]

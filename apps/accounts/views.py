@@ -5,7 +5,9 @@ from django.contrib import messages
 from django.views import View
 from django.utils.decorators import method_decorator
 from django.db import transaction
-from .forms import UserRegistrationForm, UserLoginForm, OrganizationSignupForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .forms import UserRegistrationForm, UserLoginForm, OrganizationSignupForm, ProfileSettingsForm
 from apps.organizations.models import Organization
 
 
@@ -133,3 +135,37 @@ class OrganizationSignupView(View):
 def dashboard(request):
     """User dashboard view."""
     return render(request, 'accounts/dashboard.html')
+
+
+@method_decorator(login_required, name='dispatch')
+class ProfileSettingsView(View):
+    """View for user to update their profile settings."""
+
+    def get(self, request):
+        form = ProfileSettingsForm(instance=request.user)
+        return render(request, 'accounts/profile_settings.html', {'form': form})
+
+    def post(self, request):
+        form = ProfileSettingsForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile has been updated successfully!')
+            return redirect('accounts:profile_settings')
+        return render(request, 'accounts/profile_settings.html', {'form': form})
+
+
+@login_required
+@require_POST
+def mark_notifications_as_read(request):
+    request.user.notifications.filter(is_read=False).update(is_read=True)
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def toggle_theme(request):
+    """Toggle user's theme between light and dark."""
+    user = request.user
+    user.theme = 'DARK' if user.theme == 'LIGHT' else 'LIGHT'
+    user.save()
+    return JsonResponse({'status': 'ok', 'theme': user.theme})

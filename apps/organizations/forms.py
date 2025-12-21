@@ -1,8 +1,104 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Organization, Department, Team
+from .models import (
+    Organization, Department, Team, SharedProject, ProjectFile, 
+    ProjectMeeting, ProjectTask, ProjectMilestone
+)
 
 User = get_user_model()
+
+
+class ProjectMilestoneForm(forms.ModelForm):
+    class Meta:
+        model = ProjectMilestone
+        fields = ['title', 'description', 'target_date']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'description': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'rows': 2}),
+            'target_date': forms.DateInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'type': 'date'}),
+        }
+
+
+class ProjectFileForm(forms.ModelForm):
+    class Meta:
+        model = ProjectFile
+        fields = ['file', 'name', 'description']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'name': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'placeholder': 'File display name'}),
+            'description': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'rows': 2}),
+        }
+
+
+class ProjectMeetingForm(forms.ModelForm):
+    class Meta:
+        model = ProjectMeeting
+        fields = ['title', 'description', 'start_time', 'end_time', 'meeting_link']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'description': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'rows': 2}),
+            'start_time': forms.DateTimeInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'type': 'datetime-local'}),
+            'end_time': forms.DateTimeInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'type': 'datetime-local'}),
+            'meeting_link': forms.URLInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'placeholder': 'https://...'}),
+        }
+
+
+class ProjectTaskForm(forms.ModelForm):
+    class Meta:
+        model = ProjectTask
+        fields = ['title', 'description', 'assigned_to', 'status', 'due_date']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'description': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'rows': 2}),
+            'assigned_to': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'status': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'due_date': forms.DateTimeInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg', 'type': 'datetime-local'}),
+        }
+
+    def __init__(self, *args, project=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if project:
+            self.fields['assigned_to'].queryset = project.members.all()
+
+
+class SharedProjectForm(forms.ModelForm):
+    """Form for creating a shared project."""
+    class Meta:
+        model = SharedProject
+        fields = ['name', 'description', 'members']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'e.g., Joint Venture - Alpha'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'Explain the collaboration goals...',
+                'rows': 3
+            }),
+            'members': forms.SelectMultiple(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'size': '5'
+            })
+        }
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if organization:
+            # Initially, only members of the host org can be selected
+            # More can be added later as guest orgs join
+            self.fields['members'].queryset = User.objects.filter(organization=organization)
+
+
+class JoinProjectForm(forms.Form):
+    """Form for joining a shared project via code."""
+    access_code = forms.CharField(
+        max_length=50,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            'placeholder': 'e.g., PROJ-XXXX-XXXX'
+        })
+    )
 
 
 class DepartmentForm(forms.ModelForm):
@@ -99,3 +195,23 @@ class TeamForm(forms.ModelForm):
         # Make fields optional
         self.fields['manager'].required = False
         self.fields['members'].required = False
+
+
+class InviteMemberForm(forms.Form):
+    """Form for inviting a new member."""
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            'placeholder': 'Enter email to send invitation'
+        })
+    )
+
+    def __init__(self, *args, organization=None, **kwargs):
+        self.organization = organization
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if self.organization and User.objects.filter(organization=self.organization, email=email).exists():
+            raise forms.ValidationError('A user with this email already exists in this organization.')
+        return email

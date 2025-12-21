@@ -109,54 +109,91 @@
 
 ## 3. What's Next?
 
-### 🚀 Phase 2: Real-time Features
+### ✅ Phase 2: Real-time Features (COMPLETE)
 
 **WebSocket Integration**
-- [ ] Set up Django Channels with Redis
-- [ ] Replace auto-refresh with WebSocket updates
-- [ ] Real-time typing indicators
-- [ ] Real-time presence status
+- ✅ Set up Django Channels with daphne
+- ✅ Replace auto-refresh with WebSocket updates
+- ✅ Real-time typing indicators
+- ✅ Real-time presence status (Online/Offline)
 
 **Enhanced Features**
-- [ ] Message search functionality
-- [ ] File attachment management (docs, PDFs, etc.)
-- [ ] Voice/Video calling integration
-- [ ] Screen sharing capability
-- [ ] Channel analytics and statistics
+- ✅ Message search functionality (search by content or sender)
+- ✅ Direct messages (1-on-1 chat) with deterministic channel creation
+- ✅ Breakout Rooms (temporal sub-channels with specific invites)
+- ✅ Shared Projects (inter-organizational collaboration with access codes)
+- ✅ Project-specific channels for multi-org collaboration
+- ✅ Real-time In-app Notifications (bell, dropdown, and browser alerts)
+- ✅ Mention system (@username) with instant notifications
+- ✅ Message editing (real-time updates via WebSockets)
+- ✅ Member directory with search and status indicators
+- ✅ UI improvements for chat interface and member lists
+
+### 🎯 Key Decisions
+
+- **Frontend:** Django Templates + Tailwind CSS + Vanilla JS (WebSockets)
+- **Real-time:** Full WebSocket integration for messages, typing, presence, and edits.
+- **Database:** SQLite (development), PostgreSQL (production ready)
+- **Structure:** Modular Django apps with dedicated Consumers for real-time logic.
+
+---
+
+## 2. Challenges & Solutions
+
+### Challenge 6: WebSocket Integration
+**Problem:** Need real-time feel without full page reloads.  
+**Solution:** Integrated Django Channels 4.0 with Daphne and used a ProtocolTypeRouter in asgi.py.
+
+### Challenge 7: Presence Tracking
+**Problem:** Track online/offline status reliably.  
+**Solution:** Updated User model status on WebSocket connect/disconnect and broadcasted to all channel members.
+
+### Challenge 8: Direct Messaging
+**Problem:** Avoid duplicate DM channels.  
+**Solution:** Implemented deterministic channel naming for DMs based on sorted user IDs.
+
+---
+
+## 3. What's Next?
+
+### 🚀 Phase 3: Advanced Integrations & Production
 
 **Notifications**
-- [ ] In-app notifications
-- [ ] Email notifications
-- [ ] Push notifications (optional)
-- [ ] Notification preferences
+- [ ] In-app notification system
+- [ ] Email notifications for mentions
+- [ ] Browser push notifications
+
+**Deployment & Infrastructure**
+- [ ] Configure PostgreSQL for production
+- [ ] Set up Redis for Channel Layer (replacing InMemoryLayer)
+- [ ] AWS S3 integration for media storage
+- [ ] Dockerization for easy deployment
 
 **Security & Performance**
 - [ ] Rate limiting for messages
-- [ ] Message encryption
-- [ ] Optimize database queries
+- [ ] Optimize database queries with select_related/prefetch_related
 - [ ] Add caching with Redis
-- [ ] Write comprehensive tests
 
 ---
 
 ## 4. Current Status
 
-**Time Invested:** ~10-12 hours (Week 1-2)  
-**Features Complete:** 5 major steps  
-**Code Quality:** Working production-ready MVP  
-**Progress:** 60% (Core features complete)
+**Time Invested:** ~15-18 hours  
+**Features Complete:** 6 major steps + Phase 2  
+**Code Quality:** Production-ready MVP with real-time capabilities  
+**Progress:** 85% (Core platform complete)
 
 **Working Features:**
 ✅ User signup/login  
 ✅ Organization management  
 ✅ Departments & Teams  
 ✅ Channels (Public/Private/DM)  
-✅ Complete messaging system  
-✅ File uploads (images, audio)  
-✅ Emoji reactions  
-✅ Message threads  
+✅ Real-time messaging with WebSockets  
+✅ Typing indicators & Presence  
+✅ Message search & editing  
+✅ File uploads & Emoji reactions  
 
-**Status:** 🎉 Ready for Phase 2 (Real-time with WebSockets)!
+**Status:** 🚀 READY FOR DEPLOYMENT PREPARATION!
 
 ---
 

@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="max-w-md mx-auto mt-12">
-    <div class="bg-white shadow-xl rounded-lg p-8">
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8">
         <div class="text-center mb-8">
-            <h2 class="text-3xl font-bold text-gray-800">Welcome Back</h2>
-            <p class="text-gray-600 mt-2">Sign in to your account</p>
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Welcome Back</h2>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">Sign in to your account</p>
         </div>
 
         <form method="post" class="space-y-6">
@@ -20,7 +20,7 @@
             {% endif %}
 
             <div>
-                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Username
                 </label>
                 {{ form.username }}
@@ -30,7 +30,7 @@
             </div>
 
             <div>
-                <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Password
                 </label>
                 {{ form.password }}
@@ -46,15 +46,15 @@
         </form>
 
         <div class="mt-6 text-center space-y-2">
-            <p class="text-gray-600">
+            <p class="text-gray-600 dark:text-gray-300">
                 Don't have an account? 
-                <a href="{% url 'accounts:register' %}" class="text-indigo-600 hover:text-indigo-700 font-semibold">
+                <a href="{% url 'accounts:register' %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">
                     Join Organization
                 </a>
             </p>
-            <p class="text-gray-600">
+            <p class="text-gray-600 dark:text-gray-300">
                 Want to create a company? 
-                <a href="{% url 'accounts:organization_signup' %}" class="text-indigo-600 hover:text-indigo-700 font-semibold">
+                <a href="{% url 'accounts:organization_signup' %}" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">
                     Sign Up Your Organization
                 </a>
             </p>

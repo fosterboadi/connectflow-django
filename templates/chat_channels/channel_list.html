@@ -135,8 +135,50 @@
         </div>
     {% endif %}
 
+    <!-- Direct Messages -->
+    {% if direct_messages %}
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <span class="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm mr-3">💬 Direct</span>
+                Direct Messages
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for channel in direct_messages %}
+                    <a href="{% url 'chat_channels:channel_detail' channel.pk %}" 
+                       class="bg-white border-2 border-indigo-200 hover:border-indigo-400 rounded-lg p-4 transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0">
+                                {% for member in channel.members.all %}
+                                    {% if member != user %}
+                                        {% if member.avatar %}
+                                            <img src="{{ member.avatar.url }}" alt="{{ member.username }}" class="w-10 h-10 rounded-full object-cover">
+                                        {% else %}
+                                            <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                {{ member.first_name.0|default:member.username.0|upper }}
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    {% for member in channel.members.all %}
+                                        {% if member != user %}
+                                            {{ member.get_full_name }}
+                                        {% endif %}
+                                    {% endfor %}
+                                </h3>
+                                <p class="text-xs text-gray-500">1-on-1 chat</p>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
     <!-- Empty State -->
-    {% if not official_channels and not department_channels and not team_channels and not project_channels and not private_channels %}
+    {% if not official_channels and not department_channels and not team_channels and not project_channels and not private_channels and not direct_messages %}
         <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>

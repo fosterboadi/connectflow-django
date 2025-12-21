@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Project Milestones - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Breadcrumbs -->
+    <nav class="flex mb-6 text-sm text-gray-500 font-medium">
+        <a href="{% url 'organizations:shared_project_list' %}" class="hover:text-indigo-600 transition">Shared Projects</a>
+        <span class="mx-2">/</span>
+        <a href="{% url 'organizations:shared_project_detail' project.pk %}" class="hover:text-indigo-600 transition">{{ project.name }}</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-800">Milestones</span>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Milestones Roadmap -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+                <h2 class="text-3xl font-black text-gray-800 mb-8">Project Roadmap</h2>
+                
+                <div class="relative">
+                    <!-- Vertical Line -->
+                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-indigo-100"></div>
+                    
+                    <div class="space-y-12">
+                        {% for milestone in milestones %}
+                            <div class="relative pl-12 group">
+                                <!-- Bullet -->
+                                <div class="absolute left-0 w-8 h-8 rounded-full border-4 border-white shadow-md flex items-center justify-center transition-colors
+                                    {% if milestone.is_completed %}bg-green-500{% else %}bg-indigo-100{% endif %}"
+                                     id="bullet-{{ milestone.id }}">
+                                    {% if milestone.is_completed %}
+                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="text-xl font-bold {% if milestone.is_completed %}text-gray-400 line-through{% else %}text-gray-800{% endif %}"
+                                            id="title-{{ milestone.id }}">
+                                            {{ milestone.title }}
+                                        </h3>
+                                        <p class="text-sm text-gray-500 mt-1">{{ milestone.description }}</p>
+                                        <div class="flex items-center mt-3 text-xs font-bold uppercase tracking-widest text-indigo-500">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002-2z"></path>
+                                            </svg>
+                                            Target: {{ milestone.target_date|date:"M d, Y" }}
+                                        </div>
+                                    </div>
+                                    
+                                    <button onclick="toggleMilestone('{{ milestone.id }}')" 
+                                            class="bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-600 px-4 py-2 rounded-lg text-xs font-black transition uppercase tracking-tighter">
+                                        Toggle Status
+                                    </button>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="text-center py-10 text-gray-400 italic">No milestones defined.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Milestone Sidebar -->
+        <div>
+            <div class="bg-indigo-900 rounded-2xl shadow-xl p-8 text-white sticky top-8">
+                <h3 class="text-2xl font-black mb-6">New Milestone</h3>
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div>
+                            <label class="block text-xs font-black uppercase tracking-widest text-indigo-300 mb-2">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <p class="text-[10px] text-red-300 mt-1">{{ field.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="w-full bg-white text-indigo-900 font-black py-4 rounded-xl hover:bg-indigo-50 transition shadow-lg uppercase tracking-widest text-sm">
+                        Create Milestone
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleMilestone(id) {
+    // Generate the URL using Django template tag to ensure accuracy
+    const url = `/organization/milestones/${id}/toggle/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const bullet = document.getElementById(`bullet-${id}`);
+            const title = document.getElementById(`title-${id}`);
+            
+            if (data.is_completed) {
+                bullet.classList.remove('bg-indigo-100');
+                bullet.classList.add('bg-green-500');
+                bullet.innerHTML = '<svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>';
+                title.classList.add('text-gray-400', 'line-through');
+            } else {
+                bullet.classList.remove('bg-green-500');
+                bullet.classList.add('bg-indigo-100');
+                bullet.innerHTML = '';
+                title.classList.remove('text-gray-400', 'line-through');
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

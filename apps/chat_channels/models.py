@@ -19,6 +19,7 @@ class Channel(models.Model):
         PROJECT = 'PROJECT', _('Project Channel')
         PRIVATE = 'PRIVATE', _('Private Group')
         DIRECT = 'DIRECT', _('Direct Message')
+        BREAKOUT = 'BREAKOUT', _('Breakout Room')
     
     id = models.UUIDField(
         primary_key=True,
@@ -69,6 +70,24 @@ class Channel(models.Model):
         help_text=_("Team (for team channels)")
     )
     
+    parent_channel = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='breakout_rooms',
+        help_text=_("Parent channel for breakout rooms")
+    )
+    
+    shared_project = models.ForeignKey(
+        'organizations.SharedProject',
+        on_delete=models.CASCADE,
+        related_name='channels',
+        null=True,
+        blank=True,
+        help_text=_("Shared project this channel belongs to")
+    )
+    
     # Channel ownership and membership
     created_by = models.ForeignKey(
         User,
@@ -94,6 +113,11 @@ class Channel(models.Model):
     is_archived = models.BooleanField(
         default=False,
         help_text=_("Is this channel archived?")
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        help_text=_("Is this breakout room active?")
     )
     
     read_only = models.BooleanField(
@@ -125,10 +149,19 @@ class Channel(models.Model):
         if self.read_only:
             # Only super admins and channel creator can post in read-only channels
             return user.is_admin or self.created_by == user
+        
+        # In Shared Projects, all project members can usually post unless restricted
+        if self.shared_project:
+            return user in self.shared_project.members.all()
+            
         return user in self.members.all()
     
     def can_user_view(self, user):
         """Check if user can view this channel."""
+        # If it's a shared project channel, only project members can view
+        if self.shared_project:
+            return user in self.shared_project.members.all()
+
         # Super admins can view everything in their organization
         if user.is_admin and user.organization == self.organization:
             return True
@@ -145,7 +178,7 @@ class Channel(models.Model):
         if self.channel_type == self.ChannelType.TEAM and self.team:
             return user in self.team.members.all()
         
-        # Private/Project/Direct - only members can view
+        # Private/Project/Direct/Breakout - only members can view
         return user in self.members.all()
 
 
@@ -189,14 +222,6 @@ class Message(models.Model):
         blank=True,
         related_name='replies',
         help_text=_("Parent message if this is a reply")
-    )
-    
-    # File attachment
-    file = models.FileField(
-        upload_to='messages/files/%Y/%m/%d/',
-        null=True,
-        blank=True,
-        help_text=_("Attached file")
     )
     
     # Voice message
@@ -251,6 +276,40 @@ class Message(models.Model):
         """Return summary of reactions."""
         reactions = self.reactions.values('emoji').annotate(count=models.Count('id'))
         return {r['emoji']: r['count'] for r in reactions}
+
+
+class Attachment(models.Model):
+    """
+    Attachment model - represents files attached to messages.
+    """
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    message = models.ForeignKey(
+        Message,
+        related_name='attachments',
+        on_delete=models.CASCADE,
+        help_text=_("Message this attachment belongs to")
+    )
+    file = models.FileField(
+        upload_to='messages/attachments/%Y/%m/%d/',
+        help_text=_("Attached file")
+    )
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+    
+    class Meta:
+        db_table = 'message_attachments'
+        verbose_name = _('Message Attachment')
+        verbose_name_plural = _('Message Attachments')
+        ordering = ['uploaded_at']
+
+    def __str__(self):
+        return f"Attachment for Message ID: {self.message.id}"
+
 
 
 class MessageReaction(models.Model):
