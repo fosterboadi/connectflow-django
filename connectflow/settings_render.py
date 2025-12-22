@@ -7,7 +7,18 @@ import os
 import dj_database_url
 
 # Media files - Use Cloudinary for persistent storage on Render
-if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
+
+# Debug: Print to logs (will show in Render logs)
+print(f"[CLOUDINARY DEBUG] Cloud Name: {CLOUDINARY_CLOUD_NAME}")
+print(f"[CLOUDINARY DEBUG] API Key: {CLOUDINARY_API_KEY[:5] if CLOUDINARY_API_KEY else 'NOT SET'}")
+print(f"[CLOUDINARY DEBUG] API Secret: {'SET' if CLOUDINARY_API_SECRET else 'NOT SET'}")
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    print("[CLOUDINARY DEBUG] ✅ Configuring Cloudinary storage...")
+    
     # Cloudinary is configured - use it for media storage
     INSTALLED_APPS = list(INSTALLED_APPS) + ['cloudinary_storage', 'cloudinary']
     
@@ -17,18 +28,25 @@ if os.environ.get('CLOUDINARY_CLOUD_NAME'):
     
     # Configure Cloudinary (get from environment variables)
     cloudinary.config(
-        cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-        api_key=os.environ.get('CLOUDINARY_API_KEY'),
-        api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
         secure=True
     )
     
     # Use Cloudinary for media files
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     
+    print(f"[CLOUDINARY DEBUG] ✅ DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}")
+    
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
+    print("[CLOUDINARY DEBUG] ❌ Cloudinary NOT configured - using local storage")
+    print(f"[CLOUDINARY DEBUG]    Cloud Name: {CLOUDINARY_CLOUD_NAME}")
+    print(f"[CLOUDINARY DEBUG]    API Key: {CLOUDINARY_API_KEY}")
+    print(f"[CLOUDINARY DEBUG]    API Secret: {'SET' if CLOUDINARY_API_SECRET else 'NOT SET'}")
+    
     # Fallback to local storage (development/testing)
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
