@@ -487,23 +487,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (chatForm) {
         chatForm.onsubmit = async function(e) {
+            e.preventDefault(); // Always prevent default
+            
             const hasFiles = document.getElementById('file-upload').files.length > 0;
             const hasVoice = recordedBlob != null;
             const hasMessage = messageInput.value.trim();
             
-            // If only text message, send via WebSocket
-            if (!hasFiles && !hasVoice && hasMessage) {
-                e.preventDefault();
-                chatSocket.send(JSON.stringify({type: 'chat_message', message: messageInput.value}));
-                messageInput.value = ''; 
-                sendTypingStatus(false);
-                updateSendButtonState(); // Update button after sending
-                return;
+            // Must have at least one: text, voice, or files
+            if (!hasMessage && !hasVoice && !hasFiles) {
+                return false;
             }
             
-            // If has voice or files, send via AJAX
+            // If has voice or files, send via AJAX (even with text)
             if (hasVoice || hasFiles) {
-                e.preventDefault();
                 const fd = new FormData(this);
                 
                 if (hasVoice) {
@@ -550,6 +546,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     messageInput.classList.add('border-red-500');
                     setTimeout(() => messageInput.classList.remove('border-red-500'), 2000);
                 }
+            } 
+            // If only text (emoji or regular message), send via WebSocket
+            else if (hasMessage) {
+                chatSocket.send(JSON.stringify({type: 'chat_message', message: messageInput.value}));
+                messageInput.value = ''; 
+                sendTypingStatus(false);
+                updateSendButtonState(); // Update button after sending
             }
         };
     }
