@@ -786,65 +786,63 @@ function showPicker(btn, target) {
     emojiTarget = target;
     emojiPopup.classList.remove('hidden');
     
-    // Force a reflow to get accurate dimensions
-    emojiPopup.offsetHeight;
-    
-    const rect = btn.getBoundingClientRect();
-    const pickerHeight = emojiPopup.offsetHeight || 350;
-    const pickerWidth = emojiPopup.offsetWidth || 350;
-    
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
-    const scrollY = window.scrollY || window.pageYOffset;
-    const scrollX = window.scrollX || window.pageXOffset;
-    
-    // Vertical positioning - prefer above, fall back to below
-    let top;
-    const spaceAbove = rect.top;
-    const spaceBelow = viewportHeight - rect.bottom;
-    
-    if (spaceAbove >= pickerHeight || spaceAbove > spaceBelow) {
-        // Show above the button
-        top = rect.top + scrollY - pickerHeight - 10;
-    } else {
-        // Show below the button
-        top = rect.bottom + scrollY + 10;
-    }
-    
-    // Ensure it doesn't go above viewport
-    if (top < scrollY + 10) {
-        top = scrollY + 10;
-    }
-    
-    // Ensure it doesn't go below viewport
-    if (top + pickerHeight > scrollY + viewportHeight - 10) {
-        top = scrollY + viewportHeight - pickerHeight - 10;
-    }
-    
-    // Horizontal positioning - center on button, adjust if overflows
-    let left = rect.left + scrollX + (rect.width / 2) - (pickerWidth / 2);
-    
-    // Check right edge overflow
-    if (left + pickerWidth > scrollX + viewportWidth - 10) {
-        left = scrollX + viewportWidth - pickerWidth - 10;
-    }
-    
-    // Check left edge overflow
-    if (left < scrollX + 10) {
-        left = scrollX + 10;
-    }
-    
-    // On mobile, center it horizontally
-    if (viewportWidth < 640) {
-        left = scrollX + (viewportWidth - pickerWidth) / 2;
-        if (left < scrollX + 10) left = scrollX + 10;
-        if (left + pickerWidth > scrollX + viewportWidth - 10) {
-            left = scrollX + viewportWidth - pickerWidth - 10;
+    // Wait for next frame to get accurate dimensions
+    requestAnimationFrame(() => {
+        const rect = btn.getBoundingClientRect();
+        const pickerHeight = emojiPopup.offsetHeight || 350;
+        const pickerWidth = emojiPopup.offsetWidth || 350;
+        
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        
+        // Vertical positioning - prefer above, fall back to below
+        let top;
+        const spaceAbove = rect.top;
+        const spaceBelow = viewportHeight - rect.bottom;
+        
+        if (spaceAbove >= pickerHeight || spaceAbove > spaceBelow) {
+            // Show above the button
+            top = rect.top - pickerHeight - 10;
+        } else {
+            // Show below the button
+            top = rect.bottom + 10;
         }
-    }
-    
-    emojiPopup.style.top = `${top}px`;
-    emojiPopup.style.left = `${left}px`;
+        
+        // Ensure it doesn't go above viewport
+        if (top < 10) {
+            top = 10;
+        }
+        
+        // Ensure it doesn't go below viewport
+        if (top + pickerHeight > viewportHeight - 10) {
+            top = viewportHeight - pickerHeight - 10;
+        }
+        
+        // Horizontal positioning - center on button, adjust if overflows
+        let left = rect.left + (rect.width / 2) - (pickerWidth / 2);
+        
+        // Check right edge overflow
+        if (left + pickerWidth > viewportWidth - 10) {
+            left = viewportWidth - pickerWidth - 10;
+        }
+        
+        // Check left edge overflow
+        if (left < 10) {
+            left = 10;
+        }
+        
+        // On mobile, center it horizontally
+        if (viewportWidth < 640) {
+            left = (viewportWidth - pickerWidth) / 2;
+            if (left < 10) left = 10;
+            if (left + pickerWidth > viewportWidth - 10) {
+                left = viewportWidth - pickerWidth - 10;
+            }
+        }
+        
+        emojiPopup.style.top = `${top}px`;
+        emojiPopup.style.left = `${left}px`;
+    });
 }
 
 picker.addEventListener('emoji-click', e => {
