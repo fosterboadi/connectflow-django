@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 import uuid
+from cloudinary.models import CloudinaryField
 
 
 class User(AbstractUser):
@@ -40,8 +41,9 @@ class User(AbstractUser):
     )
     
     # Profile fields
-    avatar = models.ImageField(
-        upload_to='avatars/',
+    avatar = CloudinaryField(
+        'avatar',
+        folder='avatars',
         null=True,
         blank=True,
         help_text=_("User profile picture")

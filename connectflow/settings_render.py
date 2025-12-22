@@ -17,41 +17,25 @@ print(f"[CLOUDINARY DEBUG] API Key: {CLOUDINARY_API_KEY[:5] if CLOUDINARY_API_KE
 print(f"[CLOUDINARY DEBUG] API Secret: {'SET' if CLOUDINARY_API_SECRET else 'NOT SET'}")
 
 if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    print("[CLOUDINARY DEBUG] ✅ Configuring Cloudinary storage...")
+    print("[CLOUDINARY DEBUG] ✅ Configuring Cloudinary...")
     
     import cloudinary
-    import cloudinary.uploader
-    import cloudinary.api
     
-    # Configure Cloudinary FIRST
+    # Configure Cloudinary
     cloudinary.config(
         cloud_name=CLOUDINARY_CLOUD_NAME,
         api_key=CLOUDINARY_API_KEY,
         api_secret=CLOUDINARY_API_SECRET,
-        secure=True,
-        api_proxy='http://proxy.example.com:8080'  # Optional
+        secure=True
     )
     
-    # CRITICAL: Set this BEFORE adding to INSTALLED_APPS
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-        'API_KEY': CLOUDINARY_API_KEY,
-        'API_SECRET': CLOUDINARY_API_SECRET,
-    }
-    
-    # Add Cloudinary to installed apps
+    # Add only 'cloudinary' to installed apps
     INSTALLED_APPS = list(INSTALLED_APPS)
-    if 'cloudinary_storage' not in INSTALLED_APPS:
-        INSTALLED_APPS = ['cloudinary_storage'] + INSTALLED_APPS
     if 'cloudinary' not in INSTALLED_APPS:
         INSTALLED_APPS.append('cloudinary')
     
-    # This is THE critical line
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    
-    print(f"[CLOUDINARY DEBUG] ✅ DEFAULT_FILE_STORAGE: {DEFAULT_FILE_STORAGE}")
-    print(f"[CLOUDINARY DEBUG] ✅ Cloudinary SDK configured")
-    print(f"[CLOUDINARY DEBUG] ✅ Apps: {[a for a in INSTALLED_APPS if 'cloudinary' in a]}")
+    print(f"[CLOUDINARY DEBUG] ✅ Cloudinary configured for CloudinaryField")
+    print(f"[CLOUDINARY DEBUG] ✅ Using NATIVE CloudinaryField in model")
 else:
     print("[CLOUDINARY DEBUG] ❌ Cloudinary NOT configured - using local storage")
     print(f"[CLOUDINARY DEBUG]    Cloud Name: {CLOUDINARY_CLOUD_NAME}")
