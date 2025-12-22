@@ -19,6 +19,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from django.views.static import serve
+from django.urls import re_path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,6 +28,11 @@ urlpatterns = [
     path('organization/', include('apps.organizations.urls')),
     path('channels/', include('apps.chat_channels.urls')),
     path('', RedirectView.as_view(url='/accounts/login/', permanent=False)),
+    
+    # Serve .well-known files for PWA
+    re_path(r'^\.well-known/(?P<path>.*)$', serve, {
+        'document_root': settings.BASE_DIR / 'static' / '.well-known',
+    }),
 ]
 
 # Serve media files in development
