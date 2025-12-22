@@ -44,12 +44,16 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
     # Use Cloudinary for media files
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     
-    print(f"[CLOUDINARY DEBUG] ✅ DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}")
-    print(f"[CLOUDINARY DEBUG] ✅ INSTALLED_APPS updated with cloudinary")
+    # Cloudinary storage settings
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET
+    }
     
-    # Don't override MEDIA_URL when using Cloudinary
-    # Let Cloudinary handle it
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    print(f"[CLOUDINARY DEBUG] ✅ DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}")
+    print(f"[CLOUDINARY DEBUG] ✅ CLOUDINARY_STORAGE configured")
+    print(f"[CLOUDINARY DEBUG] ✅ INSTALLED_APPS updated with cloudinary")
 else:
     print("[CLOUDINARY DEBUG] ❌ Cloudinary NOT configured - using local storage")
     print(f"[CLOUDINARY DEBUG]    Cloud Name: {CLOUDINARY_CLOUD_NAME}")
