@@ -811,8 +811,12 @@ function showPicker(btn, target) {
 
 picker.addEventListener('emoji-click', e => {
     if (emojiTarget === 'input') {
-        const el = document.getElementById('id_content'); const pos = el.selectionStart;
+        const el = document.getElementById('id_content'); 
+        const pos = el.selectionStart;
         el.value = el.value.slice(0, pos) + e.detail.unicode + el.value.slice(pos);
+        el.focus(); // Focus back on input
+        el.selectionStart = el.selectionEnd = pos + e.detail.unicode.length; // Set cursor position
+        updateSendButtonState(); // Enable send button!
     } else {
         const f = document.getElementById('reaction-form-' + emojiTarget);
         if(f) { document.getElementById('emoji-input-' + emojiTarget).value = e.detail.unicode; f.submit(); }
