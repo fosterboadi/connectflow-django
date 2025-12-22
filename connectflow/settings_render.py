@@ -19,9 +19,6 @@ print(f"[CLOUDINARY DEBUG] API Secret: {'SET' if CLOUDINARY_API_SECRET else 'NOT
 if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
     print("[CLOUDINARY DEBUG] ✅ Configuring Cloudinary storage...")
     
-    # Cloudinary is configured - use it for media storage
-    INSTALLED_APPS = list(INSTALLED_APPS) + ['cloudinary_storage', 'cloudinary']
-    
     import cloudinary
     import cloudinary.uploader
     import cloudinary.api
@@ -34,12 +31,24 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure=True
     )
     
+    # Add Cloudinary apps FIRST
+    INSTALLED_APPS = list(INSTALLED_APPS)
+    # cloudinary_storage must be before django.contrib.staticfiles
+    try:
+        staticfiles_index = INSTALLED_APPS.index('django.contrib.staticfiles')
+        INSTALLED_APPS.insert(staticfiles_index, 'cloudinary_storage')
+        INSTALLED_APPS.insert(staticfiles_index, 'cloudinary')
+    except ValueError:
+        INSTALLED_APPS = ['cloudinary_storage', 'cloudinary'] + INSTALLED_APPS
+    
     # Use Cloudinary for media files
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     
     print(f"[CLOUDINARY DEBUG] ✅ DEFAULT_FILE_STORAGE set to: {DEFAULT_FILE_STORAGE}")
+    print(f"[CLOUDINARY DEBUG] ✅ INSTALLED_APPS updated with cloudinary")
     
-    MEDIA_URL = '/media/'
+    # Don't override MEDIA_URL when using Cloudinary
+    # Let Cloudinary handle it
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 else:
     print("[CLOUDINARY DEBUG] ❌ Cloudinary NOT configured - using local storage")
