@@ -167,8 +167,9 @@ def shared_project_list(request):
 @login_required
 def shared_project_create(request):
     user = request.user
-    if not user.is_admin:
-        messages.error(request, 'Only organization admins can create shared projects.')
+    # Requirement: admins, department heads, team leaders can create
+    if not (user.is_admin or user.is_manager):
+        messages.error(request, 'Only organization admins, department heads, and team managers can create shared projects.')
         return redirect('organizations:shared_project_list')
     
     if request.method == 'POST':
@@ -271,6 +272,7 @@ def shared_project_detail(request, pk):
         'completion_percentage': completion_percentage,
         'milestone_form': milestone_form,
         'is_admin': user.is_admin,
+        'can_manage': user.is_admin or (user in project.members.all() and user.is_manager),
         'is_member': user in project.members.all(),
         'is_host': is_host,
     }
@@ -418,11 +420,114 @@ def invite_member(request):
     if request.method == 'POST':
         form = InviteMemberForm(request.POST, organization=user.organization)
         if form.is_valid():
-            messages.success(request, f"Please ask them to register with code: {user.organization.code}")
+            email = form.cleaned_data['email']
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            invite_link = request.build_absolute_uri(f"/accounts/register/?code={user.organization.code}&email={email}")
+            
+            try:
+                send_mail(
+                    subject=f'Invitation to join {user.organization.name} on ConnectFlow',
+                    message=f'You have been invited to join {user.organization.name}. Click here to join: {invite_link}',
+                    from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@connectflow.com',
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                messages.success(request, f"Invitation sent to {email}")
+            except Exception as e:
+                # Fallback if email is not configured
+                messages.success(request, f"Please ask them to register with code: {user.organization.code}")
+                # Log error in production
+            
             return redirect('organizations:invite_member')
     else:
         form = InviteMemberForm(organization=user.organization)
     return render(request, 'organizations/invite_member.html', {'form': form})
+
+
+@login_required
+@require_POST
+def member_remove(request, pk):
+    user = request.user
+    if not user.is_admin:
+        messages.error(request, 'Only admins can remove members.')
+        return redirect('organizations:member_directory')
+    
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    member = get_object_or_404(User, pk=pk, organization=user.organization)
+    
+    if member == user:
+        messages.error(request, "You cannot remove yourself.")
+    else:
+        # Remove from organization
+        member.organization = None
+        member.role = User.Role.TEAM_MEMBER # Reset role
+        member.save()
+        messages.success(request, f"{member.get_full_name() or member.username} has been removed from the organization.")
+    
+    return redirect('organizations:member_directory')
+
+
+@login_required
+def project_milestone_edit(request, project_pk, milestone_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    milestone = get_object_or_404(ProjectMilestone, pk=milestone_pk, project=project)
+    user = request.user
+    
+    # Check permissions: Admin, Host Admin, Project Creator, or Dept Head/Team Manager involved
+    can_edit = (
+        user.is_admin or 
+        project.host_organization == user.organization and user.is_admin or
+        user in project.members.all() and (user.is_manager) 
+    )
+    
+    if not can_edit:
+        messages.error(request, "You do not have permission to edit milestones.")
+        return redirect('organizations:shared_project_detail', pk=project_pk)
+    
+    if request.method == 'POST':
+        form = ProjectMilestoneForm(request.POST, instance=milestone)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Milestone updated.')
+            return redirect('organizations:shared_project_detail', pk=project_pk)
+    else:
+        form = ProjectMilestoneForm(instance=milestone)
+    
+    return render(request, 'organizations/project_milestone_form.html', {'form': form, 'project': project, 'action': 'Edit'})
+
+
+@login_required
+@require_POST
+def shared_project_remove_member(request, project_pk, member_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    user = request.user
+    
+    # Check permissions
+    can_remove = (
+        (user.organization == project.host_organization and user.is_admin) or
+        (user in project.members.all() and user.is_manager) # Allowing managers/creators to manage their project
+    )
+    
+    if not can_remove:
+         messages.error(request, "You do not have permission to remove members.")
+         return redirect('organizations:shared_project_detail', pk=project_pk)
+    
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    member_to_remove = get_object_or_404(User, pk=member_pk)
+    
+    if member_to_remove not in project.members.all():
+         messages.error(request, "User is not in this project.")
+         return redirect('organizations:shared_project_detail', pk=project_pk)
+    
+    # Prevent removing oneself if they are the only admin/manager? No, let them leave if they want, but here it's "remove".
+    
+    project.members.remove(member_to_remove)
+    messages.success(request, f"{member_to_remove.get_full_name()} removed from project.")
+    return redirect('organizations:shared_project_detail', pk=project_pk)
 
 
 @login_required

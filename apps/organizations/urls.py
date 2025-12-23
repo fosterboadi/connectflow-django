@@ -23,6 +23,7 @@ urlpatterns = [
     # Members
     path('invite/', views.invite_member, name='invite_member'),
     path('members/', views.member_directory, name='member_directory'),
+    path('members/<int:pk>/remove/', views.member_remove, name='member_remove'),
     
     # Shared Projects
     path('projects/', views.shared_project_list, name='shared_project_list'),
@@ -34,5 +35,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/tasks/', views.project_tasks, name='project_tasks'),
     path('projects/<uuid:pk>/analytics/', views.project_analytics, name='project_analytics'),
     path('projects/<uuid:pk>/milestones/', views.project_milestones, name='project_milestones'),
+    path('projects/<uuid:project_pk>/milestones/<uuid:milestone_pk>/edit/', views.project_milestone_edit, name='project_milestone_edit'),
+    path('projects/<uuid:project_pk>/members/<int:member_pk>/remove/', views.shared_project_remove_member, name='shared_project_remove_member'),
     path('milestones/<uuid:pk>/toggle/', views.toggle_milestone, name='toggle_milestone'),
 ]

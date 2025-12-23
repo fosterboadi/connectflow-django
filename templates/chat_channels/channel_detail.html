@@ -61,25 +61,27 @@
                     </div>
                 </form>
 
-                {% if can_edit %}
-                    <div class="flex space-x-2">
-                        {% if channel.channel_type == 'BREAKOUT' %}
-                            <a href="{% url 'chat_channels:breakout_close' channel.pk %}"
-                               class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-center w-full font-bold shadow-md">
-                                Close Room
-                            </a>
-                        {% else %}
-                            <a href="{% url 'chat_channels:channel_edit' channel.pk %}" 
-                               class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-lg transition text-center flex-1 font-bold border border-indigo-200 dark:border-gray-600">
-                                Edit
-                            </a>
-                            <a href="{% url 'chat_channels:breakout_create' channel.pk %}"
-                               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-center flex-1 font-bold whitespace-nowrap shadow-md">
-                                + Breakout
-                            </a>
+                <div class="flex space-x-2">
+                    {% if channel.channel_type == 'BREAKOUT' %}
+                        {% if can_edit %}
+                        <a href="{% url 'chat_channels:breakout_close' channel.pk %}"
+                           class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-center w-full font-bold shadow-md">
+                            Close Room
+                        </a>
                         {% endif %}
-                    </div>
-                {% endif %}
+                    {% else %}
+                        {% if can_edit %}
+                        <a href="{% url 'chat_channels:channel_edit' channel.pk %}" 
+                           class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-lg transition text-center flex-1 font-bold border border-indigo-200 dark:border-gray-600">
+                            Edit
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'chat_channels:breakout_create' channel.pk %}"
+                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-center flex-1 font-bold whitespace-nowrap shadow-md">
+                            + Breakout
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

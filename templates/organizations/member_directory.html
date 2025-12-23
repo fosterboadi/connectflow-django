@@ -68,11 +68,21 @@
                                     <span>Message</span>
                                 </a>
                             {% endif %}
-                            <button type="button" 
-                                    class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition"
-                                    onclick="alert('Profile details for {{ member.username }} coming soon!')">
-                                Profile
-                            </button>
+                            
+                            {% if is_admin and member != user %}
+                                <form action="{% url 'organizations:member_remove' member.id %}" method="post" onsubmit="return confirm('Are you sure you want to remove {{ member.username }} from the organization?');" class="flex-1">
+                                    {% csrf_token %}
+                                    <button type="submit" class="w-full bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg text-sm font-medium transition">
+                                        Remove
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button type="button" 
+                                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium transition"
+                                        onclick="alert('Profile details for {{ member.username }} coming soon!')">
+                                    Profile
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
