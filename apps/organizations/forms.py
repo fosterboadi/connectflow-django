@@ -76,9 +76,8 @@ class SharedProjectForm(forms.ModelForm):
                 'placeholder': 'Explain the collaboration goals...',
                 'rows': 3
             }),
-            'members': forms.SelectMultiple(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
-                'size': '5'
+            'members': forms.CheckboxSelectMultiple(attrs={
+                'class': 'grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-4 border rounded-lg bg-gray-50'
             })
         }
 
@@ -93,15 +92,7 @@ class SharedProjectForm(forms.ModelForm):
         project = super().save(commit=False)
         if commit:
             project.save()
-            
-            # Handle "Appending" members instead of replacing
-            new_members = self.cleaned_data.get('members', [])
-            if self.instance.pk:
-                project.members.add(*new_members)
-            else:
-                project.members.set(new_members)
-                
-            self.save_m2m()
+            self.save_m2m() # This will set members correctly (existing + newly checked)
         return project
 
 
@@ -186,9 +177,8 @@ class TeamForm(forms.ModelForm):
             'manager': forms.Select(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
             }),
-            'members': forms.SelectMultiple(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
-                'size': '5'
+            'members': forms.CheckboxSelectMultiple(attrs={
+                'class': 'grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-4 border rounded-lg bg-gray-50'
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500'
@@ -222,24 +212,13 @@ class TeamForm(forms.ModelForm):
     def save(self, commit=True):
         team = super().save(commit=False)
         if team.manager:
-            # Promote the selected user to TEAM_MANAGER if they are just a TEAM_MEMBER
             if team.manager.role == User.Role.TEAM_MEMBER:
                 team.manager.role = User.Role.TEAM_MANAGER
                 team.manager.save()
         
         if commit:
             team.save()
-            
-            # Handle "Appending" members instead of replacing
-            new_members = self.cleaned_data.get('members', [])
-            if self.instance.pk:
-                # If editing, add new ones to existing
-                team.members.add(*new_members)
-            else:
-                # If creating, set initial ones
-                team.members.set(new_members)
-                
-            self.save_m2m()
+            self.save_m2m() # Standard Django behavior handles the selection correctly
         return team
 
 

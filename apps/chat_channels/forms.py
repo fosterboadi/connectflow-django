@@ -31,9 +31,8 @@ class ChannelForm(forms.ModelForm):
             'team': forms.Select(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
             }),
-            'members': forms.SelectMultiple(attrs={
-                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
-                'size': '5'
+            'members': forms.CheckboxSelectMultiple(attrs={
+                'class': 'grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-4 border rounded-lg bg-gray-50'
             }),
             'is_private': forms.CheckboxInput(attrs={
                 'class': 'w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500'
@@ -50,12 +49,10 @@ class ChannelForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         if organization:
-            # Filter departments and teams by organization
             self.fields['department'].queryset = Department.objects.filter(organization=organization)
             self.fields['team'].queryset = Team.objects.filter(department__organization=organization)
             
             if shared_project:
-                # Members can be anyone from the shared project
                 self.fields['members'].queryset = shared_project.members.all()
                 self.fields['shared_project'].queryset = SharedProject.objects.filter(id=shared_project.id)
                 self.fields['shared_project'].initial = shared_project
@@ -68,7 +65,6 @@ class ChannelForm(forms.ModelForm):
             self.fields['members'].queryset = User.objects.none()
             self.fields['shared_project'].queryset = SharedProject.objects.none()
         
-        # Make fields optional
         self.fields['department'].required = False
         self.fields['team'].required = False
         self.fields['members'].required = False
@@ -78,26 +74,17 @@ class ChannelForm(forms.ModelForm):
         channel = super().save(commit=False)
         if commit:
             channel.save()
-            
-            # 1. Handle "Appending" members instead of replacing
-            new_members = self.cleaned_data.get('members', [])
-            if self.instance.pk:
-                # If editing, add new ones to existing
-                channel.members.add(*new_members)
-            else:
-                # If creating, set initial ones
-                channel.members.set(new_members)
+            self.save_m2m() # This handles the 'members' field correctly
 
-            # 2. Auto-add team members if team is selected
+            # Auto-add team members if team is selected (even if not checked in members field)
             if channel.team:
                 channel.members.add(*channel.team.members.all())
             
-            # 3. Auto-add department members if department is selected
+            # Auto-add department members if department is selected
             if channel.department:
                 for team in channel.department.teams.all():
                     channel.members.add(*team.members.all())
                     
-            self.save_m2m()
         return channel
 
 

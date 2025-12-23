@@ -582,11 +582,16 @@ def member_remove(request, pk):
     if member == user:
         messages.error(request, "You cannot remove yourself.")
     else:
+        # Clean up associations
+        member.teams.clear()
+        member.channels.clear()
+        member.shared_projects.clear()
+        
         # Remove from organization
         member.organization = None
         member.role = User.Role.TEAM_MEMBER # Reset role
         member.save()
-        messages.success(request, f"{member.get_full_name() or member.username} has been removed from the organization.")
+        messages.success(request, f"{member.get_full_name() or member.username} has been removed from the organization and all its units.")
     
     return redirect('organizations:member_directory')
 
