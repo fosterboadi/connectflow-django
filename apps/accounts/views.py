@@ -4,64 +4,131 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views import View
 from django.utils.decorators import method_decorator
-from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .forms import UserRegistrationForm, UserLoginForm, OrganizationSignupForm, ProfileSettingsForm
+from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+import json
+from .forms import ProfileSettingsForm
 from apps.organizations.models import Organization
+
+class LoginView(View):
+    """
+    Handles user login.
+    GET: Renders the login page.
+    POST: Authenticates user with Firebase ID token.
+    """
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('accounts:dashboard')
+        return render(request, 'accounts/login.html')
+
+    @method_decorator(csrf_exempt)
+    def post(self, request):
+        if request.user.is_authenticated:
+            return JsonResponse({'status': 'ok', 'message': 'Already logged in.'})
+        
+        try:
+            data = json.loads(request.body)
+            id_token = data.get('id_token')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        if not id_token:
+            return JsonResponse({'error': 'ID token is required.'}, status=400)
+
+        user = authenticate(request, id_token=id_token)
+
+        if user:
+            login(request, user)
+            messages.success(request, f'Welcome back, {user.username}!')
+            return JsonResponse({'status': 'ok'})
+        else:
+            return JsonResponse({'error': 'Invalid token or user not found.'}, status=403)
 
 
 class RegisterView(View):
-    """User registration view."""
-    
+    """
+    Renders the registration page.
+    The actual registration logic is handled by Firebase on the frontend,
+    which then sends the ID token to LoginView.
+    """
     def get(self, request):
         if request.user.is_authenticated:
             return redirect('accounts:dashboard')
-        form = UserRegistrationForm()
-        return render(request, 'accounts/register.html', {'form': form})
-    
-    def post(self, request):
-        if request.user.is_authenticated:
-            return redirect('accounts:dashboard')
-        
-        form = UserRegistrationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, f'Welcome to ConnectFlow Pro, {user.username}!')
-            return redirect('accounts:dashboard')
-        
-        return render(request, 'accounts/register.html', {'form': form})
+        return render(request, 'accounts/register.html')
 
 
-class LoginView(View):
-    """User login view."""
-    
+class OrganizationSignupView(View):
+    """
+    Renders the organization signup page.
+    """
     def get(self, request):
         if request.user.is_authenticated:
             return redirect('accounts:dashboard')
-        form = UserLoginForm()
-        return render(request, 'accounts/login.html', {'form': form})
-    
+        return render(request, 'accounts/organization_signup.html')
+
+
+class CreateOrganizationView(View):
+    """
+    API endpoint to create an organization and assign the user as Super Admin.
+    """
+    @method_decorator(csrf_exempt)
     def post(self, request):
-        if request.user.is_authenticated:
-            return redirect('accounts:dashboard')
+        try:
+            data = json.loads(request.body)
+            id_token = data.get('id_token')
+            org_name = data.get('org_name')
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        if not id_token or not org_name:
+            return JsonResponse({'error': 'ID token and Organization Name are required.'}, status=400)
+
+        # Authenticate user first
+        user = authenticate(request, id_token=id_token)
+        if not user:
+            return JsonResponse({'error': 'Authentication failed.'}, status=403)
+
+        # Logic to generate Org Code (reused from form logic, simplified here)
+        import re
+        from datetime import datetime
         
-        form = UserLoginForm(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            user = authenticate(request, username=username, password=password)
-            
-            if user is not None:
+        # Remove special characters and get first letters of each word
+        words = re.sub(r'[^a-zA-Z0-9\s]', '', org_name).upper().split()
+        if len(words) >= 2:
+            base_code = ''.join(word[:2] for word in words[:2])
+        else:
+            base_code = words[0][:4] if words else 'ORG'
+        
+        year = datetime.now().year
+        code = f"{base_code}{year}"
+        
+        # Ensure uniqueness
+        counter = 1
+        original_code = code
+        while Organization.objects.filter(code=code).exists():
+            code = f"{original_code}{counter}"
+            counter += 1
+
+        try:
+            with transaction.atomic():
+                organization = Organization.objects.create(
+                    name=org_name,
+                    code=code,
+                    is_active=True
+                )
+                
+                # Update user role and organization
+                user.organization = organization
+                user.role = 'SUPER_ADMIN'
+                user.save()
+                
                 login(request, user)
-                messages.success(request, f'Welcome back, {user.username}!')
-                next_url = request.GET.get('next', 'accounts:dashboard')
-                return redirect(next_url)
-            else:
-                messages.error(request, 'Invalid username or password.')
-        
-        return render(request, 'accounts/login.html', {'form': form})
+                
+                return JsonResponse({'status': 'ok', 'org_code': code})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
 
 @method_decorator(login_required, name='dispatch')
@@ -72,63 +139,6 @@ class LogoutView(View):
         logout(request)
         messages.info(request, 'You have been logged out successfully.')
         return redirect('accounts:login')
-
-
-class OrganizationSignupView(View):
-    """Organization signup view for creating a company and super admin."""
-    
-    def get(self, request):
-        if request.user.is_authenticated:
-            return redirect('accounts:dashboard')
-        form = OrganizationSignupForm()
-        return render(request, 'accounts/organization_signup.html', {'form': form})
-    
-    def post(self, request):
-        if request.user.is_authenticated:
-            return redirect('accounts:dashboard')
-        
-        form = OrganizationSignupForm(request.POST)
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    # Generate organization code
-                    org_code = form.generate_org_code(form.cleaned_data['org_name'])
-                    
-                    # Create organization
-                    organization = Organization.objects.create(
-                        name=form.cleaned_data['org_name'],
-                        code=org_code,
-                        is_active=True
-                    )
-                    
-                    # Get the User model
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    
-                    # Create super admin user
-                    user = User.objects.create_user(
-                        username=form.cleaned_data['username'],
-                        email=form.cleaned_data['email'],
-                        password=form.cleaned_data['password1'],
-                        first_name=form.cleaned_data['first_name'],
-                        last_name=form.cleaned_data['last_name'],
-                        organization=organization,
-                        role='SUPER_ADMIN'  # Set as Super Admin
-                    )
-                    
-                    # Log the user in
-                    login(request, user)
-                    messages.success(
-                        request, 
-                        f'Welcome! Your organization "{organization.name}" has been created. '
-                        f'Share code "{organization.code}" with your team members to join.'
-                    )
-                    return redirect('accounts:dashboard')
-                    
-            except Exception as e:
-                messages.error(request, f'An error occurred: {str(e)}')
-        
-        return render(request, 'accounts/organization_signup.html', {'form': form})
 
 
 @login_required
