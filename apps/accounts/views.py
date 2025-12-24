@@ -208,6 +208,15 @@ class ProfileSettingsView(View):
         return render(request, 'accounts/profile_settings.html', {'form': form})
 
 
+@method_decorator(login_required, name='dispatch')
+class UserProfileView(View):
+    """View to display another user's profile."""
+    def get(self, request, pk):
+        from django.shortcuts import get_object_or_404
+        user_to_view = get_object_or_404(User, pk=pk, organization=request.user.organization)
+        return render(request, 'accounts/profile_detail.html', {'viewed_user': user_to_view})
+
+
 @login_required
 @require_POST
 def mark_notifications_as_read(request):

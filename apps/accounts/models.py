@@ -49,10 +49,27 @@ class User(AbstractUser):
         help_text=_("User profile picture")
     )
     
+    professional_role = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=_("e.g., Senior Software Engineer, Project Manager")
+    )
+    
     bio = models.TextField(
         max_length=500,
         blank=True,
         help_text=_("Short bio or description")
+    )
+    
+    qualifications = models.TextField(
+        blank=True,
+        help_text=_("Certifications, degrees, or other professional qualifications")
+    )
+    
+    skills = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=_("Key skills, comma-separated (e.g., Python, Project Management, Agile)")
     )
     
     phone = models.CharField(

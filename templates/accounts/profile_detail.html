@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ viewed_user.get_full_name }} - Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Profile Header -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 mb-8">
+        <div class="h-32 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+        <div class="px-8 pb-8">
+            <div class="relative flex justify-between items-end -mt-16 mb-6">
+                <div class="relative">
+                    {% if viewed_user.avatar %}
+                        <img src="{{ viewed_user.avatar.url }}" alt="{{ viewed_user.get_full_name }}" class="w-32 h-32 rounded-3xl border-4 border-white dark:border-gray-800 object-cover shadow-lg">
+                    {% else %}
+                        <div class="w-32 h-32 bg-indigo-500 rounded-3xl border-4 border-white dark:border-gray-800 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
+                            {{ viewed_user.first_name.0|default:viewed_user.username.0|upper }}
+                        </div>
+                    {% endif %}
+                    <div class="absolute bottom-2 right-2 w-6 h-6 rounded-full border-4 border-white dark:border-gray-800 {% if viewed_user.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-400{% endif %}" title="{{ viewed_user.get_status_display }}"></div>
+                </div>
+                
+                {% if viewed_user != user %}
+                <a href="{% url 'chat_channels:start_direct_message' viewed_user.id %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition flex items-center shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    Message
+                </a>
+                {% else %}
+                <a href="{% url 'accounts:profile_settings' %}" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-6 py-2.5 rounded-xl font-bold transition shadow-sm">
+                    Edit Profile
+                </a>
+                {% endif %}
+            </div>
+
+            <div>
+                <h1 class="text-3xl font-black text-gray-900 dark:text-white">{{ viewed_user.get_full_name }}</h1>
+                <p class="text-indigo-600 dark:text-indigo-400 font-bold text-lg mb-2">
+                    {{ viewed_user.professional_role|default:viewed_user.get_role_display }}
+                </p>
+                <div class="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    {{ viewed_user.organization.name }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Left Column: About & Skills -->
+        <div class="md:col-span-2 space-y-8">
+            <!-- Bio Section -->
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <h2 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">About</h2>
+                <div class="prose dark:prose-invert max-w-none">
+                    {% if viewed_user.bio %}
+                        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">{{ viewed_user.bio }}</p>
+                    {% else %}
+                        <p class="text-gray-400 italic">No bio provided.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Qualifications Section -->
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <h2 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Qualifications & Certifications</h2>
+                <div class="prose dark:prose-invert max-w-none">
+                    {% if viewed_user.qualifications %}
+                        <div class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ viewed_user.qualifications }}</div>
+                    {% else %}
+                        <p class="text-gray-400 italic">No qualifications listed.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Sidebar info -->
+        <div class="space-y-8">
+            <!-- Skills Card -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <h2 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Skills</h2>
+                <div class="flex flex-wrap gap-2">
+                    {% if viewed_user.skills %}
+                        {% for skill in viewed_user.skills.split %}
+                            <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-800">
+                                {{ skill|cut:"," }}
+                            </span>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-gray-400 text-xs italic">No skills listed.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <h2 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">Contact</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">{{ viewed_user.email }}</span>
+                    </div>
+                    {% if viewed_user.phone %}
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">{{ viewed_user.phone }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-sm text-gray-600 dark:text-gray-300">{{ viewed_user.timezone }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
