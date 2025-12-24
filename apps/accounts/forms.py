@@ -217,10 +217,9 @@ class UserLoginForm(forms.Form):
     )
 
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['timezone'].required = False
-
+class ProfileSettingsForm(forms.ModelForm):
+    """Form for updating user profile settings."""
+    class Meta:
         model = User
         fields = [
             'first_name', 'last_name', 'email', 'avatar', 
@@ -265,3 +264,9 @@ class UserLoginForm(forms.Form):
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'timezone' in self.fields:
+            self.fields['timezone'].required = False
+
