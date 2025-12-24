@@ -249,6 +249,19 @@ def channel_detail(request, pk):
         channel_type=Channel.ChannelType.BREAKOUT
     )
     
+    # Get sidebar conversation list
+    user_channels = Channel.objects.filter(
+        organization=user.organization,
+        is_archived=False,
+        members=user
+    ).exclude(channel_type__in=[Channel.ChannelType.DIRECT, Channel.ChannelType.BREAKOUT]).distinct()
+
+    direct_messages = Channel.objects.filter(
+        organization=user.organization,
+        channel_type=Channel.ChannelType.DIRECT,
+        members=user
+    ).distinct()
+    
     # Handle message posting
     if request.method == 'POST':
         form = MessageForm(request.POST, request.FILES)
@@ -289,6 +302,8 @@ def channel_detail(request, pk):
         'channel': channel,
         'messages': channel_messages,
         'breakout_rooms': breakout_rooms,
+        'user_channels': user_channels,
+        'direct_messages': direct_messages,
         'form': form,
         'search_query': search_query,
         'can_edit': user.is_admin or channel.created_by == user,
