@@ -119,21 +119,13 @@
                                 <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p></div>
                             {% endif %}
 
-                            <!-- Actions Overlay -->
                             <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 {% if message.sender == user %}right-full mr-2{% else %}left-full ml-2{% endif %} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
                                 <button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                                
-                                {% if message.sender == user %}
-                                    <button type="button" class="edit-message-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-                                {% endif %}
-
-                                {% if message.sender == user or user.is_admin %}
-                                    <form method="post" action="{% url 'chat_channels:message_delete' message.pk %}" onsubmit="return confirm('Delete?')">{% csrf_token %}<button type="submit" class="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-red-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></form>
-                                {% endif %}
+                                {% if message.sender == user %}<button type="button" class="edit-message-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>{% endif %}
+                                {% if message.sender == user or user.is_admin %}<form method="post" action="{% url 'chat_channels:message_delete' message.pk %}" onsubmit="return confirm('Delete?')">{% csrf_token %}<button type="submit" class="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-red-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></form>{% endif %}
                             </div>
                         </div>
 
-                        <!-- Reactions Summary -->
                         {% if message.reaction_summary %}
                             <div class="flex flex-wrap gap-1 mt-1 {% if message.sender == user %}justify-end{% endif %}">
                                 {% for emoji, count in message.reaction_summary.items %}
@@ -148,18 +140,28 @@
         </div>
 
         <div class="input-area-fixed">
+            <div id="edit-mode-banner" class="hidden flex items-center justify-between px-4 py-2 bg-indigo-50 dark:bg-indigo-900/40 border-x border-t border-indigo-100 dark:border-indigo-800 rounded-t-xl">
+                <div class="flex items-center text-indigo-600 dark:text-indigo-300 text-[10px] font-black uppercase tracking-widest"><svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>Editing Message</div>
+                <button type="button" onclick="cancelEditing()" class="text-indigo-400 hover:text-indigo-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+
             <form id="chat-form" method="post" action="{% url 'chat_channels:channel_detail' channel.pk %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 transition-all focus-within:ring-2 focus-within:ring-indigo-500">
+                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 transition-all focus-within:ring-2 focus-within:ring-indigo-500" id="input-container">
                     {{ form.content }}
+                    <div id="file-preview" class="hidden mt-2 p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-between"><span id="file-name" class="text-[10px] font-bold text-indigo-600 truncate max-w-[200px]"></span><button type="button" onclick="clearFileUpload()" class="text-indigo-400 hover:text-red-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div>
+                    <div id="voice-preview" class="hidden mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div><span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Recording...</span></div><button type="button" onclick="stopVoiceRecording()" class="text-[10px] font-black text-red-600 uppercase">Stop</button></div>
                     <div class="flex items-center justify-between mt-2 px-2">
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-4" id="input-actions-left">
                             <label for="file-upload" class="text-gray-400 hover:text-indigo-600 cursor-pointer transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg></label>
                             <input type="file" name="attachments" multiple class="hidden" id="file-upload">
-                            <button type="button" onclick="toggleVoiceRecording()" class="text-gray-400 hover:text-red-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
+                            <button type="button" id="voice-record-btn" onclick="toggleVoiceRecording()" class="text-gray-400 hover:text-red-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
                             <button type="button" id="emoji-input-btn" class="text-gray-400 hover:text-yellow-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
                         </div>
-                        <button type="submit" class="bg-indigo-600 text-white p-2 rounded-xl shadow hover:bg-indigo-700 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+                        <button type="submit" id="submit-btn" class="bg-indigo-600 text-white p-2 rounded-xl shadow hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                            <svg id="update-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -193,17 +195,31 @@ document.addEventListener("DOMContentLoaded", function () {
     const messagesContainer = document.getElementById("messages-container");
     const chatForm = document.getElementById("chat-form");
     const messageInput = document.getElementById("id_content");
+    const submitBtn = document.getElementById("submit-btn");
     
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    let chatSocket = null;
+    let isEditing = false;
+    let editingMessageId = null;
+    let mediaRecorder, audioChunks = [], recordedBlob;
 
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${channelId}/`);
+    function connectWebSocket() {
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsUrl = `${wsScheme}://${window.location.host}/ws/chat/${channelId}/`;
+        chatSocket = new WebSocket(wsUrl);
+        chatSocket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            if (data.type === 'chat_message') { appendMessage(data); messagesContainer.scrollTop = messagesContainer.scrollHeight; }
+            else if (data.type === 'message_update') { handleMessageUpdate(data); }
+        };
+        chatSocket.onclose = () => setTimeout(connectWebSocket, 1000);
+    }
 
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        if (data.type === 'chat_message') { appendMessage(data); messagesContainer.scrollTop = messagesContainer.scrollHeight; }
-        else if (data.type === 'message_edit') { handleMessageUpdate(data); }
-    };
+    function updateSendButtonState() {
+        const hasText = messageInput.value.trim().length > 0;
+        const hasFiles = document.getElementById('file-upload').files.length > 0;
+        const hasVoice = recordedBlob != null;
+        submitBtn.disabled = !(hasText || hasFiles || hasVoice || isEditing);
+    }
 
     function appendMessage(data) {
         if (document.getElementById(`message-${data.message_id}`)) return;
@@ -212,136 +228,107 @@ document.addEventListener("DOMContentLoaded", function () {
         div.className = `flex space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}`;
         div.id = `message-${data.message_id}`;
         const avatar = data.sender_avatar ? `<img src="${data.sender_avatar}" class="w-9 h-9 rounded-xl object-cover shadow-sm">` : `<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">${data.sender_name[0].toUpperCase()}</div>`;
-        
-        let content = '';
-        if (data.voice_message_url) {
-            content = `<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><div class="flex items-center space-x-3 py-1 min-w-[220px]"><button type="button" onclick="playVoiceMessage('${data.message_id}')" class="text-current hover:scale-110 transition"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1 bg-current opacity-20 h-1.5 rounded-full overflow-hidden"><div class="bg-current h-full w-0 transition-all duration-100" id="voice-progress-${data.message_id}"></div></div><audio id="voice-audio-${data.message_id}" src="${data.voice_message_url}" class="hidden"></audio></div></div>`;
-        } else {
-            content = `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
-        }
-
-        let actionHtml = `
-            <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 ${isMe ? 'right-full mr-2' : 'left-full ml-2'} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
-                <button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="${data.message_id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                ${isMe ? `<button type="button" class="edit-message-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="${data.message_id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>` : ''}
-            </div>
-        `;
-
-        div.innerHTML = `<div class="flex-shrink-0">${avatar}</div><div class="flex-1 max-w-2xl group"><div class="flex items-center space-x-2 mb-1 ${isMe ? 'justify-end' : ''}"><span class="font-bold text-xs text-gray-700 dark:text-gray-200">${data.sender_name}</span><span class="text-[9px] text-gray-400 font-medium">Just now</span></div><div class="relative">${content}${actionHtml}</div></div>`;
+        let content = data.voice_message_url ? `<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><div class="flex items-center space-x-3 py-1 min-w-[220px]"><button type="button" onclick="playVoiceMessage('${data.message_id}')" class="text-current hover:scale-110 transition"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1 bg-current opacity-20 h-1.5 rounded-full overflow-hidden"><div class="bg-current h-full w-0 transition-all duration-100" id="voice-progress-${data.message_id}"></div></div><audio id="voice-audio-${data.message_id}" src="${data.voice_message_url}" class="hidden"></audio></div></div>` : `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
+        let actions = `<div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 ${isMe ? 'right-full mr-2' : 'left-full ml-2'} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20"><button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="${data.message_id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>${isMe ? `<button type="button" class="edit-message-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="${data.message_id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>` : ''}</div>`;
+        div.innerHTML = `<div class="flex-shrink-0">${avatar}</div><div class="flex-1 max-w-2xl group"><div class="flex items-center space-x-2 mb-1 ${isMe ? 'justify-end' : ''}"><span class="font-bold text-xs text-gray-700 dark:text-gray-200">${data.sender_name}</span><span class="text-[9px] text-gray-400 font-medium">Just now</span></div><div class="relative">${content}${actions}</div></div>`;
         messagesContainer.appendChild(div);
-        bindMessageActions(div);
+        bindActions(div);
     }
 
-    function bindMessageActions(el) {
+    function bindActions(el) {
         el.querySelectorAll('.edit-message-btn').forEach(b => b.onclick = () => startEditing(b.dataset.messageId));
-        el.querySelectorAll('.emoji-reaction-btn').forEach(b => b.onclick = (e) => { e.stopPropagation(); showPicker(e.currentTarget, b.dataset.messageId); });
+        el.querySelectorAll('.emoji-reaction-btn').forEach(b => b.onclick = (e) => showPicker(e.currentTarget, b.dataset.messageId));
     }
-    bindMessageActions(document);
 
-    if (chatForm) {
-        chatForm.onsubmit = function(e) {
-            e.preventDefault();
-            const msg = messageInput.value.trim();
-            if(msg) { chatSocket.send(JSON.stringify({ 'message': msg })); messageInput.value = ''; }
-        };
-    }
+    window.startEditing = (messageId) => {
+        const content = document.querySelector(`#message-${messageId} .message-content`);
+        if (!content) return;
+        if (editingMessageId) document.getElementById(`message-${editingMessageId}`).classList.remove('bg-indigo-50/50', 'dark:bg-indigo-900/20');
+        isEditing = true; editingMessageId = messageId;
+        messageInput.value = content.textContent.trim();
+        document.getElementById('edit-mode-banner').classList.remove('hidden');
+        document.getElementById('send-icon').classList.add('hidden');
+        document.getElementById('update-icon').classList.remove('hidden');
+        document.getElementById('input-actions-left').classList.add('invisible');
+        messageInput.focus();
+        document.getElementById(`message-${messageId}`).classList.add('bg-indigo-50/50', 'dark:bg-indigo-900/20');
+        updateSendButtonState();
+    };
+
+    window.cancelEditing = () => {
+        if (editingMessageId) document.getElementById(`message-${editingMessageId}`).classList.remove('bg-indigo-50/50', 'dark:bg-indigo-900/20');
+        isEditing = false; editingMessageId = null; messageInput.value = '';
+        document.getElementById('edit-mode-banner').classList.add('hidden');
+        document.getElementById('send-icon').classList.remove('hidden');
+        document.getElementById('update-icon').classList.add('hidden');
+        document.getElementById('input-actions-left').classList.remove('invisible');
+        updateSendButtonState();
+    };
+
+    window.toggleVoiceRecording = async () => {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => { recordedBlob = new Blob(audioChunks, { type: 'audio/webm' }); document.getElementById('voice-preview').classList.add('hidden'); updateSendButtonState(); };
+            mediaRecorder.start(); document.getElementById('voice-preview').classList.remove('hidden');
+        } else { mediaRecorder.stop(); }
+    };
+
+    window.stopVoiceRecording = () => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); };
+    window.clearFileUpload = () => { document.getElementById('file-upload').value = ''; document.getElementById('file-preview').classList.add('hidden'); updateSendButtonState(); };
+
+    document.getElementById('file-upload').onchange = function() {
+        if (this.files.length) { document.getElementById('file-name').textContent = this.files.length === 1 ? this.files[0].name : `${this.files.length} files`; document.getElementById('file-preview').classList.remove('hidden'); }
+        else { document.getElementById('file-preview').classList.add('hidden'); }
+        updateSendButtonState();
+    };
+
+    chatForm.onsubmit = async (e) => {
+        e.preventDefault(); const msg = messageInput.value.trim(); if (!msg && !recordedBlob && !document.getElementById('file-upload').files.length && !isEditing) return;
+        if (isEditing) {
+            const res = await fetch(`/channels/message/${editingMessageId}/edit/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }, body: `content=${encodeURIComponent(msg)}` });
+            if (res.ok) { chatSocket.send(JSON.stringify({ type: 'message_edit', message_id: editingMessageId, message: msg })); cancelEditing(); }
+        } else {
+            const fd = new FormData(chatForm);
+            if (recordedBlob) fd.set('voice_message', new File([recordedBlob], 'voice.webm'));
+            if (recordedBlob || fd.get('attachments')) {
+                const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
+                const data = await res.json();
+                if (data.success) { recordedBlob = null; messageInput.value = ''; clearFileUpload(); chatSocket.send(JSON.stringify({ type: 'chat_message', message_id: data.message_id, sender_id: userId, sender_name: userName, sender_avatar: data.sender_avatar, message: data.content, voice_message_url: data.voice_message_url, timestamp: data.timestamp })); }
+            } else { chatSocket.send(JSON.stringify({ 'message': msg })); messageInput.value = ''; }
+        }
+        updateSendButtonState();
+    };
 
     function handleMessageUpdate(data) {
-        const msg = document.getElementById(`message-${data.message_id}`);
-        if (msg) { const cp = msg.querySelector('.message-content'); if(cp) cp.textContent = data.message; }
-    }
-
-    async function startEditing(messageId) {
-        const messageDiv = document.getElementById(`message-${messageId}`);
-        const contentElement = messageDiv.querySelector('.message-content');
-        if (!contentElement || messageDiv.querySelector('.edit-textarea')) return;
-
-        const originalText = contentElement.textContent;
-        const parent = contentElement.parentElement;
-        
-        // Hide original
-        contentElement.classList.add('hidden');
-        
-        // Create inline editor
-        const editContainer = document.createElement('div');
-        editContainer.className = 'edit-container w-full mt-1';
-        editContainer.innerHTML = `
-            <textarea class="edit-textarea w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-sm resize-none" rows="3">${originalText}</textarea>
-            <div class="flex justify-end space-x-2 mt-2">
-                <button type="button" class="cancel-btn px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-700">Cancel</button>
-                <button type="button" class="save-btn px-3 py-1 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-sm hover:bg-indigo-700">Save</button>
-            </div>
-        `;
-        
-        parent.appendChild(editContainer);
-        const textarea = editContainer.querySelector('textarea');
-        textarea.focus();
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
-        // Cancel
-        editContainer.querySelector('.cancel-btn').onclick = () => {
-            editContainer.remove();
-            contentElement.classList.remove('hidden');
-        };
-
-        // Save
-        editContainer.querySelector('.save-btn').onclick = async () => {
-            const newText = textarea.value.trim();
-            if (!newText || newText === originalText) {
-                editContainer.remove();
-                contentElement.classList.remove('hidden');
-                return;
-            }
-
-            const res = await fetch(`/channels/message/${messageId}/edit/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' },
-                body: `content=${encodeURIComponent(newText)}`
-            });
-
-            if (res.ok) {
-                contentElement.textContent = newText;
-                chatSocket.send(JSON.stringify({ type: 'message_edit', message_id: messageId, message: newText }));
-                editContainer.remove();
-                contentElement.classList.remove('hidden');
-            } else {
-                alert("Failed to save changes.");
-            }
-        };
+        const cp = document.querySelector(`#message-${data.message_id} .message-content`);
+        if (cp) { cp.textContent = data.message; cp.classList.add('animate-pulse'); setTimeout(() => cp.classList.remove('animate-pulse'), 1000); }
     }
 
     const emojiPopup = document.getElementById('emoji-picker-popup');
     const picker = emojiPopup.querySelector('emoji-picker');
     let emojiTarget = null;
-
-    function showPicker(btn, target) {
-        emojiTarget = target;
-        const rect = btn.getBoundingClientRect();
-        emojiPopup.style.top = `${rect.top - 420}px`;
-        emojiPopup.style.left = `${rect.left - 300}px`;
-        emojiPopup.classList.remove('hidden');
-    }
-
+    function showPicker(btn, target) { emojiTarget = target; const rect = btn.getBoundingClientRect(); emojiPopup.style.top = `${rect.top - 420}px`; emojiPopup.style.left = `${rect.left - 200}px`; emojiPopup.classList.toggle('hidden'); }
     picker.addEventListener('emoji-click', e => {
-        if (emojiTarget === 'input') { document.getElementById('id_content').value += e.detail.unicode; }
-        else {
-            const f = document.getElementById('reaction-form-' + emojiTarget);
-            if(f) { document.getElementById('emoji-input-' + emojiTarget).value = e.detail.unicode; f.submit(); }
-        }
+        if (emojiTarget === 'input') { messageInput.value += e.detail.unicode; updateSendButtonState(); }
+        else { const f = document.getElementById('reaction-form-' + emojiTarget); if(f) { document.getElementById('emoji-input-' + emojiTarget).value = e.detail.unicode; f.submit(); } }
         emojiPopup.classList.add('hidden');
     });
-
     document.getElementById('emoji-input-btn').onclick = (e) => { e.stopPropagation(); showPicker(e.currentTarget, 'input'); };
     document.addEventListener('click', () => emojiPopup.classList.add('hidden'));
+    
+    messageInput.addEventListener('input', updateSendButtonState);
+    connectWebSocket();
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    bindActions(document);
 });
 
-function toggleSidebar() { document.getElementById('info-sidebar').classList.toggle('hidden'); }
 function playVoiceMessage(id) {
     const a = document.getElementById('voice-audio-' + id);
     const p = document.getElementById('voice-progress-' + id);
     if (a && a.paused) { a.play(); a.ontimeupdate = () => p.style.width = `${(a.currentTime / a.duration) * 100}%`; a.onended = () => p.style.width = '0%'; } 
     else if (a) { a.pause(); a.currentTime = 0; }
 }
-function toggleVoiceRecording() { alert("Recording active. Click to stop and send."); }
 </script>
 {% endblock %}
