@@ -182,68 +182,6 @@ class Channel(models.Model):
         return user in self.members.all()
 
 
-from django.db.models.signals import m2m_changed, post_delete
-from django.dispatch import receiver
-from django.urls import reverse
-import cloudinary.uploader
-
-@receiver(post_delete, sender=Message)
-def delete_message_voice_from_cloudinary(sender, instance, **kwargs):
-    if instance.voice_message:
-        try:
-            cloudinary.uploader.destroy(instance.voice_message.name)
-        except Exception as e:
-            print(f"Cloudinary deletion error: {e}")
-
-@receiver(post_delete, sender=Attachment)
-def delete_attachment_from_cloudinary(sender, instance, **kwargs):
-    if instance.file:
-        try:
-            cloudinary.uploader.destroy(instance.file.name)
-        except Exception as e:
-            print(f"Cloudinary deletion error: {e}")
-
-@receiver(m2m_changed, sender=Channel.members.through)
-def notify_members_added_to_channel(sender, instance, action, pk_set, **kwargs):
-    if action == "post_add":
-        from apps.accounts.models import Notification, User
-        from asgiref.sync import async_to_sync
-        from channels.layers import get_channel_layer
-        
-        channel_layer = get_channel_layer()
-        
-        for user_id in pk_set:
-            try:
-                user = User.objects.get(pk=user_id)
-                if user == instance.created_by:
-                    continue
-                
-                link = reverse('chat_channels:channel_detail', kwargs={'pk': instance.pk})
-                notification = Notification.notify(
-                    recipient=user,
-                    sender=instance.created_by,
-                    title=f"New Channel: #{instance.name}",
-                    content=f"You have been added to the channel #{instance.name}.",
-                    notification_type='CHANNEL',
-                    link=link
-                )
-                
-                # Broadcast via WebSocket
-                async_to_sync(channel_layer.group_send)(
-                    f"notifications_{user.id}",
-                    {
-                        'type': 'send_notification',
-                        'id': str(notification.id),
-                        'title': notification.title,
-                        'content': notification.content,
-                        'notification_type': notification.notification_type,
-                        'link': notification.link,
-                    }
-                )
-            except Exception as e:
-                print(f"Error sending notification: {e}")
-
-
 class Message(models.Model):
     """
     Message model - represents messages in channels.
@@ -453,3 +391,66 @@ class MessageReadReceipt(models.Model):
     
     def __str__(self):
         return f"{self.user.username} read message at {self.read_at}"
+
+
+# SIGNALS (Placed at the bottom to avoid NameErrors)
+from django.db.models.signals import m2m_changed, post_delete
+from django.dispatch import receiver
+from django.urls import reverse
+import cloudinary.uploader
+
+@receiver(post_delete, sender=Message)
+def delete_message_voice_from_cloudinary(sender, instance, **kwargs):
+    if instance.voice_message:
+        try:
+            cloudinary.uploader.destroy(instance.voice_message.name)
+        except Exception as e:
+            print(f"Cloudinary deletion error: {e}")
+
+@receiver(post_delete, sender=Attachment)
+def delete_attachment_from_cloudinary(sender, instance, **kwargs):
+    if instance.file:
+        try:
+            cloudinary.uploader.destroy(instance.file.name)
+        except Exception as e:
+            print(f"Cloudinary deletion error: {e}")
+
+@receiver(m2m_changed, sender=Channel.members.through)
+def notify_members_added_to_channel(sender, instance, action, pk_set, **kwargs):
+    if action == "post_add":
+        from apps.accounts.models import Notification, User
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        
+        channel_layer = get_channel_layer()
+        
+        for user_id in pk_set:
+            try:
+                user = User.objects.get(pk=user_id)
+                if user == instance.created_by:
+                    continue
+                
+                link = reverse('chat_channels:channel_detail', kwargs={'pk': instance.pk})
+                notification = Notification.notify(
+                    recipient=user,
+                    sender=instance.created_by,
+                    title=f"New Channel: #{instance.name}",
+                    content=f"You have been added to the channel #{instance.name}.",
+                    notification_type='CHANNEL',
+                    link=link
+                )
+                
+                # Broadcast via WebSocket
+                async_to_sync(channel_layer.group_send)(
+                    f"notifications_{user.id}",
+                    {
+                        'type': 'send_notification',
+                        'id': str(notification.id),
+                        'title': notification.title,
+                        'content': notification.content,
+                        'notification_type': notification.notification_type,
+                        'link': notification.link,
+                    }
+                )
+            except Exception as e:
+                print(f"Error sending notification: {e}")
