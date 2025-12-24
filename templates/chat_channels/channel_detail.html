@@ -1,141 +1,159 @@
 {% extends 'base.html' %}
 
-{% block title %}#{{ channel.name }} - ConnectFlow Pro{% endblock %}
+{% block title %}#{{ channel.name }} - ConnectFlow Workspace{% endblock %}
 
 {% load static %}
 {% load chat_filters %}
 
 {% block extra_css %}
 <style>
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-}
+    /* Full-screen Workspace Layout */
+    html, body {
+        overflow: hidden !important;
+        height: 100%;
+    }
+
+    .workspace-container {
+        position: fixed;
+        top: 64px; /* Navbar height approximate - will adjust via CSS variable if needed */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        background-color: var(--background-light, #f9fafb);
+    }
+
+    /* Left Panel: Conversation List */
+    .conversation-panel {
+        width: 300px;
+        flex-shrink: 0;
+        border-right: 1px solid #e5e7eb;
+        background: white;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Central Panel: Messaging Area */
+    .messaging-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+        position: relative;
+    }
+
+    /* Right Panel: Contextual Sidebar */
+    .contextual-sidebar {
+        width: 320px;
+        flex-shrink: 0;
+        border-left: 1px solid #e5e7eb;
+        background: #fdfdfd;
+        display: none; /* Hidden by default on small screens */
+    }
+
+    @media (min-width: 1280px) {
+        .contextual-sidebar {
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    /* Internal Scrolling for Message History */
+    .message-history {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        scroll-behavior: smooth;
+    }
+
+    /* Fixed Input Box */
+    .input-area-fixed {
+        flex-shrink: 0;
+        padding: 1.25rem;
+        background: white;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    /* Custom Scrollbar for better UI */
+    .message-history::-webkit-scrollbar {
+        width: 6px;
+    }
+    .message-history::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .message-history::-webkit-scrollbar-thumb {
+        background: #e5e7eb;
+        border-radius: 10px;
+    }
+    .dark .message-history::-webkit-scrollbar-thumb {
+        background: #374151;
+    }
+
+    /* Dark Mode Adjustments */
+    .dark .workspace-container, 
+    .dark .conversation-panel, 
+    .dark .messaging-panel,
+    .dark .input-area-fixed {
+        background-color: #1f2937; /* gray-800 */
+        border-color: #374151; /* gray-700 */
+    }
+    .dark .contextual-sidebar {
+        background-color: #111827; /* gray-900 */
+        border-color: #374151;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
-    <!-- Channel Header -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 mb-8 border border-gray-100 dark:border-gray-700">
-        <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div class="flex-1">
-                <div class="flex items-center space-x-3 mb-2 flex-wrap gap-2">
-                    <h1 class="text-4xl font-bold text-gray-800 dark:text-white">#{{ channel.name }}</h1>
-                    <span class="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-sm font-bold">
-                        {{ channel.get_channel_type_display }}
-                    </span>
-                    {% if channel.is_private %}
-                        <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm font-bold">🔒 Private</span>
-                    {% endif %}
-                    {% if channel.read_only %}
-                        <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-bold">Read-only</span>
-                    {% endif %}
-                </div>
-                
-                {% if channel.description %}
-                    <p class="text-gray-600 dark:text-gray-300 mb-4">{{ channel.description }}</p>
-                {% endif %}
-                
-                <div class="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400 flex-wrap gap-2 font-medium">
-                    <span>👥 {{ channel.member_count }} member{{ channel.member_count|pluralize }}</span>
-                    <span>📅 Created {{ channel.created_at|date:"M d, Y" }}</span>
-                    {% if channel.created_by %}
-                        <span>👤 by {{ channel.created_by.get_full_name }}</span>
-                    {% endif %}
-                </div>
+<div class="workspace-container">
+    
+    <!-- Panel 1: Conversation List -->
+    <aside class="conversation-panel hidden md:flex">
+        <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="font-black text-xs uppercase tracking-widest text-gray-500">Conversations</h2>
+            <a href="{% url 'chat_channels:channel_list' %}" class="text-indigo-600 hover:text-indigo-700"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></a>
+        </div>
+        <div class="flex-1 overflow-y-auto">
+            <!-- Simplified list for the panel -->
+            <div class="space-y-1 p-2">
+                <p class="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-tighter">Your Channels</p>
+                <!-- This would ideally be populated with user's active channels -->
+                <a href="#" class="flex items-center px-3 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-bold text-sm">
+                    <span class="mr-2">#</span> {{ channel.name }}
+                </a>
+                <p class="px-3 py-2 mt-4 text-[10px] font-black text-gray-400 uppercase tracking-tighter">Recent DMs</p>
+                <div class="text-center py-4 text-xs text-gray-400 italic">Navigate to "Channels" to see more</div>
             </div>
-            
-            <div class="flex flex-col space-y-3">
-                <form method="get" class="relative text-gray-800">
-                    <input type="text" name="q" value="{{ search_query|default:'' }}" 
-                           placeholder="Search messages..."
-                           class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-sm">
-                    <div class="absolute left-3 top-2.5 text-gray-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </div>
-                </form>
+        </div>
+    </aside>
 
-                <div class="flex space-x-2">
-                    {% if channel.channel_type == 'BREAKOUT' %}
-                        {% if can_edit %}
-                        <a href="{% url 'chat_channels:breakout_close' channel.pk %}"
-                           class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-center w-full font-bold shadow-md">
-                            Close Room
-                        </a>
-                        {% endif %}
-                    {% else %}
-                        {% if can_edit %}
-                        <a href="{% url 'chat_channels:channel_edit' channel.pk %}" 
-                           class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-lg transition text-center flex-1 font-bold border border-indigo-200 dark:border-gray-600">
-                            Edit
-                        </a>
-                        {% endif %}
-                        <a href="{% url 'chat_channels:breakout_create' channel.pk %}"
-                           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-center flex-1 font-bold whitespace-nowrap shadow-md">
-                            + Breakout
-                        </a>
-                    {% endif %}
+    <!-- Panel 2: Central Messaging Area -->
+    <main class="messaging-panel">
+        <!-- Chat Header -->
+        <header class="h-16 flex-shrink-0 border-b border-gray-100 dark:border-gray-700 px-6 flex items-center justify-between bg-white dark:bg-gray-800 z-10">
+            <div class="flex items-center">
+                <div class="mr-3 md:hidden">
+                    <a href="{% url 'chat_channels:channel_list' %}" class="text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg></a>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg text-gray-800 dark:text-white flex items-center">
+                        <span class="text-indigo-500 mr-1">#</span>{{ channel.name }}
+                    </h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{{ channel.get_channel_type_display }} • {{ channel.member_count }} members</p>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Info Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-gray-800 dark:text-gray-100">
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-100 dark:border-gray-700">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-50 dark:border-gray-700 pb-2">Channel Details</h2>
-            <div class="space-y-3 text-gray-700 dark:text-gray-300">
-                <p class="text-sm"><span class="text-gray-500 dark:text-gray-400 font-bold uppercase text-[10px]">Type:</span> <span class="font-medium ml-2">{{ channel.get_channel_type_display }}</span></p>
-                {% if channel.department %}<p class="text-sm"><span class="text-gray-500 dark:text-gray-400 font-bold uppercase text-[10px]">Dept:</span> <span class="font-medium ml-2">{{ channel.department.name }}</span></p>{% endif %}
-                {% if channel.team %}<p class="text-sm"><span class="text-gray-500 dark:text-gray-400 font-bold uppercase text-[10px]">Team:</span> <span class="font-medium ml-2">{{ channel.team.name }}</span></p>{% endif %}
-                <p class="text-sm"><span class="text-gray-500 dark:text-gray-400 font-bold uppercase text-[10px]">Org:</span> <span class="font-medium ml-2">{{ channel.organization.name }}</span></p>
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSidebar()" class="p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition lg:hidden">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
             </div>
-        </div>
+        </header>
 
-        <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-100 dark:border-gray-700">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-50 dark:border-gray-700 pb-2">Members ({{ channel.member_count }})</h2>
-            <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="member-list">
-                {% for member in channel.members.all %}
-                    <div class="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition relative">
-                        <div class="flex items-center space-x-3">
-                            <div class="relative">
-                                {% if member.avatar %}
-                                    <img src="{{ member.avatar.url }}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-50 dark:ring-gray-600">
-                                {% else %}
-                                    <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold shadow-sm">{{ member.username.0|upper }}</div>
-                                {% endif %}
-                                <div class="status-indicator absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 {% if member.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-400{% endif %}" data-user-id="{{ member.id }}"></div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold">{{ member.get_full_name }}</p>
-                                <p class="text-[10px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-widest">{{ member.get_role_display }}</p>
-                            </div>
-                        </div>
-                        {% if member != user %}
-                            <a href="{% url 'chat_channels:start_direct_message' member.id %}" class="text-indigo-600 dark:text-indigo-400 p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg></a>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Chat -->
-    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden mb-8 flex flex-col h-[750px] border border-gray-100 dark:border-gray-700">
-        <div class="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-            <h2 class="font-black flex items-center text-gray-800 dark:text-white uppercase tracking-widest text-xs">
-                <span class="w-2 h-2 bg-green-500 rounded-full mr-3 animate-pulse"></span>
-                Live Discussion
-            </h2>
-        </div>
-
-        <div class="flex-1 p-6 overflow-y-auto space-y-6 bg-white dark:bg-gray-800" id="messages-container">
+        <!-- Messages History (Internal Scroll) -->
+        <div class="message-history" id="messages-container">
             {% for message in messages %}
                 <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %}" id="message-{{ message.pk }}">
                     <div class="flex-shrink-0">
@@ -148,170 +166,128 @@
                     <div class="flex-1 max-w-2xl">
                         <div class="flex items-center space-x-2 mb-1 {% if message.sender == user %}justify-end{% endif %}">
                             <span class="font-bold text-xs text-gray-700 dark:text-gray-200">{{ message.sender.get_full_name }}</span>
-                            <span class="text-[9px] text-gray-400 font-medium">{{ message.created_at|date:"M d, h:i A" }}</span>
+                            <span class="text-[9px] text-gray-400 font-medium">{{ message.created_at|date:"h:i A" }}</span>
                         </div>
                         
                         {% if message.voice_message %}
-                            <!-- Voice Message Bubble -->
-                            <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 content-container relative">
+                            <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3">
                                 <div class="flex items-center space-x-3 py-1 min-w-[220px]">
                                     <button type="button" onclick="playVoiceMessage('{{ message.pk }}')" class="{% if message.sender == user %}text-white{% else %}text-indigo-600{% endif %} hover:scale-110 transition flex-shrink-0">
                                         <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                     </button>
                                     <div class="flex-1">
-                                        <div class="flex items-center justify-between mb-1.5 font-black uppercase tracking-widest text-[9px] {% if message.sender == user %}text-indigo-100{% else %}text-indigo-600{% endif %}">
-                                            <span>🎤 Voice Note</span>
-                                            <span>{{ message.voice_duration|default:"0" }}s</span>
-                                        </div>
                                         <div class="w-full bg-{% if message.sender == user %}indigo-400{% else %}gray-300{% endif %} h-1.5 rounded-full overflow-hidden">
                                             <div class="bg-{% if message.sender == user %}white{% else %}indigo-600{% endif %} h-full w-0 transition-all duration-100" id="voice-progress-{{ message.pk }}"></div>
                                         </div>
                                     </div>
-                                    <audio id="voice-audio-{{ message.pk }}" src="{{ message.voice_message.url }}" class="hidden" preload="metadata"></audio>
+                                    <audio id="voice-audio-{{ message.pk }}" src="{{ message.voice_message.url }}" class="hidden"></audio>
                                 </div>
                             </div>
-                        {% elif message.attachments.exists %}
-                            <!-- File Attachments (no bubble, like emoji-only) -->
-                            <div class="message-content space-y-2">
-                                {% for attachment in message.attachments.all %}
-                                    {% if attachment.file|is_image %}
-                                        <a href="{{ attachment.file.url }}" target="_blank" class="block">
-                                            <img src="{{ attachment.file.url }}" class="max-w-md max-h-96 rounded-lg shadow-lg hover:shadow-2xl transition-shadow object-cover" alt="Image attachment">
-                                        </a>
-                                    {% else %}
-                                        <a href="{{ attachment.file.url }}" download class="flex items-center space-x-3 p-3 {% if message.sender == user %}bg-indigo-600 hover:bg-indigo-700{% else %}bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600{% endif %} rounded-lg transition shadow-md">
-                                            <svg class="w-8 h-8 {% if message.sender == user %}text-white{% else %}text-indigo-600{% endif %}" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-bold {% if message.sender == user %}text-white{% else %}text-gray-800 dark:text-gray-100{% endif %} truncate">{{ attachment.file|basename }}</p>
-                                                <p class="text-xs {% if message.sender == user %}text-indigo-100{% else %}text-gray-500 dark:text-gray-400{% endif %}">Click to download</p>
-                                            </div>
-                                        </a>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
                         {% elif message.content|is_emoji_only %}
-                            <!-- Emoji-only Message (WhatsApp style - no bubble, large size) -->
                             <div class="message-content {% if message.sender == user %}text-right{% endif %}">
-                                <span class="text-6xl leading-none inline-block hover:scale-110 transition-transform cursor-default">{{ message.content }}</span>
+                                <span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">{{ message.content }}</span>
                             </div>
                         {% elif message.content %}
-                            <!-- Regular Text Message Bubble -->
-                            <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 content-container relative">
+                            <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3">
                                 <p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p>
                             </div>
                         {% endif %}
-
-                        <!-- Reactions Display -->
-                        {% if message.reaction_summary %}
-                            <div class="flex flex-wrap gap-1 mt-2 {% if message.sender == user %}justify-end{% endif %}">
-                                {% for emoji, count in message.reaction_summary.items %}
-                                    <span class="inline-flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-2 py-0.5 rounded-full text-xs shadow-sm">
-                                        <span>{{ emoji }}</span>
-                                        <span class="ml-1.5 font-bold text-gray-500">{{ count }}</span>
-                                    </span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-
-                        <!-- Actions -->
-                        <div class="flex items-center space-x-2 mt-1.5 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %}">
-                            <button type="button" class="emoji-reaction-btn text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" data-message-id="{{ message.pk }}" title="Add reaction">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </button>
-                            
-                            <form id="reaction-form-{{ message.pk }}" method="post" action="{% url 'chat_channels:message_react' message.pk %}" class="hidden">
-                                {% csrf_token %}
-                                <input type="hidden" name="emoji" id="emoji-input-{{ message.pk }}">
-                            </form>
-
-                            {% if message.sender == user or user.is_admin %}
-                                {% if message.sender == user and not message.voice_message and not message.attachments.exists %}
-                                    <button type="button" class="edit-message-btn text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" data-message-id="{{ message.pk }}" title="Edit message">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                    </button>
-                                {% endif %}
-                                <form method="post" action="{% url 'chat_channels:message_delete' message.pk %}" class="inline" onsubmit="return confirm('Delete this message?')">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-gray-400 hover:text-red-600 transition p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete message">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
                     </div>
                 </div>
             {% empty %}
-                <div id="no-messages-placeholder" class="text-center py-24 text-gray-400 italic">No messages here yet.</div>
+                <div id="no-messages-placeholder" class="text-center py-24 text-gray-400 italic">Start the conversation...</div>
             {% endfor %}
         </div>
 
-        <!-- Input Area -->
-        <div class="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-            <form id="chat-form" method="post" action="{% url 'chat_channels:channel_detail' channel.pk %}" enctype="multipart/form-data" class="relative group">
+        <!-- Input Area (Fixed at Bottom) -->
+        <div class="input-area-fixed">
+            <form id="chat-form" method="post" action="{% url 'chat_channels:channel_detail' channel.pk %}" enctype="multipart/form-data">
                 {% csrf_token %}
-                <div class="relative">
+                <div class="relative bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 transition-focus focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent">
                     {{ form.content }}
-                    <button type="button" id="emoji-input-btn" class="absolute right-3 bottom-3 text-gray-400 hover:text-indigo-600 transition z-50 p-2 bg-white dark:bg-gray-700 rounded-full shadow-sm border border-gray-100 dark:border-gray-600" title="Add emoji">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </button>
-                </div>
-
-                <!-- File Preview Area -->
-                <div id="file-preview" class="hidden mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-lg">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <span id="file-name" class="text-xs font-bold text-blue-600"></span>
+                    
+                    <div class="flex items-center justify-between mt-2 px-2">
+                        <div class="flex items-center space-x-3">
+                            <label for="file-upload" class="cursor-pointer text-gray-400 hover:text-indigo-600 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            </label>
+                            <input type="file" name="attachments" multiple class="hidden" id="file-upload">
+                            <button type="button" onclick="toggleVoiceRecording()" class="text-gray-400 hover:text-red-500 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                            </button>
+                            <button type="button" id="emoji-input-btn" class="text-gray-400 hover:text-yellow-500 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </button>
                         </div>
-                        <button type="button" onclick="clearFileUpload()" class="text-gray-400 hover:text-red-500 p-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
                     </div>
-                </div>
-
-                <div class="flex items-center justify-between mt-3">
-                    <div class="flex items-center space-x-4">
-                        <label for="file-upload" class="cursor-pointer text-gray-400 hover:text-indigo-600 transition p-1" title="Attach files">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                        </label>
-                        <input type="file" name="attachments" multiple accept="image/*,application/pdf,.doc,.docx,.zip" class="hidden" id="file-upload">
-                        <button type="button" id="voice-record-btn" onclick="toggleVoiceRecording()" class="text-gray-400 hover:text-red-500 transition p-1" title="Record voice message">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                        </button>
-                    </div>
-                    <button type="submit" id="send-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow-lg transition transform hover:scale-110 active:scale-95" title="Send message">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Voice Overlay -->
-                <div id="voice-preview" class="hidden absolute left-0 -top-20 w-full p-4 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-lg flex items-center justify-between z-[60]">
-                    <div class="flex items-center space-x-3"><div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div><span class="text-xs font-bold text-red-600">Recording...</span><span id="recording-time" class="text-sm font-mono text-red-500">0:00</span></div>
-                    <button type="button" onclick="stopVoiceRecording()" class="text-red-600 font-bold text-xs uppercase">Stop</button>
-                </div>
-                <div id="voice-playback" class="hidden absolute left-0 -top-20 w-full p-4 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 rounded-lg flex items-center justify-between z-[60]">
-                    <div class="flex items-center space-x-4"><button type="button" onclick="playVoicePreview()" class="text-indigo-600 hover:scale-110 transition"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><div><p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Capture Ready</p><p id="playback-duration" class="text-[10px] text-indigo-400">0:00</p></div></div>
-                    <button type="button" onclick="clearVoiceRecording()" class="text-gray-400 hover:text-red-500 p-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                    <audio id="voice-preview-audio" class="hidden"></audio>
                 </div>
             </form>
         </div>
-    </div>
+    </main>
+
+    <!-- Panel 3: Contextual Sidebar -->
+    <aside class="contextual-sidebar overflow-y-auto" id="info-sidebar">
+        <div class="p-6">
+            <h3 class="text-xs font-black uppercase tracking-widest text-gray-400 mb-6">Channel Details</h3>
+            
+            <!-- Description -->
+            <div class="mb-8">
+                <p class="text-sm text-gray-600 dark:text-gray-300">{{ channel.description|default:"No description provided." }}</p>
+            </div>
+
+            <!-- Members -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xs font-bold text-gray-800 dark:text-white uppercase">Members ({{ channel.member_count }})</h4>
+                </div>
+                <div class="space-y-3">
+                    {% for member in channel.members.all|slice:":10" %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    {% if member.avatar %}
+                                        <img src="{{ member.avatar.url }}" class="w-8 h-8 rounded-full object-cover">
+                                    {% else %}
+                                        <div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-black">{{ member.username.0|upper }}</div>
+                                    {% endif %}
+                                    <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 {% if member.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-300{% endif %}"></div>
+                                </div>
+                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ member.get_full_name }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Breakout Rooms -->
+            {% if breakout_rooms %}
+            <div>
+                <h4 class="text-xs font-bold text-gray-800 dark:text-white uppercase mb-4">Active Breakouts</h4>
+                <div class="space-y-2">
+                    {% for room in breakout_rooms %}
+                        <a href="{% url 'chat_channels:channel_detail' room.pk %}" class="block p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-xl hover:bg-green-100 transition">
+                            <p class="text-xs font-black text-green-700 dark:text-green-400"># {{ room.name }}</p>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
 </div>
 
-<!-- Popups -->
-<div id="emoji-picker-popup" class="hidden fixed z-[110] shadow-2xl rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 bg-white max-h-[400px] sm:max-h-[450px]">
-    <emoji-picker style="--num-columns: 8; --emoji-size: 1.25rem; max-height: 400px; overflow-y: auto;" class="sm:--num-columns: 8 max-sm:--num-columns: 6"></emoji-picker>
+<!-- Popups (same as before) -->
+<div id="emoji-picker-popup" class="hidden fixed z-[110] shadow-2xl rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 bg-white max-h-[400px]">
+    <emoji-picker style="--num-columns: 8; --emoji-size: 1.25rem;"></emoji-picker>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const channelId = "{{ channel.id }}";
@@ -320,10 +296,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const messagesContainer = document.getElementById("messages-container");
     const chatForm = document.getElementById("chat-form");
     const messageInput = document.getElementById("id_content");
-    const typingIndicator = document.getElementById("typing-indicator");
     
     let chatSocket = null;
-    let typingTimeout = null;
 
     function connectWebSocket() {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
@@ -335,13 +309,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const data = JSON.parse(e.data);
                 if (data.type === 'chat_message') {
                     appendMessage(data);
-                    const p = document.getElementById('no-messages-placeholder'); if(p) p.remove();
-                } else if (data.type === 'typing') {
-                    handleTypingIndicator(data);
-                } else if (data.type === 'presence') {
-                    handlePresenceUpdate(data);
-                } else if (data.type === 'message_update') {
-                    handleMessageUpdate(data);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 }
             } catch(err) { console.error("WS Error:", err); }
         };
@@ -352,14 +320,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!text || typeof text !== 'string') return false;
         const trimmed = text.trim();
         if (!trimmed || trimmed.length > 20) return false;
-        
-        // Regex to match emojis
         const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2702}-\u{27B0}\u{24C2}-\u{1F251}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F191}-\u{1F19A}]+/gu;
-        
         const textWithoutEmoji = trimmed.replace(emojiRegex, '').trim();
-        const hasEmojis = emojiRegex.test(trimmed);
-        
-        return hasEmojis && !textWithoutEmoji;
+        return emojiRegex.test(trimmed) && !textWithoutEmoji;
     }
 
     function appendMessage(data) {
@@ -374,339 +337,58 @@ document.addEventListener("DOMContentLoaded", function () {
             : `<div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-xs">${data.sender_name[0].toUpperCase()}</div>`;
 
         let content = '';
-        let isEmoji = false;
-        
         if (data.voice_message_url) {
             content = `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3">
                 <div class="flex items-center space-x-3 py-1 min-w-[220px]">
                     <button type="button" onclick="playVoiceMessage('${data.message_id}')" class="${isMe ? 'text-white' : 'text-indigo-600'} hover:scale-110 transition flex-shrink-0"><svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
                     <div class="flex-1">
-                        <div class="flex items-center justify-between mb-1.5 font-black uppercase tracking-widest text-[9px] ${isMe ? 'text-indigo-100' : 'text-indigo-600'}"><span>🎤 Voice Note</span><span>${data.voice_duration || '0'}s</span></div>
                         <div class="w-full bg-${isMe ? 'indigo-400' : 'gray-300'} h-1.5 rounded-full overflow-hidden"><div class="bg-${isMe ? 'white' : 'indigo-600'} h-full w-0 transition-all duration-100" id="voice-progress-${data.message_id}"></div></div>
                     </div>
                     <audio id="voice-audio-${data.message_id}" src="${data.voice_message_url}" class="hidden" preload="metadata"></audio>
                 </div>
             </div>`;
         } else if (isEmojiOnly(data.message)) {
-            // Emoji-only message (no bubble)
-            isEmoji = true;
-            content = `<div class="message-content ${isMe ? 'text-right' : ''}">
-                <span class="text-6xl leading-none inline-block hover:scale-110 transition-transform cursor-default">${data.message || ''}</span>
-            </div>`;
+            content = `<div class="message-content ${isMe ? 'text-right' : ''}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">${data.message || ''}</span></div>`;
         } else if (data.message && data.message.trim()) {
-            // Regular text message (only if has content)
-            content = `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3">
-                <p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p>
-            </div>`;
-        }
-
-        let actionHtml = `<button type="button" class="emoji-reaction-btn text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" data-message-id="${data.message_id}" title="Add reaction">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        </button>`;
-        actionHtml += `<form id="reaction-form-${data.message_id}" method="post" action="/channels/message/${data.message_id}/react/" class="hidden"><input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}"><input type="hidden" name="emoji" id="emoji-input-${data.message_id}"></form>`;
-        
-        if (isMe) {
-            if (!data.voice_message_url && !isEmoji) {
-                actionHtml += `<button type="button" class="edit-message-btn text-gray-400 hover:text-indigo-600 transition p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" data-message-id="${data.message_id}" title="Edit message">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                </button>`;
-            }
-            actionHtml += `<form method="post" action="/channels/message/${data.message_id}/delete/" class="inline" onsubmit="return confirm('Delete this message?')">
-                <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie('csrftoken')}">
-                <button type="submit" class="text-gray-400 hover:text-red-600 transition p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete message">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-            </form>`;
+            content = `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
         }
 
         div.innerHTML = `
             <div class="flex-shrink-0">${avatar}</div>
             <div class="flex-1 max-w-2xl">
-                <div class="flex items-center space-x-2 mb-1 ${isMe ? 'justify-end' : ''}"><span class="font-bold text-xs text-gray-700 dark:text-gray-300">${data.sender_name}</span><span class="text-[9px] text-gray-400">${data.timestamp}</span></div>
+                <div class="flex items-center space-x-2 mb-1 ${isMe ? 'justify-end' : ''}"><span class="font-bold text-xs text-gray-700 dark:text-gray-300">${data.sender_name}</span><span class="text-[9px] text-gray-400">${data.timestamp || 'Just now'}</span></div>
                 ${content}
-                <div class="flex items-center space-x-2 mt-1.5 ${isMe ? 'flex-row-reverse space-x-reverse' : ''}">${actionHtml}</div>
             </div>`;
 
         messagesContainer.appendChild(div);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        const eBtn = div.querySelector('.edit-message-btn'); if(eBtn) eBtn.onclick = () => startEditing(data.message_id);
-        const reactBtn = div.querySelector('.emoji-reaction-btn'); if(reactBtn) reactBtn.onclick = (e) => { e.stopPropagation(); showPicker(e.currentTarget, data.message_id); };
-    }
-
-    // --- Core Logic Binding ---
-    document.querySelectorAll('.edit-message-btn').forEach(b => b.onclick = () => startEditing(b.dataset.messageId));
-    document.querySelectorAll('.emoji-reaction-btn').forEach(b => b.onclick = (e) => { e.stopPropagation(); showPicker(e.currentTarget, b.dataset.messageId); });
-
-    // Send button state management
-    const sendBtn = document.getElementById('send-btn');
-    function updateSendButtonState() {
-        const hasText = messageInput && messageInput.value.trim().length > 0;
-        const hasFiles = document.getElementById('file-upload') && document.getElementById('file-upload').files.length > 0;
-        const hasVoice = recordedBlob != null;
-        
-        const canSend = hasText || hasFiles || hasVoice;
-        
-        if (sendBtn) {
-            if (canSend) {
-                sendBtn.disabled = false;
-                sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                sendBtn.classList.add('hover:scale-110');
-            } else {
-                sendBtn.disabled = true;
-                sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                sendBtn.classList.remove('hover:scale-110');
-            }
-        }
-    }
-    
-    // Update send button on input
-    if (messageInput) {
-        messageInput.addEventListener('input', updateSendButtonState);
-        messageInput.addEventListener('keyup', updateSendButtonState);
-    }
-    
-    // Initial state
-    updateSendButtonState();
-
-    // File upload preview
-    const fileInput = document.getElementById('file-upload');
-    const filePreview = document.getElementById('file-preview');
-    const fileName = document.getElementById('file-name');
-    
-    if (fileInput) {
-        fileInput.onchange = function() {
-            if (this.files.length > 0) {
-                const names = Array.from(this.files).map(f => f.name).join(', ');
-                fileName.textContent = this.files.length > 1 ? `${this.files.length} files selected` : names;
-                filePreview.classList.remove('hidden');
-            } else {
-                filePreview.classList.add('hidden');
-            }
-            updateSendButtonState(); // Update button when files selected
-        };
     }
 
     if (chatForm) {
         chatForm.onsubmit = async function(e) {
-            e.preventDefault(); // Always prevent default
-            
+            e.preventDefault();
             const hasFiles = document.getElementById('file-upload').files.length > 0;
             const hasVoice = recordedBlob != null;
             const hasMessage = messageInput.value.trim();
             
-            // Must have at least one: text, voice, or files
-            if (!hasMessage && !hasVoice && !hasFiles) {
-                return false;
-            }
+            if (!hasMessage && !hasVoice && !hasFiles) return false;
             
-            // If has voice or files, send via AJAX (even with text)
             if (hasVoice || hasFiles) {
                 const fd = new FormData(this);
-                
                 if (hasVoice) {
                     fd.set('voice_message', new File([recordedBlob], `voice-${Date.now()}.webm`, {type: 'audio/webm'}));
                     fd.set('voice_duration', Math.floor((Date.now() - recordingStartTime) / 1000));
                 }
-                
-                try {
-                    const res = await fetch(this.action, { 
-                        method: 'POST', 
-                        body: fd, 
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest', 
-                            'X-CSRFToken': getCookie('csrftoken')
-                        }
-                    });
-                    const data = await res.json();
-                    
-                    if (data.success) {
-                        if (hasVoice) clearVoiceRecording();
-                        if (hasFiles) clearFileUpload();
-                        messageInput.value = '';
-                        updateSendButtonState(); // Update button after sending
-                        
-                        // Broadcast via WebSocket
-                        chatSocket.send(JSON.stringify({
-                            type: 'chat_message', 
-                            message_id: data.message_id, 
-                            sender_id: userId, 
-                            sender_name: userName, 
-                            sender_avatar: data.sender_avatar, 
-                            message: data.content,
-                            voice_message_url: data.voice_message_url, 
-                            voice_duration: data.voice_duration, 
-                            timestamp: data.timestamp
-                        }));
-                    } else {
-                        console.error('Failed to send:', data.error);
-                        messageInput.classList.add('border-red-500');
-                        setTimeout(() => messageInput.classList.remove('border-red-500'), 2000);
-                    }
-                } catch(err) { 
-                    console.error('Upload error:', err);
-                    messageInput.classList.add('border-red-500');
-                    setTimeout(() => messageInput.classList.remove('border-red-500'), 2000);
+                const res = await fetch(this.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') }});
+                const data = await res.json();
+                if (data.success) {
+                    if (hasVoice) clearVoiceRecording();
+                    messageInput.value = '';
+                    chatSocket.send(JSON.stringify({ type: 'chat_message', message_id: data.message_id, sender_id: userId, sender_name: userName, sender_avatar: data.sender_avatar, message: data.content, voice_message_url: data.voice_message_url, voice_duration: data.voice_duration, timestamp: data.timestamp }));
                 }
-            } 
-            // If only text (emoji or regular message), send via WebSocket
-            else if (hasMessage) {
+            } else {
                 chatSocket.send(JSON.stringify({type: 'chat_message', message: messageInput.value}));
                 messageInput.value = ''; 
-                sendTypingStatus(false);
-                updateSendButtonState(); // Update button after sending
-            }
-        };
-    }
-
-    if(messageInput) { messageInput.oninput = () => { sendTypingStatus(true); clearTimeout(typingTimeout); typingTimeout = setTimeout(() => sendTypingStatus(false), 3000); }; }
-    function sendTypingStatus(is) { if (chatSocket && chatSocket.readyState === WebSocket.OPEN) chatSocket.send(JSON.stringify({type: 'typing', is_typing: is})); }
-
-    function handleTypingIndicator(data) {
-        if(data.is_typing) { typingIndicator.textContent = data.sender_name + ' is typing...'; typingIndicator.classList.remove('hidden'); }
-        else { typingIndicator.classList.add('hidden'); }
-    }
-
-    function handlePresenceUpdate(data) {
-        document.querySelectorAll(`.status-indicator[data-user-id="${data.user_id}"]`).forEach(i => {
-            i.classList.toggle('bg-green-500', data.status === 'ONLINE');
-            i.classList.toggle('bg-gray-400', data.status !== 'ONLINE');
-        });
-    }
-
-    function handleMessageUpdate(data) {
-        const msg = document.getElementById(`message-${data.message_id}`);
-        if (msg) { const cp = msg.querySelector('.message-content'); if(cp) cp.textContent = data.message; }
-    }
-
-    function startEditing(messageId) {
-        const messageDiv = document.getElementById(`message-${messageId}`);
-        if (!messageDiv) return;
-        
-        const contentElement = messageDiv.querySelector('.message-content');
-        if (!contentElement) return;
-        
-        const currentText = contentElement.textContent.trim();
-        
-        // Create edit form
-        const editForm = document.createElement('div');
-        editForm.className = 'edit-form';
-        editForm.innerHTML = `
-            <textarea class="w-full px-3 py-2 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white" rows="2">${currentText}</textarea>
-            <div class="flex space-x-2 mt-2">
-                <button type="button" class="save-edit bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded text-sm font-bold">Save</button>
-                <button type="button" class="cancel-edit bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-1 rounded text-sm font-bold">Cancel</button>
-            </div>
-        `;
-        
-        // Hide original content and show edit form
-        const parentContainer = contentElement.parentElement;
-        contentElement.style.display = 'none';
-        parentContainer.insertBefore(editForm, contentElement);
-        
-        const textarea = editForm.querySelector('textarea');
-        textarea.focus();
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-        
-        // Cancel edit
-        editForm.querySelector('.cancel-edit').onclick = () => {
-            editForm.remove();
-            contentElement.style.display = '';
-        };
-        
-        // Save edit
-        editForm.querySelector('.save-edit').onclick = async () => {
-            const newContent = textarea.value.trim();
-            if (!newContent) {
-                // Visual feedback instead of alert
-                textarea.classList.add('border-red-500');
-                textarea.placeholder = 'Message cannot be empty';
-                setTimeout(() => {
-                    textarea.classList.remove('border-red-500');
-                    textarea.placeholder = '';
-                }, 2000);
-                return;
-            }
-            
-            if (newContent === currentText) {
-                editForm.remove();
-                contentElement.style.display = '';
-                return;
-            }
-            
-            // Disable buttons during save
-            const saveBtn = editForm.querySelector('.save-edit');
-            const cancelBtn = editForm.querySelector('.cancel-edit');
-            saveBtn.disabled = true;
-            cancelBtn.disabled = true;
-            saveBtn.textContent = 'Saving...';
-            
-            try {
-                const response = await fetch(`/channels/message/${messageId}/edit/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: `content=${encodeURIComponent(newContent)}`
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Edit failed:', response.status, errorText);
-                    throw new Error(`Server error (${response.status})`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Update content immediately
-                    contentElement.textContent = newContent;
-                    editForm.remove();
-                    contentElement.style.display = '';
-                    
-                    // Broadcast via WebSocket if connected
-                    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                        chatSocket.send(JSON.stringify({
-                            type: 'message_edit',
-                            message_id: messageId,
-                            message: newContent
-                        }));
-                    }
-                    
-                    // Silent success - just update UI
-                } else {
-                    throw new Error(data.error || 'Failed to save');
-                }
-            } catch (error) {
-                console.error('Edit error:', error);
-                
-                // Re-enable buttons
-                saveBtn.disabled = false;
-                cancelBtn.disabled = false;
-                saveBtn.textContent = 'Save';
-                
-                // Show error only - no alert, just visual feedback
-                textarea.classList.add('border-red-500');
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'text-red-600 text-xs mt-1';
-                errorDiv.textContent = 'Failed to save: ' + error.message;
-                editForm.appendChild(errorDiv);
-                setTimeout(() => {
-                    textarea.classList.remove('border-red-500');
-                    errorDiv.remove();
-                }, 3000);
-            }
-        };
-        
-        // Allow Enter to save (Shift+Enter for new line)
-        textarea.onkeydown = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                editForm.querySelector('.save-edit').click();
-            } else if (e.key === 'Escape') {
-                editForm.querySelector('.cancel-edit').click();
             }
         };
     }
@@ -723,8 +405,7 @@ function getCookie(name) {
         for (let i = 0; i < cookies.length; i++) {
             const cookie = cookies[i].trim();
             if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1)); break;
             }
         }
     }
@@ -742,130 +423,48 @@ async function toggleVoiceRecording() {
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
             mediaRecorder.onstop = () => {
                 recordedBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                document.getElementById('voice-preview-audio').src = URL.createObjectURL(recordedBlob);
-                document.getElementById('voice-preview').classList.add('hidden');
-                document.getElementById('voice-playback').classList.remove('hidden');
-                document.getElementById('playback-duration').textContent = `${Math.floor((Date.now() - recordingStartTime) / 1000)}s`;
                 stream.getTracks().forEach(t => t.stop());
-                updateSendButtonState(); // Update button when voice recorded
+                alert("Voice note ready to send!");
             };
             mediaRecorder.start();
-            document.getElementById('voice-preview').classList.remove('hidden');
-            document.getElementById('voice-record-btn').classList.add('text-red-500');
             recordingStartTime = Date.now();
-            recordingTimer = setInterval(() => { document.getElementById('recording-time').textContent = formatTime(Math.floor((Date.now() - recordingStartTime) / 1000)); }, 1000);
-        } catch (err) { 
-            console.error('Microphone access denied:', err);
-            const btn = document.getElementById('voice-record-btn');
-            btn.classList.add('text-red-600');
-            setTimeout(() => btn.classList.remove('text-red-600'), 2000);
-        }
+            console.log("Recording started...");
+        } catch (err) { console.error('Microphone access denied:', err); }
+    } else {
+        mediaRecorder.stop();
+        console.log("Recording stopped.");
     }
 }
-function stopVoiceRecording() { if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); clearInterval(recordingTimer); document.getElementById('voice-record-btn').classList.remove('text-red-500'); } }
-function clearVoiceRecording() { 
-    document.getElementById('voice-playback').classList.add('hidden'); 
-    recordedBlob = null; 
-    updateSendButtonState(); // Update button when voice cleared
-}
-function playVoicePreview() { const a = document.getElementById('voice-preview-audio'); a.paused ? a.play() : (a.pause(), a.currentTime = 0); }
+
 function playVoiceMessage(id) {
     const a = document.getElementById('voice-audio-' + id);
     const p = document.getElementById('voice-progress-' + id);
     if (a && a.paused) { a.play(); a.ontimeupdate = () => p.style.width = `${(a.currentTime / a.duration) * 100}%`; a.onended = () => p.style.width = '0%'; } 
     else if (a) { a.pause(); a.currentTime = 0; }
 }
-function formatTime(s) { return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`; }
-function clearFileUpload() {
-    document.getElementById('file-upload').value = '';
-    document.getElementById('file-preview').classList.add('hidden');
-    updateSendButtonState(); // Update button when files cleared
-}
 
-// --- Emoji Engine ---
+function clearVoiceRecording() { recordedBlob = null; }
+
+// --- Emoji Picker ---
 const emojiPopup = document.getElementById('emoji-picker-popup');
 const picker = emojiPopup.querySelector('emoji-picker');
-let emojiTarget = null;
-
-function showPicker(btn, target) {
-    emojiTarget = target;
-    emojiPopup.classList.remove('hidden');
-    
-    // Wait for next frame to get accurate dimensions
-    requestAnimationFrame(() => {
-        const rect = btn.getBoundingClientRect();
-        const pickerHeight = emojiPopup.offsetHeight || 350;
-        const pickerWidth = emojiPopup.offsetWidth || 350;
-        
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        
-        // Vertical positioning - prefer above, fall back to below
-        let top;
-        const spaceAbove = rect.top;
-        const spaceBelow = viewportHeight - rect.bottom;
-        
-        if (spaceAbove >= pickerHeight || spaceAbove > spaceBelow) {
-            // Show above the button
-            top = rect.top - pickerHeight - 10;
-        } else {
-            // Show below the button
-            top = rect.bottom + 10;
-        }
-        
-        // Ensure it doesn't go above viewport
-        if (top < 10) {
-            top = 10;
-        }
-        
-        // Ensure it doesn't go below viewport
-        if (top + pickerHeight > viewportHeight - 10) {
-            top = viewportHeight - pickerHeight - 10;
-        }
-        
-        // Horizontal positioning - center on button, adjust if overflows
-        let left = rect.left + (rect.width / 2) - (pickerWidth / 2);
-        
-        // Check right edge overflow
-        if (left + pickerWidth > viewportWidth - 10) {
-            left = viewportWidth - pickerWidth - 10;
-        }
-        
-        // Check left edge overflow
-        if (left < 10) {
-            left = 10;
-        }
-        
-        // On mobile, center it horizontally
-        if (viewportWidth < 640) {
-            left = (viewportWidth - pickerWidth) / 2;
-            if (left < 10) left = 10;
-            if (left + pickerWidth > viewportWidth - 10) {
-                left = viewportWidth - pickerWidth - 10;
-            }
-        }
-        
-        emojiPopup.style.top = `${top}px`;
-        emojiPopup.style.left = `${left}px`;
-    });
-}
-
+document.getElementById('emoji-input-btn').onclick = (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    emojiPopup.style.top = `${rect.top - 420}px`;
+    emojiPopup.style.left = `${rect.left - 300}px`;
+    emojiPopup.classList.toggle('hidden');
+};
 picker.addEventListener('emoji-click', e => {
-    if (emojiTarget === 'input') {
-        const el = document.getElementById('id_content'); 
-        const pos = el.selectionStart;
-        el.value = el.value.slice(0, pos) + e.detail.unicode + el.value.slice(pos);
-        el.focus(); // Focus back on input
-        el.selectionStart = el.selectionEnd = pos + e.detail.unicode.length; // Set cursor position
-        updateSendButtonState(); // Enable send button!
-    } else {
-        const f = document.getElementById('reaction-form-' + emojiTarget);
-        if(f) { document.getElementById('emoji-input-' + emojiTarget).value = e.detail.unicode; f.submit(); }
-    }
+    const el = document.getElementById('id_content'); 
+    el.value += e.detail.unicode;
     emojiPopup.classList.add('hidden');
 });
-
-document.getElementById('emoji-input-btn').onclick = (e) => { e.stopPropagation(); showPicker(e.currentTarget, 'input'); };
 document.addEventListener('click', (e) => { if (!emojiPopup.contains(e.target)) emojiPopup.classList.add('hidden'); });
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('info-sidebar');
+    sidebar.classList.toggle('hidden');
+}
 </script>
 {% endblock %}
