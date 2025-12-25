@@ -300,6 +300,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Message.DoesNotExist:
             return False, None
 
-    async def update_user_status(self, status):
-        User.objects.filter(id=self.user.id).update(status=status, last_seen=timezone.now())
+    @database_sync_to_async
+    def update_user_status(self, status):
         User.objects.filter(id=self.user.id).update(status=status, last_seen=timezone.now())
