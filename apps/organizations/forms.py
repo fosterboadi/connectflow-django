@@ -187,6 +187,7 @@ class TeamForm(forms.ModelForm):
     
     def __init__(self, *args, department=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.department = department
         
         # Filter managers and members based on department's organization
         if department:
@@ -208,6 +209,22 @@ class TeamForm(forms.ModelForm):
         # Make fields optional
         self.fields['manager'].required = False
         self.fields['members'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get('name')
+        
+        if name and self.department:
+            # Check if a team with this name already exists in this department
+            # Exclude current instance if editing
+            query = Team.objects.filter(department=self.department, name=name)
+            if self.instance.pk:
+                query = query.exclude(pk=self.instance.pk)
+            
+            if query.exists():
+                self.add_error('name', f'A team named "{name}" already exists in this department.')
+        
+        return cleaned_data
 
     def save(self, commit=True):
         team = super().save(commit=False)

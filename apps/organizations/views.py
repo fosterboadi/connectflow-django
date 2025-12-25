@@ -491,11 +491,15 @@ def team_create(request, department_pk):
     if request.method == 'POST':
         form = TeamForm(request.POST, department=department)
         if form.is_valid():
-            team = form.save(commit=False)
-            team.department = department
-            team.save()
-            form.save_m2m()
-            return redirect('organizations:team_list', department_pk=department_pk)
+            try:
+                from django.db import IntegrityError
+                team = form.save(commit=False)
+                team.department = department
+                team.save()
+                form.save_m2m()
+                return redirect('organizations:team_list', department_pk=department_pk)
+            except IntegrityError:
+                form.add_error('name', f'A team with this name already exists in this department.')
     else:
         form = TeamForm(department=department)
     return render(request, 'organizations/team_form.html', {'form': form, 'action': 'Create', 'department': department})
@@ -511,8 +515,12 @@ def team_edit(request, pk):
     if request.method == 'POST':
         form = TeamForm(request.POST, instance=team, department=team.department)
         if form.is_valid():
-            form.save()
-            return redirect('organizations:team_list', department_pk=team.department.pk)
+            try:
+                from django.db import IntegrityError
+                form.save()
+                return redirect('organizations:team_list', department_pk=team.department.pk)
+            except IntegrityError:
+                form.add_error('name', f'A team with this name already exists in this department.')
     else:
         form = TeamForm(instance=team, department=team.department)
     return render(request, 'organizations/team_form.html', {'form': form, 'action': 'Edit', 'team': team, 'department': team.department})
