@@ -260,10 +260,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const avatar = data.sender_avatar ? `<img src="${data.sender_avatar}" class="w-9 h-9 rounded-xl object-cover shadow-sm">` : `<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">${data.sender_name[0].toUpperCase()}</div>`;
         
         let content = '';
-        const checkIsImage = (att) => att.is_image || /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(att.name) || (att.url && att.url.toLowerCase().split('?')[0].endsWith('.png|jpg|jpeg|gif|webp|bmp|svg'.split('|')));
-        // Simpler extension check for JS
-        const hasImgExt = (url) => /\.(png|jpg|jpeg|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
-        const hasVidExt = (url) => /\.(mp4|mov|webm|avi|mkv)(\?.*)?$/i.test(url);
+        const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
+        const vidExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv'];
+        
+        const hasImgExt = (url) => {
+            if (!url) return false;
+            const path = url.toLowerCase().split('?')[0];
+            return imgExtensions.some(ext => path.endsWith(ext));
+        };
+        const hasVidExt = (url) => {
+            if (!url) return false;
+            const path = url.toLowerCase().split('?')[0];
+            return vidExtensions.some(ext => path.endsWith(ext));
+        };
 
         if (data.voice_message_url) {
             content = `<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 min-w-[260px]"><div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('${data.message_id}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-${data.message_id}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-${data.message_id}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-${data.message_id}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-${data.message_id}">0:00</span></div></div>`;
