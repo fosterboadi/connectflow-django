@@ -345,6 +345,18 @@ class Attachment(models.Model):
 
     def __str__(self):
         return f"Attachment for Message ID: {self.message.id}"
+        
+    @property
+    def is_image(self):
+        """Check if file is an image based on extension."""
+        name = self.file.name.lower()
+        return name.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'))
+    
+    @property
+    def is_video(self):
+        """Check if file is a video based on extension."""
+        name = self.file.name.lower()
+        return name.endswith(('.mp4', '.mov', '.webm', '.avi', '.mkv'))
 
 
 

@@ -85,7 +85,25 @@
                                 </div>
                             {% elif message.attachments.all %}
                                 <div class="space-y-2">
-                                    {% for att in message.attachments.all %}<a href="{{ att.file.url }}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span class="text-[10px] font-black uppercase truncate max-w-[120px]">{{ att.file.name|basename }}</span></a>{% endfor %}
+                                    {% for att in message.attachments.all %}
+                                        {% if att.is_image %}
+                                            <a href="{{ att.file.url }}" target="_blank" class="block mb-2 group relative">
+                                                <img src="{{ att.file.url }}" alt="{{ att.file.name|basename }}" class="rounded-lg max-h-80 w-auto object-cover border border-gray-200 dark:border-gray-700 hover:opacity-95 transition shadow-sm">
+                                            </a>
+                                        {% elif att.is_video %}
+                                            <div class="block mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black shadow-sm max-w-sm">
+                                                <video controls class="w-full max-h-80" preload="metadata">
+                                                    <source src="{{ att.file.url }}">
+                                                    Your browser does not support the video tag.
+                                                </video>
+                                            </div>
+                                        {% else %}
+                                            <a href="{{ att.file.url }}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm">
+                                                <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                <span class="text-[10px] font-black uppercase truncate max-w-[120px]">{{ att.file.name|basename }}</span>
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
                                     {% if message.content %}<div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 mt-2"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p></div>{% endif %}
                                 </div>
                             {% elif message.content|is_emoji_only %}<div class="message-content {% if message.sender == user %}text-right{% endif %}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">{{ message.content }}</span></div>
@@ -211,11 +229,22 @@ document.addEventListener("DOMContentLoaded", function () {
         div.id = `message-${data.message_id}`;
         const avatar = data.sender_avatar ? `<img src="${data.sender_avatar}" class="w-9 h-9 rounded-xl object-cover shadow-sm">` : `<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">${data.sender_name[0].toUpperCase()}</div>`;
         let content = '';
+        const isImage = (name) => /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/i.test(name);
+        const isVideo = (name) => /\.(mp4|mov|webm|avi|mkv)$/i.test(name);
+
         if (data.voice_message_url) {
             content = `<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 min-w-[260px]"><div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('${data.message_id}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-${data.message_id}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-${data.message_id}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-${data.message_id}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-${data.message_id}">0:00</span></div></div>`;
         } else if (data.attachments && data.attachments.length > 0) {
             content = `<div class="space-y-2">`;
-            data.attachments.forEach(att => { content += `<a href="${att.url}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span class="text-[10px] font-black uppercase truncate max-w-[120px]">${att.name}</span></a>`; });
+            data.attachments.forEach(att => {
+                if (isImage(att.name)) {
+                    content += `<a href="${att.url}" target="_blank" class="block mb-2 group relative"><img src="${att.url}" class="rounded-lg max-h-80 w-auto object-cover border border-gray-200 dark:border-gray-700 hover:opacity-95 transition shadow-sm"></a>`;
+                } else if (isVideo(att.name)) {
+                    content += `<div class="block mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black shadow-sm max-w-sm"><video controls class="w-full max-h-80" preload="metadata"><source src="${att.url}">Your browser does not support the video tag.</video></div>`;
+                } else {
+                    content += `<a href="${att.url}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span class="text-[10px] font-black uppercase truncate max-w-[120px]">${att.name}</span></a>`;
+                }
+            });
             if (data.message) content += `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 mt-2"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
             content += `</div>`;
         } else if (isEmojiOnly(data.message)) {
