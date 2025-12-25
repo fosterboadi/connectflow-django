@@ -27,6 +27,10 @@ urlpatterns = [
     path('accounts/', include('apps.accounts.urls')),
     path('organization/', include('apps.organizations.urls')),
     path('channels/', include('apps.chat_channels.urls')),
+    
+    # API v1
+    path('api/v1/', include('connectflow.api_urls')),
+    
     path('', RedirectView.as_view(url='/accounts/login/', permanent=False)),
     
     # Serve .well-known files for PWA
