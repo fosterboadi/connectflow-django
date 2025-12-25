@@ -100,7 +100,7 @@ class MessageForm(forms.ModelForm):
                 'placeholder': 'Type your message... (Shift+Enter for new line)',
                 'rows': 3
             }),
-            'voice_message': forms.HiddenInput(attrs={'id': 'voice-message-input'}),
+            'voice_message': forms.FileInput(attrs={'id': 'voice-message-input', 'class': 'hidden'}),
             'voice_duration': forms.HiddenInput(attrs={'id': 'voice-duration-input'}),
             'parent_message': forms.HiddenInput()
         }

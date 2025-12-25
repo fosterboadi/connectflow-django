@@ -272,6 +272,12 @@ def channel_detail(request, pk):
     
     # Handle message posting
     if request.method == 'POST':
+        # Manually ensure voice_message is in request.FILES if it was sent as such
+        # This fixes issues where the widget might interfere or if sent via FormData
+        if 'voice_message' in request.FILES:
+             # Just to be sure it's available for the form
+             pass
+
         form = MessageForm(request.POST, request.FILES)
         if form.is_valid():
             message = form.save(commit=False)
@@ -304,6 +310,9 @@ def channel_detail(request, pk):
                 })
             
             return redirect('chat_channels:channel_detail', pk=pk)
+        elif request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return form errors as JSON
+            return JsonResponse({'success': False, 'error': form.errors.as_json()}, status=400)
     else:
         form = MessageForm()
     

@@ -190,6 +190,12 @@ document.addEventListener("DOMContentLoaded", function () {
         else { ws.play(); icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; }
     }
 
+    function isEmojiOnly(str) {
+        if (!str) return false;
+        const emojiRegex = /^(?:[\u2700-\u27bf]|(?:\ud83c[\udde6-\uddff]){2}|[\ud800-\udbff][\udc00-\udfff]|[\u0023-\u0039]\ufe0f?\u20e3|\u3299|\u3297|\u303d|\u3030|\u24c2|\ud83c[\udd70-\udd71]|\ud83c[\udd7e-\udd7f]|\ud83c\udd8e|\ud83c[\udd91-\udd9a]|\ud83c[\udde6-\uddff]|\ud83c[\ude01-\ude02]|\ud83c\ude1a|\ud83c\ude2f|\ud83c[\ude32-\ude3a]|\ud83c[\ude50-\ude51]|\u203c|\u2049|[\u25aa-\u25ab]|\u25b6|\u25c0|[\u25fb-\u25fe]|\u00a9|\u00ae|\u2122|\u2139|\ud83c\udc04|[\u2600-\u26FF]|\u2b05|\u2b06|\u2b07|\u2b1b|\u2b1c|\u2b50|\u2b55|\u231a|\u231b|\u2328|\u23cf|[\u23e9-\u23f3]|[\u23f8-\u23fa]|\ud83c\udccf|\u2934|\u2935|[\u2190-\u21ff]|\s)+$/;
+        return emojiRegex.test(str.trim());
+    }
+
     function updateSendButtonState() {
         const hasText = messageInput.value.trim().length > 0;
         const hasFiles = document.getElementById('file-upload').files.length > 0;
@@ -212,6 +218,8 @@ document.addEventListener("DOMContentLoaded", function () {
             data.attachments.forEach(att => { content += `<a href="${att.url}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span class="text-[10px] font-black uppercase truncate max-w-[120px]">${att.name}</span></a>`; });
             if (data.message) content += `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 mt-2"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
             content += `</div>`;
+        } else if (isEmojiOnly(data.message)) {
+            content = `<div class="message-content ${isMe ? 'text-right' : ''}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">${data.message}</span></div>`;
         } else {
             content = `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
         }
@@ -284,19 +292,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
     chatForm.onsubmit = async (e) => {
         e.preventDefault(); const msg = messageInput.value.trim(); if (!msg && !recordedBlob && !document.getElementById('file-upload').files.length && !isEditing) return;
-        if (isEditing) {
-            const res = await fetch(`/channels/message/${editingMessageId}/edit/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }, body: `content=${encodeURIComponent(msg)}` });
-            if (res.ok) { chatSocket.send(JSON.stringify({ type: 'message_edit', message_id: editingMessageId, message: msg })); cancelEditing(); }
-        } else {
-            const fd = new FormData(chatForm);
-            if (recordedBlob) fd.set('voice_message', new File([recordedBlob], 'voice.webm'));
-            if (recordedBlob || document.getElementById('file-upload').files.length) {
-                const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
-                const data = await res.json();
-                if (data.success) { clearVoiceRecording(); clearFileUpload(); messageInput.value = ''; chatSocket.send(JSON.stringify({ type: 'chat_message', message_id: data.message_id, sender_id: userId, sender_name: userName, sender_avatar: data.sender_avatar, message: data.content, voice_message_url: data.voice_message_url, timestamp: data.timestamp, attachments: data.attachments })); }
-            } else { chatSocket.send(JSON.stringify({ 'message': msg })); messageInput.value = ''; }
+        
+        try {
+            submitBtn.disabled = true;
+            if (isEditing) {
+                const res = await fetch(`/channels/message/${editingMessageId}/edit/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }, body: `content=${encodeURIComponent(msg)}` });
+                if (res.ok) { chatSocket.send(JSON.stringify({ type: 'message_edit', message_id: editingMessageId, message: msg })); cancelEditing(); }
+                else { alert('Failed to edit message. Please try again.'); }
+            } else {
+                const fd = new FormData(chatForm);
+                if (recordedBlob && recordedBlob.size > 0) {
+                    fd.set('voice_message', new File([recordedBlob], 'voice.webm', { type: 'audio/webm' }));
+                    if (previewWaveform) { fd.set('voice_duration', Math.ceil(previewWaveform.getDuration())); }
+                }
+                
+                if (recordedBlob || document.getElementById('file-upload').files.length) {
+                    submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                    
+                    const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
+                    
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    
+                    const data = await res.json();
+                    if (data.success) { 
+                        clearVoiceRecording(); clearFileUpload(); messageInput.value = ''; 
+                        chatSocket.send(JSON.stringify({ 
+                            type: 'chat_message', 
+                            message_id: data.message_id, 
+                            sender_id: userId, 
+                            sender_name: userName, 
+                            sender_avatar: data.sender_avatar, 
+                            message: data.content, 
+                            voice_message_url: data.voice_message_url, 
+                            timestamp: data.timestamp, 
+                            attachments: data.attachments 
+                        })); 
+                    } else {
+                        alert('Upload failed: ' + (data.error || 'Unknown error'));
+                    }
+                } else { 
+                    chatSocket.send(JSON.stringify({ 'message': msg })); messageInput.value = ''; 
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred while sending the message. Please check your connection and try again.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg><svg id="update-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            updateSendButtonState();
         }
-        updateSendButtonState();
     };
 
     function handleMessageUpdate(data) { const cp = document.querySelector(`#message-${data.message_id} .message-content`); if (cp) { cp.textContent = data.message; cp.classList.add('animate-pulse'); setTimeout(() => cp.classList.remove('animate-pulse'), 1000); } }
