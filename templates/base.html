@@ -34,24 +34,6 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     
-    <style>
-        /* Force high contrast for common text elements */
-        .dark input, .dark textarea, .dark select {
-            color: white !important;
-            background-color: #374151 !important; /* gray-700 */
-        }
-        input, textarea, select {
-            color: #111827 !important; /* gray-900 */
-        }
-        ::placeholder {
-            color: #9ca3af !important; /* gray-400 */
-            opacity: 1;
-        }
-        .dark ::placeholder {
-            color: #6b7280 !important; /* gray-500 */
-        }
-    </style>
-    
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">

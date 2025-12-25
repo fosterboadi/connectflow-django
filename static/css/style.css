@@ -15,17 +15,34 @@
     background-color: #1f2937 !important; /* gray-800 */
 }
 
-.dark .text-gray-800 {
-    color: #f3f4f6 !important; /* gray-100 */
+.dark .bg-gray-50 {
+    background-color: #111827 !important; /* gray-900 */
 }
 
-.dark .text-gray-600 {
-    color: #d1d5db !important; /* gray-300 */
-}
+/* Text visibility overrides */
+.dark .text-gray-900 { color: #f9fafb !important; }
+.dark .text-gray-800 { color: #f3f4f6 !important; }
+.dark .text-gray-700 { color: #e5e7eb !important; }
+.dark .text-gray-600 { color: #d1d5db !important; }
+.dark .text-gray-500 { color: #9ca3af !important; }
+.dark .text-gray-400 { color: #9ca3af !important; }
 
+/* Border visibility */
 .dark .border-gray-100, 
-.dark .border-gray-200 {
+.dark .border-gray-200,
+.dark .border-gray-300 {
     border-color: #374151 !important; /* gray-700 */
+}
+
+/* Input/Form visibility in dark mode */
+.dark input, .dark textarea, .dark select {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+    border-color: #4b5563 !important;
+}
+
+.dark label {
+    color: #d1d5db !important;
 }
 
 /* Custom scrollbar */
