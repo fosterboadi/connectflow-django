@@ -235,8 +235,10 @@ class Message(models.Model):
     )
     
     # Voice message
-    voice_message = models.FileField(
-        upload_to='messages/voice/%Y/%m/%d/',
+    voice_message = CloudinaryField(
+        'voice_message',
+        folder='messages/voice',
+        resource_type='auto',
         null=True,
         blank=True,
         help_text=_("Voice message audio file")
@@ -472,9 +474,12 @@ import cloudinary.uploader
 def delete_message_voice_from_cloudinary(sender, instance, **kwargs):
     if instance.voice_message:
         try:
-            cloudinary.uploader.destroy(instance.voice_message.name)
+            cloudinary.uploader.destroy(instance.voice_message.public_id)
         except Exception as e:
-            print(f"Cloudinary deletion error: {e}")
+            try:
+                cloudinary.uploader.destroy(instance.voice_message.name)
+            except:
+                print(f"Cloudinary deletion error: {e}")
 
 @receiver(post_delete, sender=Attachment)
 def delete_attachment_from_cloudinary(sender, instance, **kwargs):
