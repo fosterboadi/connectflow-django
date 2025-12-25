@@ -224,30 +224,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             notification_type='MENTION',
                             link=channel_url
                         )
-                                            await self.broadcast_notification(recipient.id, notification)
-                                            recipient_ids.add(recipient.id)
-                                        except Exception:
-                                            continue
-                                
-                                # 2. Handle Replies (Notify original sender)
-                                parent = await database_sync_to_async(lambda: message.parent_message)()
-                                if parent:
-                                    parent_sender = await database_sync_to_async(lambda: parent.sender)()
-                                    if parent_sender.id != self.user.id and parent_sender.id not in recipient_ids:
-                                        notification = await database_sync_to_async(Notification.notify)(
-                                            recipient=parent_sender,
-                                            sender=self.user,
-                                            title=f"New reply in #{channel.name}",
-                                            content=f"{self.user.get_full_name()} replied to your message: {message.content[:50]}...",
-                                            notification_type='MESSAGE',
-                                            link=channel_url
-                                        )
-                                        await self.broadcast_notification(parent_sender.id, notification)
-                                        recipient_ids.add(parent_sender.id)
-                        
-                                # 3. Handle Direct Messages (Notify the other person if not already notified)        if channel_type == 'DIRECT':
+                        await self.broadcast_notification(recipient.id, notification)
+                        recipient_ids.add(recipient.id)
+                except Exception:
+                    continue
+        
+        # 2. Handle Replies (Notify original sender)
+        parent = await database_sync_to_async(lambda: message.parent_message)()
+        if parent:
+            parent_sender = await database_sync_to_async(lambda: parent.sender)()
+            if parent_sender.id != self.user.id and parent_sender.id not in recipient_ids:
+                notification = await database_sync_to_async(Notification.notify)(
+                    recipient=parent_sender,
+                    sender=self.user,
+                    title=f"New reply in #{channel.name}",
+                    content=f"{self.user.get_full_name()} replied to your message: {message.content[:50]}...",
+                    notification_type='MESSAGE',
+                    link=channel_url
+                )
+                await self.broadcast_notification(parent_sender.id, notification)
+                recipient_ids.add(parent_sender.id)
+
+        # 3. Handle Direct Messages (Notify the other person if not already notified)
+        if channel_type == 'DIRECT':
             other_members = await database_sync_to_async(
                 lambda: list(channel.members.exclude(id=self.user.id))
+            )()
             )()
             
             for recipient in other_members:
