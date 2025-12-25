@@ -427,6 +427,26 @@ def shared_project_detail(request, pk):
 
 
 @login_required
+def shared_project_delete(request, pk):
+    """Delete a shared project. Only host organization admins can do this."""
+    user = request.user
+    project = get_object_or_404(SharedProject, pk=pk)
+    
+    # Permission check: Only admin of the host organization
+    if not (user.is_admin and project.host_organization == user.organization):
+        messages.error(request, "You do not have permission to delete this project.")
+        return redirect('organizations:shared_project_detail', pk=pk)
+    
+    if request.method == 'POST':
+        project_name = project.name
+        project.delete()
+        messages.success(request, f'Project "{project_name}" has been successfully deleted.')
+        return redirect('organizations:shared_project_list')
+        
+    return render(request, 'organizations/shared_project_confirm_delete.html', {'project': project})
+
+
+@login_required
 def organization_overview(request):
     user = request.user
     if not user.organization:

@@ -31,6 +31,7 @@ urlpatterns = [
     path('projects/create/', views.shared_project_create, name='shared_project_create'),
     path('projects/join/', views.shared_project_join, name='shared_project_join'),
     path('projects/<uuid:pk>/', views.shared_project_detail, name='shared_project_detail'),
+    path('projects/<uuid:pk>/delete/', views.shared_project_delete, name='shared_project_delete'),
     path('projects/<uuid:pk>/files/', views.project_files, name='project_files'),
     path('projects/<uuid:pk>/meetings/', views.project_meetings, name='project_meetings'),
     path('projects/<uuid:pk>/tasks/', views.project_tasks, name='project_tasks'),

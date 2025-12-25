@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Project - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-4">
+    <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-3xl overflow-hidden border border-red-100 dark:border-red-900/30">
+        <div class="p-8 text-center bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
+            <div class="w-20 h-20 bg-white dark:bg-gray-800 rounded-3xl shadow-sm flex items-center justify-center mx-auto mb-6 border border-red-100 dark:border-red-900/30">
+                <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Delete Project?</h1>
+            <p class="text-sm text-red-600 dark:text-red-400 mt-2 font-black uppercase tracking-widest">Warning: This action is permanent</p>
+        </div>
+
+        <div class="p-10">
+            <p class="text-gray-600 dark:text-gray-300 text-center mb-10 leading-relaxed">
+                You are about to delete the shared project <span class="font-bold text-gray-900 dark:text-white">"{{ project.name }}"</span>. 
+                This will also permanently remove all associated tasks, milestones, meetings, and files. This action cannot be undone.
+            </p>
+
+            <form method="post" class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                {% csrf_token %}
+                <a href="{% url 'organizations:shared_project_detail' project.pk %}" 
+                   class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-black uppercase tracking-widest py-4 rounded-2xl transition hover:bg-gray-200 dark:hover:bg-gray-600 text-center">
+                    No, Keep Project
+                </a>
+                <button type="submit" 
+                        class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl transition shadow-lg shadow-red-200 dark:shadow-none">
+                    Yes, Delete Permanently
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
