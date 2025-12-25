@@ -354,8 +354,11 @@ class Attachment(models.Model):
     @property
     def is_image(self):
         """Check if file is an image."""
-        if hasattr(self.file, 'resource_type'):
-            return self.file.resource_type == 'image'
+        try:
+            if hasattr(self.file, 'resource_type'):
+                return self.file.resource_type == 'image'
+        except:
+            pass
         
         extensions = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg')
         name = str(self.file).lower()
@@ -369,8 +372,11 @@ class Attachment(models.Model):
     @property
     def is_video(self):
         """Check if file is a video."""
-        if hasattr(self.file, 'resource_type'):
-            return self.file.resource_type == 'video'
+        try:
+            if hasattr(self.file, 'resource_type'):
+                return self.file.resource_type == 'video'
+        except:
+            pass
 
         extensions = ('.mp4', '.mov', '.webm', '.avi', '.mkv')
         name = str(self.file).lower()

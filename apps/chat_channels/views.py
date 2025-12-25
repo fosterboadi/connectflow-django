@@ -302,11 +302,18 @@ def channel_detail(request, pk):
             # Save the message first
             message.save()
             
+            processed_attachments = []
             try:
                 # Handle multiple attachments
                 attachments = request.FILES.getlist('attachments')
                 for attachment_file in attachments:
-                    Attachment.objects.create(message=message, file=attachment_file)
+                    att = Attachment.objects.create(message=message, file=attachment_file)
+                    processed_attachments.append({
+                        'url': att.file.url, 
+                        'name': att.file.name.split('/')[-1],
+                        'is_image': att.is_image,
+                        'is_video': att.is_video
+                    })
             except Exception as e:
                 # If attachment upload fails, permanently delete the orphan message
                 message.delete(force=True) 
@@ -325,12 +332,7 @@ def channel_detail(request, pk):
                     'timestamp': message.created_at.strftime('%b %d, %I:%M %p'),
                     'voice_message_url': message.voice_message.url if message.voice_message else None,
                     'voice_duration': message.voice_duration,
-                    'attachments': [{
-                        'url': a.file.url, 
-                        'name': a.file.name.split('/')[-1],
-                        'is_image': a.is_image,
-                        'is_video': a.is_video
-                    } for a in message.attachments.all()]
+                    'attachments': processed_attachments
                 })
             
             return redirect('chat_channels:channel_detail', pk=pk)
