@@ -238,18 +238,6 @@ def project_meetings(request, pk):
             meeting = form.save(commit=False)
             meeting.project = project
             meeting.organizer = request.user
-            
-            # If no link is provided, generate a Google Meet style link
-            if not meeting.meeting_link:
-                import random
-                import string
-                def gen_code(length):
-                    return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
-                
-                # Format: meet.google.com/abc-defg-hij
-                meet_code = f"{gen_code(3)}-{gen_code(4)}-{gen_code(3)}"
-                meeting.meeting_link = f"https://meet.google.com/{meet_code}"
-            
             meeting.save()
 
             # Notification logic

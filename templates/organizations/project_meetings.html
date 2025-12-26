@@ -49,7 +49,6 @@
                             {% if meeting.meeting_link %}
                                 {% if "meet.google.com" in meeting.meeting_link %}
                                     <a href="{{ meeting.meeting_link }}" target="_blank" class="flex items-center space-x-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-bold px-6 py-2 rounded-lg text-sm transition shadow-sm">
-                                        <!-- Google Meet Icon Colors -->
                                         <div class="flex space-x-0.5">
                                             <div class="w-1 h-3 bg-blue-500 rounded-full"></div>
                                             <div class="w-1 h-3 bg-green-500 rounded-full"></div>
@@ -58,9 +57,24 @@
                                         </div>
                                         <span>Join Google Meet</span>
                                     </a>
+                                {% elif "zoom.us" in meeting.meeting_link %}
+                                    <a href="{{ meeting.meeting_link }}" target="_blank" class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition shadow-sm">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0a12 12 0 1012 12A12.013 12.013 0 0012 0zm6.16 16.51a1.2 1.2 0 01-1.2 1.2h-9.92a1.2 1.2 0 01-1.2-1.2V7.49a1.2 1.2 0 011.2-1.2h9.92a1.2 1.2 0 011.2 1.2v9.02z"/></svg>
+                                        <span>Join Zoom Meeting</span>
+                                    </a>
+                                {% elif "teams.microsoft.com" in meeting.meeting_link %}
+                                    <a href="{{ meeting.meeting_link }}" target="_blank" class="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition shadow-sm">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                                        <span>Join Teams</span>
+                                    </a>
+                                {% elif "jit.si" in meeting.meeting_link %}
+                                    <a href="{{ meeting.meeting_link }}" target="_blank" class="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-2 rounded-lg text-sm transition shadow-sm">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                        <span>Join Jitsi Meet</span>
+                                    </a>
                                 {% else %}
                                     <a href="{{ meeting.meeting_link }}" target="_blank" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded-lg text-sm transition shadow-sm">
-                                        Join Meeting
+                                        Launch Meeting
                                     </a>
                                 {% endif %}
                             {% endif %}
