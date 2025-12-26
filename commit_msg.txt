@@ -1,8 +1,4 @@
-feat: remove Stripe and consolidate billing on Paystack
+fix: restore commented out department_list URL
 
-- Deleted Stripe-related fields from Organization and SubscriptionPlan models.
-- Removed Stripe checkout and webhook views/URLs.
-- Updated SubscriptionPlanForm and Platform Admin UI to focus exclusively on Paystack.
-- Redesigned billing selection page with a single 'Activate with Paystack' primary action.
-- Removed stripe from project requirements.
-- Generated and applied migrations to clean up database schema.
+- Added missing newline after '# Departments' comment in urls.py.
+- This resolves the NoReverseMatch error on the dashboard.

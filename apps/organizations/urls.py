@@ -14,7 +14,8 @@ urlpatterns = [
     path('billing/success/', billing_views.billing_success, name='billing_success'),
     path('webhooks/paystack/', billing_views.paystack_webhook, name='paystack_webhook'),
     
-    # Departments    path('departments/', views.department_list, name='department_list'),
+    # Departments
+    path('departments/', views.department_list, name='department_list'),
     path('departments/create/', views.department_create, name='department_create'),
     path('departments/<uuid:pk>/edit/', views.department_edit, name='department_edit'),
     path('departments/<uuid:pk>/delete/', views.department_delete, name='department_delete'),
