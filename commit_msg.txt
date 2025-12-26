@@ -1,0 +1,6 @@
+fix: resolve Cloudinary 401 error for project file downloads
+
+- Reverted ProjectFile model to use CloudinaryField with resource_type='auto'.
+- Updated deletion signals to correctly handle CloudinaryField assets.
+- Cleaned up Cloudinary settings for better default behavior.
+- Applied necessary migrations for the model change.

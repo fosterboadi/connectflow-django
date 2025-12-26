@@ -181,7 +181,7 @@ FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH')
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': config('CLOUDINARY_API_KEY'),
-    'API_SECRET': config('CLOUDINARY_API_SECRET')
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
 
 # Modern Django 4.2+ Storage Configuration
