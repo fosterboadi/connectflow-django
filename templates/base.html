@@ -39,6 +39,12 @@
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
     <!-- App Loading Screen -->
     <div id="app-loader" class="fixed inset-0 z-[9999] bg-gradient-to-br from-indigo-600 to-purple-700 flex flex-col items-center justify-center transition-opacity duration-500">
+        <script>
+            // Instant check to prevent flash on sub-pages
+            if (sessionStorage.getItem('app_initialized')) {
+                document.getElementById('app-loader').style.display = 'none';
+            }
+        </script>
         <div class="relative">
             <!-- Logo/Icon Animation -->
             <div class="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center mb-6 animate-bounce mx-auto">
@@ -60,23 +66,33 @@
         // Remove loader when page is fully loaded
         window.addEventListener('load', function() {
             const loader = document.getElementById('app-loader');
-            // Small delay to ensure the branding is seen
+            
+            // If already initialized, ensure it stays hidden
+            if (sessionStorage.getItem('app_initialized')) {
+                loader.style.display = 'none';
+                return;
+            }
+
+            // Small delay to ensure the branding is seen on first load
             setTimeout(() => {
                 loader.style.opacity = '0';
                 // Remove from DOM after transition
                 setTimeout(() => {
                     loader.style.display = 'none';
+                    // Set flag so it doesn't show again in this session
+                    sessionStorage.setItem('app_initialized', 'true');
                 }, 500);
             }, 800);
         });
         
-        // Fallback: If load event takes too long (e.g. slow network), remove loader anyway after 5s
+        // Fallback: If load event takes too long, remove loader anyway
         setTimeout(() => {
             const loader = document.getElementById('app-loader');
             if (loader && loader.style.display !== 'none') {
                 loader.style.opacity = '0';
                 setTimeout(() => {
                     loader.style.display = 'none';
+                    sessionStorage.setItem('app_initialized', 'true');
                 }, 500);
             }
         }, 5000);
