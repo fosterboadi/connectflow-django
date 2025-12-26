@@ -306,6 +306,63 @@ def project_tasks(request, pk):
 
 
 @login_required
+def project_task_edit(request, project_pk, task_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    task = get_object_or_404(ProjectTask, pk=task_pk, project=project)
+    user = request.user
+    
+    # Check permissions: Admin, Manager, Project Creator, Task Creator, or Task Assignee
+    can_edit = (
+        user.is_admin or 
+        user.is_manager or
+        project.created_by == user or
+        task.creator == user or
+        task.assigned_to == user
+    )
+    
+    if not can_edit:
+        messages.error(request, "You do not have permission to edit this task.")
+        return redirect('organizations:project_tasks', pk=project_pk)
+    
+    if request.method == 'POST':
+        form = ProjectTaskForm(request.POST, instance=task, project=project)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Task updated.')
+            return redirect('organizations:project_tasks', pk=project_pk)
+    else:
+        form = ProjectTaskForm(instance=task, project=project)
+    
+    return render(request, 'organizations/project_task_form.html', {'form': form, 'project': project, 'action': 'Edit', 'task': task})
+
+
+@login_required
+def project_task_delete(request, project_pk, task_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    task = get_object_or_404(ProjectTask, pk=task_pk, project=project)
+    user = request.user
+    
+    # Check permissions: Admin, Manager, Project Creator, or Task Creator
+    can_delete = (
+        user.is_admin or 
+        user.is_manager or
+        project.created_by == user or
+        task.creator == user
+    )
+    
+    if not can_delete:
+        messages.error(request, "You do not have permission to delete this task.")
+        return redirect('organizations:project_tasks', pk=project_pk)
+    
+    if request.method == 'POST':
+        task.delete()
+        messages.success(request, 'Task deleted.')
+        return redirect('organizations:project_tasks', pk=project_pk)
+    
+    return render(request, 'organizations/project_task_confirm_delete.html', {'project': project, 'task': task})
+
+
+@login_required
 def project_analytics(request, pk):
     project = get_object_or_404(SharedProject, pk=pk)
     if request.user not in project.members.all():

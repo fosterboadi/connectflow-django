@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Task - {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-10">
+    <nav class="flex mb-8 text-sm text-gray-500 font-medium">
+        <a href="{% url 'organizations:shared_project_list' %}" class="hover:text-indigo-600 transition">Shared Projects</a>
+        <span class="mx-2">/</span>
+        <a href="{% url 'organizations:shared_project_detail' project.pk %}" class="hover:text-indigo-600 transition">{{ project.name }}</a>
+        <span class="mx-2">/</span>
+        <a href="{% url 'organizations:project_tasks' project.pk %}" class="hover:text-indigo-600 transition">Tasks</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-800 dark:text-gray-200">Edit Task</span>
+    </nav>
+
+    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+        <div class="p-8 border-b border-gray-100 dark:border-gray-700 bg-indigo-50 dark:bg-indigo-900/20">
+            <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Edit Task</h1>
+            <p class="text-indigo-600 dark:text-indigo-400 mt-2 font-bold text-sm">Update task details, status, or assignment.</p>
+        </div>
+        
+        <form method="post" class="p-8 space-y-6">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <p class="text-[10px] text-red-500 mt-1 font-bold">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div class="flex items-center space-x-4 pt-4">
+                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-lg transition uppercase tracking-widest text-xs">
+                    Save Changes
+                </button>
+                <a href="{% url 'organizations:project_tasks' project.pk %}" class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-black py-4 rounded-xl transition text-center uppercase tracking-widest text-xs">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
