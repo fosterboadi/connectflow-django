@@ -1,6 +1,0 @@
-feat: add secure Super Admin initialization portal
-
-- Created 'promote_me' view and template to allow internal team members to upgrade their accounts.
-- Secured the portal using a PLATFORM_SECRET_KEY environment variable.
-- Added URL routing for the initialization portal at /accounts/setup/promote/.
-- This enables Super Admin access on restricted environments like Render without shell access.

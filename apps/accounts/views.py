@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 import json
+import os
 from django.contrib.auth import get_user_model
 from .forms import ProfileSettingsForm
 from apps.organizations.models import Organization
