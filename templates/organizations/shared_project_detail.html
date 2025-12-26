@@ -33,7 +33,7 @@
                         {{ project.host_organization.name }}
                     </div>
                     
-                    {% if is_admin and is_host %}
+                    {% if is_admin and is_host or is_creator %}
                     <div class="flex items-center bg-white dark:bg-gray-900 px-4 py-2 rounded-2xl border-2 border-indigo-100 dark:border-indigo-900 shadow-sm">
                         <div class="mr-4">
                             <p class="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none mb-1.5">Invite Code</p>
