@@ -36,9 +36,13 @@
 
 /* Input/Form visibility in dark mode */
 .dark input, .dark textarea, .dark select {
-    background-color: #1e293b !important;
-    color: #e2e8f0 !important;
-    border-color: #334155 !important; /* slate-700 */
+    background-color: #ffffff !important;
+    color: #0f172a !important; /* dark slate text */
+    border-color: #cbd5e1 !important; /* slate-300 border */
+}
+
+.dark input::placeholder, .dark textarea::placeholder {
+    color: #94a3b8 !important; /* slate-400 placeholder */
 }
 
 .dark label {
