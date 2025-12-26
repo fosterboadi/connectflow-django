@@ -1,0 +1,73 @@
+{% extends 'accounts/platform/base_admin.html' %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">Platform Users</h1>
+            <p class="text-sm text-gray-500 font-medium">Global directory of all accounts registered on ConnectFlow.</p>
+        </div>
+        
+        <form method="get" class="relative w-full md:w-64">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search by name or email..." 
+                   class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-sm">
+            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">User</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Organization</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Platform Role</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Joined</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for user_acc in users_list %}
+                <tr class="hover:bg-gray-50/50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center font-black text-xs uppercase overflow-hidden">
+                                {% if user_acc.avatar %}
+                                    <img src="{{ user_acc.avatar.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    {{ user_acc.username|slice:":1" }}
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">{{ user_acc.get_full_name|default:user_acc.username }}</p>
+                                <p class="text-xs text-gray-400 font-medium">{{ user_acc.email }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if user_acc.organization %}
+                            <span class="text-sm font-bold text-gray-700">{{ user_acc.organization.name }}</span>
+                        {% else %}
+                            <span class="text-xs italic text-gray-400">No Org</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded uppercase tracking-widest">
+                            {{ user_acc.get_role_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs text-gray-500 font-medium">{{ user_acc.date_joined|date:"M d, Y" }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'accounts:profile_detail' user_acc.pk %}" class="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800">
+                            View Profile
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

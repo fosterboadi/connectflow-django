@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, platform_admin_views
 
 app_name = 'accounts'
 
@@ -15,4 +15,10 @@ urlpatterns = [
     path('profile/<str:pk>/', views.UserProfileView.as_view(), name='profile_detail'),
     path('toggle-theme/', views.toggle_theme, name='toggle_theme'),
     path('notifications/mark-read/', views.mark_notifications_as_read, name='mark_notifications_read'),
+    
+    # Platform Admin (Super Admin only)
+    path('platform/dashboard/', platform_admin_views.platform_dashboard, name='platform_dashboard'),
+    path('platform/organizations/', platform_admin_views.platform_org_list, name='platform_org_list'),
+    path('platform/organizations/<uuid:pk>/toggle/', platform_admin_views.platform_toggle_org_status, name='platform_toggle_org_status'),
+    path('platform/users/', platform_admin_views.platform_user_list, name='platform_user_list'),
 ]

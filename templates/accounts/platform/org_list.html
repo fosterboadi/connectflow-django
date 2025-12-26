@@ -1,0 +1,76 @@
+{% extends 'accounts/platform/base_admin.html' %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">Organizations</h1>
+            <p class="text-sm text-gray-500 font-medium">Manage all registered companies and entities.</p>
+        </div>
+        
+        <form method="get" class="relative w-full md:w-64">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search orgs..." 
+                   class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-sm">
+            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Organization</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Code</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Industry</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Stats</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for org in organizations %}
+                <tr class="hover:bg-gray-50/50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            {% if org.logo %}
+                                <img src="{{ org.logo.url }}" class="w-8 h-8 rounded-lg object-cover">
+                            {% else %}
+                                <div class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center font-bold text-[10px] uppercase">{{ org.name|slice:":2" }}</div>
+                            {% endif %}
+                            <span class="text-sm font-bold text-gray-800">{{ org.name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <code class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded">{{ org.code }}</code>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-bold text-gray-600 uppercase tracking-tighter">{{ org.get_industry_display|default:"Unknown" }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex space-x-2">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">{{ org.member_count }} Users</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase">{{ org.project_count }} Projects</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if org.is_active %}
+                            <span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded uppercase tracking-widest">Active</span>
+                        {% else %}
+                            <span class="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded uppercase tracking-widest">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <form action="{% url 'accounts:platform_toggle_org_status' org.pk %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs font-bold {% if org.is_active %}text-red-600 hover:text-red-800{% else %}text-green-600 hover:text-green-800{% endif %}">
+                                {% if org.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
