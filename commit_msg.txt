@@ -1,7 +1,7 @@
-feat: implement 'Gatekeeper' logic to enforce subscription limits
+feat: architectural scaling for subscription enforcement (DRF integration)
 
-- Added helper methods to Organization model (can_add_user, can_create_project, has_feature) for centralized limit checking.
-- Updated invite_member view to prevent exceeding the plan's user cap.
-- Updated shared_project_create view to enforce the maximum project limit.
-- Restricted access to project_analytics based on the 'has_analytics' feature toggle.
-- Implemented user-friendly error messages when plan limits are encountered.
+- Integrated subscription limit validation into SharedProjectSerializer for API consistency.
+- Implemented custom DRF permission class 'HasSubscriptionFeature' for reusable premium feature locking.
+- Added premium 'analytics' action to SharedProjectViewSet protected by subscription checks.
+- Ensured that both Web and API layers now share the same 'Gatekeeper' logic.
+- Optimized app structure for future mobile and third-party integrations.

@@ -1,6 +1,9 @@
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Organization, Department, Team, SharedProject
 from .serializers import OrganizationSerializer, DepartmentSerializer, TeamSerializer, SharedProjectSerializer
+from .permissions import HasSubscriptionFeature
 
 class OrganizationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrganizationSerializer
@@ -36,3 +39,15 @@ class SharedProjectViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, host_organization=self.request.user.organization)
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, HasSubscriptionFeature('has_analytics')])
+    def analytics(self, request, pk=None):
+        project = self.get_object()
+        # Scale-Ready: Return basic stats for the API
+        data = {
+            'member_count': project.members.count(),
+            'channel_count': project.channels.count(),
+            'file_count': project.files.count(),
+            'task_count': project.tasks.count(),
+        }
+        return Response(data)

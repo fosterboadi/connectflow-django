@@ -39,3 +39,19 @@ class SharedProjectSerializer(serializers.ModelSerializer):
             'created_by', 'creator_details', 'access_code', 'created_at', 'milestones'
         ]
         read_only_fields = ['access_code', 'created_at']
+
+    def validate(self, data):
+        """
+        Scale Check: Ensure host organization isn't exceeding their project limit.
+        """
+        request = self.context.get('request')
+        if request and request.method == 'POST':
+            # Use the host_organization from data, or fallback to user's org
+            host_org = data.get('host_organization') or (request.user.organization if request.user else None)
+            
+            if host_org and not host_org.can_create_project():
+                plan = host_org.get_plan()
+                raise serializers.ValidationError(
+                    f"Organization '{host_org.name}' has reached the limit of {plan.max_projects} project(s) for the '{plan.name}' plan."
+                )
+        return data
