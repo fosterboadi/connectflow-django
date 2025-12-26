@@ -1,6 +1,0 @@
-feat: implement intelligent meeting platform detection
-
-- Reverted automated link generation to allow manual user-provided links.
-- Added smart platform detection in the UI for Google Meet, Zoom, Teams, and Jitsi.
-- Implemented branded buttons with specific color schemes and icons for each major video platform.
-- Standardized "Launch Meeting" fallback for unrecognized platforms.

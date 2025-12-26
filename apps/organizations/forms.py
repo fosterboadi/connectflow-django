@@ -13,7 +13,7 @@ class OrganizationForm(forms.ModelForm):
     
     class Meta:
         model = Organization
-        fields = ['name', 'logo', 'description', 'timezone']
+        fields = ['name', 'logo', 'description', 'industry', 'website', 'size', 'headquarters', 'timezone']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
@@ -24,6 +24,21 @@ class OrganizationForm(forms.ModelForm):
             'description': forms.Textarea(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
                 'rows': 3
+            }),
+            'industry': forms.Select(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+            }),
+            'website': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'https://example.com'
+            }),
+            'size': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'e.g., 50-100 employees'
+            }),
+            'headquarters': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
+                'placeholder': 'e.g., London, UK'
             }),
             'timezone': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent',

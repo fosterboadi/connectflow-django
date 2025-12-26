@@ -61,6 +61,47 @@
 
                 <!-- Right Column: Details -->
                 <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.industry.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
+                                Industry
+                            </label>
+                            {{ form.industry }}
+                            {% if form.industry.errors %}
+                                <p class="text-red-500 text-[10px] mt-1 font-bold">{{ form.industry.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="{{ form.size.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
+                                Company Size
+                            </label>
+                            {{ form.size }}
+                            {% if form.size.errors %}
+                                <p class="text-red-500 text-[10px] mt-1 font-bold">{{ form.size.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="{{ form.website.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
+                            Website
+                        </label>
+                        {{ form.website }}
+                        {% if form.website.errors %}
+                            <p class="text-red-500 text-[10px] mt-1 font-bold">{{ form.website.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.headquarters.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
+                            Headquarters
+                        </label>
+                        {{ form.headquarters }}
+                        {% if form.headquarters.errors %}
+                            <p class="text-red-500 text-[10px] mt-1 font-bold">{{ form.headquarters.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+
                     <div>
                         <label for="{{ form.timezone.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
                             Default Timezone

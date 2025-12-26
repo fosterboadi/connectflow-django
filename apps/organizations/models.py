@@ -41,6 +41,43 @@ class Organization(models.Model):
         blank=True,
         help_text=_("Organization description")
     )
+
+    class Industry(models.TextChoices):
+        TECHNOLOGY = 'TECH', _('Technology')
+        FINANCE = 'FIN', _('Finance & Banking')
+        HEALTHCARE = 'HEALTH', _('Healthcare')
+        EDUCATION = 'EDU', _('Education')
+        MANUFACTURING = 'MANU', _('Manufacturing')
+        RETAIL = 'RETAIL', _('Retail & E-commerce')
+        CONSULTING = 'CONSULT', _('Consulting')
+        OTHER = 'OTHER', _('Other')
+
+    industry = models.CharField(
+        max_length=20,
+        choices=Industry.choices,
+        default=Industry.OTHER,
+        help_text=_("Primary industry")
+    )
+
+    website = models.URLField(
+        blank=True,
+        null=True,
+        help_text=_("Official website URL")
+    )
+
+    size = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text=_("Company size (e.g., 10-50 employees)")
+    )
+
+    headquarters = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("HQ Location (City, Country)")
+    )
     
     timezone = models.CharField(
         max_length=50,
