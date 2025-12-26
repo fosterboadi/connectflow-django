@@ -13,6 +13,10 @@ class SubscriptionPlan(models.Model):
     name = models.CharField(max_length=100, unique=True)
     price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
+    # Provider IDs (Link to external products)
+    stripe_price_id = models.CharField(max_length=255, blank=True, null=True, help_text=_("Stripe Price ID (e.g., price_...)"))
+    paystack_plan_code = models.CharField(max_length=255, blank=True, null=True, help_text=_("Paystack Plan Code (e.g., PLN_...)"))
+
     # Quantitative Limits
     max_users = models.IntegerField(default=10, help_text=_("Maximum users allowed in the organization"))
     max_projects = models.IntegerField(default=1, help_text=_("Maximum shared projects allowed"))
@@ -53,6 +57,26 @@ class Organization(models.Model):
         null=True,
         blank=True,
         related_name='organizations'
+    )
+
+    # Billing - Stripe
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
+    stripe_subscription_id = models.CharField(max_length=255, blank=True, null=True)
+
+    # Billing - Paystack
+    paystack_customer_id = models.CharField(max_length=255, blank=True, null=True)
+    paystack_subscription_code = models.CharField(max_length=255, blank=True, null=True)
+
+    # Billing - General
+    subscription_status = models.CharField(
+        max_length=20, 
+        default='inactive',
+        choices=[
+            ('active', _('Active')),
+            ('inactive', _('Inactive')),
+            ('past_due', _('Past Due')),
+            ('cancelled', _('Cancelled')),
+        ]
     )
     
     name = models.CharField(
@@ -122,6 +146,11 @@ class Organization(models.Model):
         max_length=50,
         default='UTC',
         help_text=_("Organization default timezone")
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        help_text=_("Is this organization active?")
     )
     
     created_at = models.DateTimeField(auto_now_add=True)

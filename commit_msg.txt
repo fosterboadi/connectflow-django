@@ -1,7 +1,8 @@
-feat: architectural scaling for subscription enforcement (DRF integration)
+feat: implement dual-provider billing (Stripe & Paystack)
 
-- Integrated subscription limit validation into SharedProjectSerializer for API consistency.
-- Implemented custom DRF permission class 'HasSubscriptionFeature' for reusable premium feature locking.
-- Added premium 'analytics' action to SharedProjectViewSet protected by subscription checks.
-- Ensured that both Web and API layers now share the same 'Gatekeeper' logic.
-- Optimized app structure for future mobile and third-party integrations.
+- Added billing metadata fields to Organization and SubscriptionPlan models.
+- Implemented select_plan, stripe_checkout, and paystack_checkout views.
+- Created secure webhook handlers for automated subscription activation.
+- Integrated billing status into the Organization Overview dashboard.
+- Configured dynamic price/plan mapping via the Platform Admin suite.
+- Updated requirements with stripe and requests libraries.

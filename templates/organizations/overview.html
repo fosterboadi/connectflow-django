@@ -12,12 +12,24 @@
                     <img src="{{ organization.logo.url }}" class="w-16 h-16 rounded-xl object-cover">
                 {% endif %}
                 <div>
-                    <h1 class="text-4xl font-bold text-gray-800">{{ organization.name }}</h1>
+                    <div class="flex items-center space-x-3">
+                        <h1 class="text-4xl font-bold text-gray-800">{{ organization.name }}</h1>
+                        {% if organization.subscription_plan %}
+                            <span class="bg-indigo-50 text-indigo-600 text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest border border-indigo-100">
+                                {{ organization.subscription_plan.name }} Plan
+                            </span>
+                        {% endif %}
+                    </div>
                     <p class="text-gray-600 mt-2">Organization Structure & Teams</p>
                 </div>
             </div>
             <div class="flex space-x-3">
                 {% if user.is_admin %}
+                    <a href="{% url 'organizations:billing_select_plan' %}" 
+                       class="bg-green-50 hover:bg-green-100 text-green-900 border-2 border-green-200 px-6 py-3 rounded-xl transition flex items-center font-black uppercase text-[10px] tracking-widest shadow-sm">
+                        <svg class="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Billing
+                    </a>
                     <a href="{% url 'organizations:organization_settings' %}" 
                        class="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border-2 border-indigo-200 dark:bg-gray-800 dark:text-indigo-400 dark:border-indigo-900 px-6 py-3 rounded-xl transition flex items-center font-black uppercase text-[10px] tracking-widest shadow-sm">
                         <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>

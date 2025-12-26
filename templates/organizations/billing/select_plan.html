@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Billing & Plans - ConnectFlow Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-12 px-4">
+    <div class="text-center mb-16">
+        <h1 class="text-4xl font-black text-gray-900 tracking-tight mb-4">Choose the right plan for your team</h1>
+        <p class="text-lg text-gray-500 font-medium">Transparent pricing for organizations of all sizes.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {% for plan in plans %}
+        <div class="relative bg-white rounded-3xl shadow-xl border border-gray-100 flex flex-col {% if current_plan == plan %}ring-4 ring-indigo-600 ring-offset-4{% endif %}">
+            {% if current_plan == plan %}
+                <span class="absolute -top-4 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full">Current Plan</span>
+            {% endif %}
+
+            <div class="p-8 border-b border-gray-50">
+                <h3 class="text-xl font-black text-gray-800 mb-2 uppercase italic tracking-tighter">{{ plan.name }}</h3>
+                <div class="flex items-baseline space-x-1">
+                    <span class="text-4xl font-black text-gray-900">${{ plan.price_monthly|floatformat:0 }}</span>
+                    <span class="text-gray-400 font-bold text-sm">/month</span>
+                </div>
+            </div>
+
+            <div class="p-8 flex-1">
+                <ul class="space-y-4">
+                    <li class="flex items-center text-sm text-gray-600 font-medium">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Up to {{ plan.max_users }} members
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600 font-medium">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        {{ plan.max_projects }} Shared Workspaces
+                    </li>
+                    <li class="flex items-center text-sm text-gray-600 font-medium">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        {{ plan.max_storage_mb }}MB Cloud Storage
+                    </li>
+                    {% if plan.has_analytics %}
+                    <li class="flex items-center text-sm text-gray-600 font-medium">
+                        <svg class="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Advanced Analytics
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <div class="p-8 space-y-3">
+                {% if current_plan != plan %}
+                    <a href="{% url 'organizations:stripe_checkout' plan.id %}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-black uppercase tracking-widest py-4 rounded-2xl transition shadow-lg shadow-indigo-100 active:scale-95">
+                        Upgrade via Stripe
+                    </a>
+                    <a href="{% url 'organizations:paystack_checkout' plan.id %}" class="block w-full bg-blue-50 hover:bg-blue-100 text-blue-600 text-center font-black uppercase tracking-widest py-4 rounded-2xl transition active:scale-95">
+                        Pay with Paystack
+                    </a>
+                {% else %}
+                    <button disabled class="w-full bg-gray-100 text-gray-400 font-black uppercase tracking-widest py-4 rounded-2xl cursor-not-allowed">
+                        Already Active
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-12 text-center">
+        <p class="text-xs text-gray-400 font-medium italic">Payments are processed securely via Stripe and Paystack. You can cancel at any time.</p>
+    </div>
+</div>
+{% endblock %}

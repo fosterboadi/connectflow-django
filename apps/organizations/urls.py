@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, billing_views
 
 app_name = 'organizations'
 
@@ -8,8 +8,15 @@ urlpatterns = [
     path('', views.organization_overview, name='overview'),
     path('settings/', views.organization_settings, name='organization_settings'),
     
-    # Departments
-    path('departments/', views.department_list, name='department_list'),
+    # Billing
+    path('billing/plans/', billing_views.billing_select_plan, name='billing_select_plan'),
+    path('billing/stripe/<uuid:plan_id>/', billing_views.stripe_checkout, name='stripe_checkout'),
+    path('billing/paystack/<uuid:plan_id>/', billing_views.paystack_checkout, name='paystack_checkout'),
+    path('billing/success/', billing_views.billing_success, name='billing_success'),
+    path('webhooks/stripe/', billing_views.stripe_webhook, name='stripe_webhook'),
+    path('webhooks/paystack/', billing_views.paystack_webhook, name='paystack_webhook'),
+    
+    # Departments    path('departments/', views.department_list, name='department_list'),
     path('departments/create/', views.department_create, name='department_create'),
     path('departments/<uuid:pk>/edit/', views.department_edit, name='department_edit'),
     path('departments/<uuid:pk>/delete/', views.department_delete, name='department_delete'),
