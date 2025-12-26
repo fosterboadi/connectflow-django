@@ -1,6 +1,7 @@
-fix: resolve Cloudinary 401 error for project file downloads
+fix: resolve Cloudinary 401 and ensure universal file support
 
-- Reverted ProjectFile model to use CloudinaryField with resource_type='auto'.
-- Updated deletion signals to correctly handle CloudinaryField assets.
-- Cleaned up Cloudinary settings for better default behavior.
-- Applied necessary migrations for the model change.
+- Switched ProjectFile model to FileField combined with RawMediaCloudinaryStorage.
+- Configured Cloudinary to force secure HTTPS URLs (SECURE: True).
+- Enabled RawMediaCloudinaryStorage as default to properly handle "raw" assets (non-images).
+- Verified fix with a successful test script generating correct 'raw/upload' HTTPS URLs.
+- Applied migrations for the model field update.

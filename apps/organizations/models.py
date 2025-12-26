@@ -288,10 +288,8 @@ class ProjectFile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='files')
     uploader = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
-    file = CloudinaryField(
-        'file',
-        folder='projects/files',
-        resource_type='auto',
+    file = models.FileField(
+        upload_to='projects/files',
         help_text=_("Shared file")
     )
     name = models.CharField(max_length=255)
@@ -399,14 +397,10 @@ def delete_org_logo_from_cloudinary(sender, instance, **kwargs):
 def delete_project_file_from_cloudinary(sender, instance, **kwargs):
     if instance.file:
         try:
-            import cloudinary.uploader
-            cloudinary.uploader.destroy(instance.file.public_id)
+            # This calls the storage backend's delete method (RawMediaCloudinaryStorage)
+            instance.file.delete(save=False)
         except Exception as e:
-            try:
-                import cloudinary.uploader
-                cloudinary.uploader.destroy(instance.file.name)
-            except:
-                print(f"Cloudinary deletion error: {e}")
+            print(f"File deletion error: {e}")
 
 @receiver(m2m_changed, sender=Team.members.through)
 def notify_members_added_to_team(sender, instance, action, pk_set, **kwargs):
