@@ -1,8 +1,7 @@
-feat: implement dual-provider billing (Stripe & Paystack)
+fix: resolve TemplateSyntaxError and improve filter compatibility
 
-- Added billing metadata fields to Organization and SubscriptionPlan models.
-- Implemented select_plan, stripe_checkout, and paystack_checkout views.
-- Created secure webhook handlers for automated subscription activation.
-- Integrated billing status into the Organization Overview dashboard.
-- Configured dynamic price/plan mapping via the Platform Admin suite.
-- Updated requirements with stripe and requests libraries.
+- Standardized template library registration in project_tags.py.
+- Simplified has_module_access filter logic with better error handling.
+- Updated base.html to use separate load tags for static and project_tags.
+- Switched to double quotes for filter arguments in base.html for better parsing.
+- Fixed 500 error occurring on dashboard and other pages.
