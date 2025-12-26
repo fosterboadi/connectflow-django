@@ -10,25 +10,25 @@
         <span class="mx-2">/</span>
         <a href="{% url 'organizations:shared_project_detail' project.pk %}" class="hover:text-indigo-600 transition">{{ project.name }}</a>
         <span class="mx-2">/</span>
-        <span class="text-gray-800">Milestones</span>
+        <span class="text-gray-800 dark:text-gray-200">Milestones</span>
     </nav>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Milestones Roadmap -->
         <div class="lg:col-span-2">
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-                <h2 class="text-3xl font-black text-gray-800 mb-8">Project Roadmap</h2>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-8">
+                <h2 class="text-3xl font-black text-gray-800 dark:text-white mb-8">Project Roadmap</h2>
                 
                 <div class="relative">
                     <!-- Vertical Line -->
-                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-indigo-100"></div>
+                    <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-indigo-100 dark:bg-indigo-900/30"></div>
                     
                     <div class="space-y-12">
                         {% for milestone in milestones %}
                             <div class="relative pl-12 group">
                                 <!-- Bullet -->
-                                <div class="absolute left-0 w-8 h-8 rounded-full border-4 border-white shadow-md flex items-center justify-center transition-colors
-                                    {% if milestone.is_completed %}bg-green-500{% else %}bg-indigo-100{% endif %}"
+                                <div class="absolute left-0 w-8 h-8 rounded-full border-4 border-white dark:border-gray-800 shadow-md flex items-center justify-center transition-colors
+                                    {% if milestone.is_completed %}bg-green-500{% else %}bg-indigo-100 dark:bg-indigo-900/50{% endif %}"
                                      id="bullet-{{ milestone.id }}">
                                     {% if milestone.is_completed %}
                                         <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -39,12 +39,12 @@
                                 
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <h3 class="text-xl font-bold {% if milestone.is_completed %}text-gray-400 line-through{% else %}text-gray-800{% endif %}"
+                                        <h3 class="text-xl font-bold {% if milestone.is_completed %}text-gray-400 dark:text-gray-500 line-through{% else %}text-gray-800 dark:text-white{% endif %}"
                                             id="title-{{ milestone.id }}">
                                             {{ milestone.title }}
                                         </h3>
-                                        <p class="text-sm text-gray-500 mt-1">{{ milestone.description }}</p>
-                                        <div class="flex items-center mt-3 text-xs font-bold uppercase tracking-widest text-indigo-500">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ milestone.description }}</p>
+                                        <div class="flex items-center mt-3 text-xs font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
                                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002-2z"></path>
                                             </svg>
@@ -53,7 +53,7 @@
                                     </div>
                                     
                                     <button onclick="toggleMilestone('{{ milestone.id }}')" 
-                                            class="bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-600 px-4 py-2 rounded-lg text-xs font-black transition uppercase tracking-tighter">
+                                            class="bg-gray-100 dark:bg-gray-700 hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white text-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg text-xs font-black transition uppercase tracking-tighter shadow-sm border border-transparent dark:border-gray-600">
                                         Toggle Status
                                     </button>
                                 </div>
@@ -68,7 +68,7 @@
 
         <!-- Add Milestone Sidebar -->
         <div>
-            <div class="bg-indigo-900 rounded-2xl shadow-xl p-8 text-white sticky top-8">
+            <div class="bg-indigo-900 rounded-2xl shadow-xl p-8 text-white sticky top-8 border border-indigo-800">
                 <h3 class="text-2xl font-black mb-6">New Milestone</h3>
                 <form method="post" class="space-y-6">
                     {% csrf_token %}

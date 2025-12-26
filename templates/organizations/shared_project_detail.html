@@ -77,6 +77,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         {% if is_member %}
+                        <a href="{% url 'organizations:project_milestones' project.pk %}" class="text-gray-400 hover:text-indigo-600 text-[10px] font-black uppercase tracking-widest transition" onclick="event.stopPropagation()">View Full Roadmap</a>
                         <button type="button" class="text-indigo-600 text-xs font-black uppercase tracking-widest hover:text-indigo-800" onclick="event.stopPropagation(); toggleFold('manage-form')">Manage</button>
                         {% endif %}
                         <svg id="roadmap-arrow" class="w-5 h-5 text-gray-400 transition-transform duration-300 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
