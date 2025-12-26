@@ -14,7 +14,6 @@ class SubscriptionPlan(models.Model):
     price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
     # Provider IDs (Link to external products)
-    stripe_price_id = models.CharField(max_length=255, blank=True, null=True, help_text=_("Stripe Price ID (e.g., price_...)"))
     paystack_plan_code = models.CharField(max_length=255, blank=True, null=True, help_text=_("Paystack Plan Code (e.g., PLN_...)"))
 
     # Quantitative Limits
@@ -58,10 +57,6 @@ class Organization(models.Model):
         blank=True,
         related_name='organizations'
     )
-
-    # Billing - Stripe
-    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
-    stripe_subscription_id = models.CharField(max_length=255, blank=True, null=True)
 
     # Billing - Paystack
     paystack_customer_id = models.CharField(max_length=255, blank=True, null=True)

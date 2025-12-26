@@ -30,18 +30,11 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
-            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">External Gateway Mapping</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Stripe Price ID</label>
-                    {{ form.stripe_price_id }}
-                    <p class="text-[10px] text-gray-400 mt-1">Found in Stripe Dashboard -> Products</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Paystack Plan Code</label>
-                    {{ form.paystack_plan_code }}
-                    <p class="text-[10px] text-gray-400 mt-1">Found in Paystack Dashboard -> Plans</p>
-                </div>
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Paystack Integration</h3>
+            <div>
+                <label class="block text-xs font-black text-gray-400 uppercase mb-2">Paystack Plan Code</label>
+                {{ form.paystack_plan_code }}
+                <p class="text-[10px] text-gray-400 mt-1">Found in Paystack Dashboard -> Plans (e.g., PLN_...)</p>
             </div>
         </div>
 

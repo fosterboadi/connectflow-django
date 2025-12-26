@@ -10,10 +10,8 @@ urlpatterns = [
     
     # Billing
     path('billing/plans/', billing_views.billing_select_plan, name='billing_select_plan'),
-    path('billing/stripe/<uuid:plan_id>/', billing_views.stripe_checkout, name='stripe_checkout'),
     path('billing/paystack/<uuid:plan_id>/', billing_views.paystack_checkout, name='paystack_checkout'),
     path('billing/success/', billing_views.billing_success, name='billing_success'),
-    path('webhooks/stripe/', billing_views.stripe_webhook, name='stripe_webhook'),
     path('webhooks/paystack/', billing_views.paystack_webhook, name='paystack_webhook'),
     
     # Departments    path('departments/', views.department_list, name='department_list'),

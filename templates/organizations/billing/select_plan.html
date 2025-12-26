@@ -49,11 +49,8 @@
 
             <div class="p-8 space-y-3">
                 {% if current_plan != plan %}
-                    <a href="{% url 'organizations:stripe_checkout' plan.id %}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white text-center font-black uppercase tracking-widest py-4 rounded-2xl transition shadow-lg shadow-indigo-100 active:scale-95">
-                        Upgrade via Stripe
-                    </a>
-                    <a href="{% url 'organizations:paystack_checkout' plan.id %}" class="block w-full bg-blue-50 hover:bg-blue-100 text-blue-600 text-center font-black uppercase tracking-widest py-4 rounded-2xl transition active:scale-95">
-                        Pay with Paystack
+                    <a href="{% url 'organizations:paystack_checkout' plan.id %}" class="block w-full bg-[#09a5db] hover:bg-[#0894c7] text-white text-center font-black uppercase tracking-widest py-4 rounded-2xl transition shadow-lg shadow-blue-100 active:scale-95">
+                        Activate with Paystack
                     </a>
                 {% else %}
                     <button disabled class="w-full bg-gray-100 text-gray-400 font-black uppercase tracking-widest py-4 rounded-2xl cursor-not-allowed">

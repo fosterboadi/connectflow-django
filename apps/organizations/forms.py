@@ -12,7 +12,7 @@ class SubscriptionPlanForm(forms.ModelForm):
     class Meta:
         model = SubscriptionPlan
         fields = [
-            'name', 'price_monthly', 'stripe_price_id', 'paystack_plan_code',
+            'name', 'price_monthly', 'paystack_plan_code',
             'max_users', 'max_projects', 'max_storage_mb', 
             'has_analytics', 'has_custom_branding', 
             'has_priority_support', 'is_active'
@@ -20,7 +20,6 @@ class SubscriptionPlanForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500'}),
             'price_monthly': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500'}),
-            'stripe_price_id': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500', 'placeholder': 'price_...'}),
             'paystack_plan_code': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500', 'placeholder': 'PLN_...'}),
             'max_users': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500'}),
             'max_projects': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500'}),

@@ -1,4 +1,3 @@
-import stripe
 import requests
 import json
 import os
@@ -10,8 +9,6 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.urls import reverse
 from .models import SubscriptionPlan, Organization
-
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 @login_required
 def billing_select_plan(request):
@@ -28,31 +25,6 @@ def billing_select_plan(request):
         'current_plan': current_plan,
         'organization': user.organization
     })
-
-@login_required
-def stripe_checkout(request, plan_id):
-    """Initiate Stripe Checkout session."""
-    plan = get_object_or_404(SubscriptionPlan, id=plan_id)
-    org = request.user.organization
-    
-    if not plan.stripe_price_id:
-        messages.error(request, "This plan is not yet configured for Stripe payments.")
-        return redirect('organizations:billing_select_plan')
-
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            customer_email=request.user.email,
-            payment_method_types=['card'],
-            line_items=[{'price': plan.stripe_price_id, 'quantity': 1}],
-            mode='subscription',
-            success_url=request.build_absolute_uri(reverse('organizations:billing_success')) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=request.build_absolute_uri(reverse('organizations:billing_select_plan')),
-            metadata={'org_id': str(org.id), 'plan_id': str(plan.id)}
-        )
-        return redirect(checkout_session.url, code=303)
-    except Exception as e:
-        messages.error(request, f"Error starting Stripe checkout: {str(e)}")
-        return redirect('organizations:billing_select_plan')
 
 @login_required
 def paystack_checkout(request, plan_id):
@@ -91,36 +63,6 @@ def paystack_checkout(request, plan_id):
         messages.error(request, f"Connection error: {str(e)}")
         
     return redirect('organizations:billing_select_plan')
-
-@csrf_exempt
-def stripe_webhook(request):
-    """Handle Stripe Webhooks."""
-    payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-    event = None
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, os.environ.get('STRIPE_WEBHOOK_SECRET')
-        )
-    except Exception as e:
-        return HttpResponse(status=400)
-
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        org_id = session['metadata']['org_id']
-        plan_id = session['metadata']['plan_id']
-        
-        org = Organization.objects.get(id=org_id)
-        plan = SubscriptionPlan.objects.get(id=plan_id)
-        
-        org.subscription_plan = plan
-        org.stripe_customer_id = session['customer']
-        org.stripe_subscription_id = session['subscription']
-        org.subscription_status = 'active'
-        org.save()
-
-    return HttpResponse(status=200)
 
 @csrf_exempt
 def paystack_webhook(request):

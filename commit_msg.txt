@@ -1,7 +1,8 @@
-fix: resolve TemplateSyntaxError and improve filter compatibility
+feat: remove Stripe and consolidate billing on Paystack
 
-- Standardized template library registration in project_tags.py.
-- Simplified has_module_access filter logic with better error handling.
-- Updated base.html to use separate load tags for static and project_tags.
-- Switched to double quotes for filter arguments in base.html for better parsing.
-- Fixed 500 error occurring on dashboard and other pages.
+- Deleted Stripe-related fields from Organization and SubscriptionPlan models.
+- Removed Stripe checkout and webhook views/URLs.
+- Updated SubscriptionPlanForm and Platform Admin UI to focus exclusively on Paystack.
+- Redesigned billing selection page with a single 'Activate with Paystack' primary action.
+- Removed stripe from project requirements.
+- Generated and applied migrations to clean up database schema.
