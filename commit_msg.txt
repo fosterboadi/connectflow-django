@@ -1,5 +1,7 @@
-fix: load project_tags in templates to resolve Invalid Filter error
+style: declutter platform admin UI with modern icons and tooltips
 
-- Added {% load project_tags %} to base.html and user_permissions.html.
-- This ensures custom filters like has_module_access and get_item are correctly recognized by the Django template engine.
-- Fixed 500 error on login and platform management pages.
+- Replaced text-heavy action buttons in Org List and User Directory with sleek SVG icons.
+- Implemented status-aware icon colors for organization activation toggles.
+- Upgraded sidebar navigation with modern icons and refined typography (e.g., 'Insights' instead of 'Dashboard').
+- Added hover tooltips to all icon actions for better accessibility and UX.
+- Improved overall table layouts for a more professional, minimalist look.
