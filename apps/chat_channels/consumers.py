@@ -75,12 +75,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             attachments = data.get('attachments', [])
             parent_id = data.get('parent_message_id')
             
+            # Get org name safely
+            org_name = await self.get_user_org_name()
+
             # Prepare common broadcast data
             broadcast_data = {
                 'type': 'chat_message',
                 'message': content,
                 'sender_id': self.user.id,
                 'sender_name': self.user.get_full_name(),
+                'sender_organization': org_name,
                 'sender_avatar': self.user.avatar.url if self.user.avatar else None,
                 'timestamp': data.get('timestamp', timezone.now().strftime('%b %d, %I:%M %p')),
                 'voice_message_url': voice_url,
@@ -277,6 +281,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'created_at': "Just now"
             }
         )
+
+    @database_sync_to_async
+    def get_user_org_name(self):
+        if self.user.organization:
+            return self.user.organization.name
+        return None
 
     @database_sync_to_async
     def check_channel_access(self):

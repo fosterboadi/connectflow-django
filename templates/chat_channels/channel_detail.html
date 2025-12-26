@@ -76,7 +76,13 @@
                 <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %}" id="message-{{ message.pk }}">
                     <div class="flex-shrink-0">{% if message.sender.avatar %}<img src="{{ message.sender.avatar.url }}" class="w-9 h-9 rounded-xl object-cover shadow-sm">{% else %}<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">{{ message.sender.username.0|upper }}</div>{% endif %}</div>
                     <div class="flex-1 max-w-2xl group">
-                        <div class="flex items-center space-x-2 mb-1 {% if message.sender == user %}justify-end{% endif %}"><span class="font-bold text-xs text-gray-700 dark:text-gray-200">{{ message.sender.get_full_name }}</span><span class="text-[9px] text-gray-400 font-medium">{{ message.created_at|date:"h:i A" }}</span></div>
+                        <div class="flex items-center space-x-2 mb-1 {% if message.sender == user %}justify-end{% endif %}">
+                            <span class="font-bold text-xs text-gray-700 dark:text-gray-200">{{ message.sender.get_full_name }}</span>
+                            {% if channel.shared_project and message.sender.organization %}
+                                <span class="ml-1 text-[9px] text-gray-400 font-bold uppercase tracking-tighter border border-gray-200 dark:border-gray-600 px-1 rounded">{{ message.sender.organization.name }}</span>
+                            {% endif %}
+                            <span class="text-[9px] text-gray-400 font-medium">{{ message.created_at|date:"h:i A" }}</span>
+                        </div>
                         <div class="relative">
                             {% if message.voice_message %}
                                 <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 min-w-[260px]">
