@@ -124,13 +124,34 @@ class Organization(models.Model):
         help_text=_("Organization default timezone")
     )
     
-    is_active = models.BooleanField(
-        default=True,
-        help_text=_("Is this organization active?")
-    )
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def get_plan(self):
+        """Return the subscription plan or a very restrictive default if None."""
+        if self.subscription_plan:
+            return self.subscription_plan
+        # Return a 'Dummy' plan object for organizations with no plan set
+        return SubscriptionPlan(
+            name="No Plan", 
+            max_users=5, 
+            max_projects=0, 
+            max_storage_mb=50,
+            has_analytics=False
+        )
+
+    def can_add_user(self):
+        plan = self.get_plan()
+        return self.members.count() < plan.max_users
+
+    def can_create_project(self):
+        plan = self.get_plan()
+        # Count projects where this org is the host
+        return self.hosted_projects.count() < plan.max_projects
+
+    def has_feature(self, feature_name):
+        plan = self.get_plan()
+        return getattr(plan, feature_name, False)
     
     class Meta:
         db_table = 'organizations'

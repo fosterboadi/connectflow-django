@@ -397,6 +397,11 @@ def project_analytics(request, pk):
     if request.user not in project.members.all():
         return redirect('organizations:shared_project_list')
     
+    # Gatekeeper: Check Feature Access
+    if not project.host_organization.has_feature('has_analytics'):
+        messages.warning(request, f"Project Analytics is a premium feature. Please upgrade the host organization's ({project.host_organization.name}) plan to gain access.")
+        return redirect('organizations:shared_project_detail', pk=pk)
+    
     # --- Task Stats ---
     task_stats = project.tasks.values('status').annotate(count=Count('id'))
     
@@ -476,11 +481,14 @@ def shared_project_list(request):
 @login_required
 def shared_project_create(request):
     user = request.user
-    # Requirement: admins, department heads, team leaders can create
     if not (user.is_admin or user.is_manager):
-        messages.error(request, 'Only organization admins, department heads, and team managers can create shared projects.')
         return redirect('organizations:shared_project_list')
     
+    # Gatekeeper: Check Project Limit
+    if not user.organization.can_create_project():
+        messages.error(request, f"Your current plan ({user.organization.get_plan().name}) only allows {user.organization.get_plan().max_projects} active project(s). Upgrade to create more.")
+        return redirect('organizations:shared_project_list')
+
     if request.method == 'POST':
         form = SharedProjectForm(request.POST, organization=user.organization)
         if form.is_valid():
@@ -755,9 +763,15 @@ def team_delete(request, pk):
 
 @login_required
 def invite_member(request):
+    """Invite a new member to the organization via email."""
     user = request.user
     if not (user.is_admin or user.is_manager):
         return redirect('organizations:overview')
+
+    # Gatekeeper: Check User Limit
+    if not user.organization.can_add_user():
+        messages.error(request, f"You have reached the maximum user limit for your '{user.organization.get_plan().name}' plan. Please upgrade to invite more members.")
+        return redirect('organizations:member_directory')
 
     if request.method == 'POST':
         form = InviteMemberForm(request.POST, organization=user.organization)
