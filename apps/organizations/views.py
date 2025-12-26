@@ -694,6 +694,7 @@ def project_milestone_edit(request, project_pk, milestone_pk):
     can_edit = (
         user.is_admin or 
         project.host_organization == user.organization and user.is_admin or
+        project.created_by == user or
         user in project.members.all() and (user.is_manager) 
     )
     
@@ -711,6 +712,32 @@ def project_milestone_edit(request, project_pk, milestone_pk):
         form = ProjectMilestoneForm(instance=milestone)
     
     return render(request, 'organizations/project_milestone_form.html', {'form': form, 'project': project, 'action': 'Edit'})
+
+
+@login_required
+def project_milestone_delete(request, project_pk, milestone_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    milestone = get_object_or_404(ProjectMilestone, pk=milestone_pk, project=project)
+    user = request.user
+    
+    # Check permissions: Admin, Host Admin, Project Creator, or Dept Head/Team Manager involved
+    can_delete = (
+        user.is_admin or 
+        project.host_organization == user.organization and user.is_admin or
+        project.created_by == user or
+        user in project.members.all() and (user.is_manager) 
+    )
+    
+    if not can_delete:
+        messages.error(request, "You do not have permission to delete milestones.")
+        return redirect('organizations:shared_project_detail', pk=project_pk)
+    
+    if request.method == 'POST':
+        milestone.delete()
+        messages.success(request, 'Milestone deleted.')
+        return redirect('organizations:shared_project_detail', pk=project_pk)
+    
+    return render(request, 'organizations/project_milestone_confirm_delete.html', {'project': project, 'milestone': milestone})
 
 
 @login_required
