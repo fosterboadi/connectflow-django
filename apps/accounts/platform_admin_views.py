@@ -3,10 +3,38 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Q
 from apps.accounts.models import User
-from apps.organizations.models import Organization, SharedProject
+from apps.organizations.models import Organization, SharedProject, SubscriptionPlan
+from apps.organizations.forms import SubscriptionPlanForm
 
 def super_admin_check(user):
     return user.is_authenticated and user.role == User.Role.SUPER_ADMIN
+
+@login_required
+@user_passes_test(super_admin_check)
+def platform_plan_list(request):
+    """List all available subscription plans."""
+    plans = SubscriptionPlan.objects.annotate(org_count=Count('organizations'))
+    return render(request, 'accounts/platform/plan_list.html', {'plans': plans})
+
+@login_required
+@user_passes_test(super_admin_check)
+def platform_plan_edit(request, pk=None):
+    """Create or edit a subscription plan."""
+    plan = get_object_or_404(SubscriptionPlan, pk=pk) if pk else None
+    
+    if request.method == 'POST':
+        form = SubscriptionPlanForm(request.POST, instance=plan)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Subscription plan updated.")
+            return redirect('accounts:platform_plan_list')
+    else:
+        form = SubscriptionPlanForm(instance=plan)
+        
+    return render(request, 'accounts/platform/plan_form.html', {
+        'form': form,
+        'plan': plan
+    })
 
 @login_required
 @user_passes_test(super_admin_check)

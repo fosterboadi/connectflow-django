@@ -1,6 +1,7 @@
-feat: add global role management to platform admin
+feat: implement dynamic subscription tier management
 
-- Implemented ability to promote users to SUPER_ADMIN directly from the Platform Admin UI.
-- Updated user_permissions.html with a high-visibility Role Selection dropdown.
-- Ensured promoted Super Admins receive is_staff and is_superuser flags for complete system access.
-- This allows the master Super Admin to safely onboard other staff members to the platform management suite.
+- Added SubscriptionPlan model to define tiers with quantitative limits (users, projects, storage) and feature toggles.
+- Updated Organization model to link each entity to a specific plan.
+- Created Platform Admin UI for listing, creating, and editing subscription plans.
+- Integrated Plan management into the sidebar for Super Admins.
+- Provided a foundation for live enforcement of plan benefits across the platform.

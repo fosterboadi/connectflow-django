@@ -1,0 +1,104 @@
+{% extends 'accounts/platform/base_admin.html' %}
+
+{% block admin_content %}
+<div class="max-w-2xl">
+    <div class="mb-8">
+        <a href="{% url 'accounts:platform_plan_list' %}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 uppercase tracking-widest flex items-center mb-4">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+            Back to Tiers
+        </a>
+        <h1 class="text-3xl font-black text-gray-800 tracking-tight">{% if plan %}Edit Plan{% else %}Create New Tier{% endif %}</h1>
+        <p class="text-sm text-gray-500 font-medium">Configure the pricing and benefits for this subscription tier.</p>
+    </div>
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        
+        <!-- Basic Info -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Plan Identity</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Tier Name</label>
+                    {{ form.name }}
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Monthly Price ($)</label>
+                    {{ form.price_monthly }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantitative Limits -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Usage Limits</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">User Cap</label>
+                    {{ form.max_users }}
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Project Cap</label>
+                    {{ form.max_projects }}
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-gray-400 uppercase mb-2">Storage (MB)</label>
+                    {{ form.max_storage_mb }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Toggles -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 bg-gray-50 border-b border-gray-100">
+                <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Feature Entitlements</h3>
+            </div>
+            
+            <div class="divide-y divide-gray-50">
+                <div class="p-6 flex items-center justify-between hover:bg-gray-50/50 transition">
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">Project Analytics</p>
+                        <p class="text-[10px] text-gray-400 font-medium">Access to collaboration maps and performance data.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="has_analytics" class="sr-only peer" {% if form.has_analytics.value %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div class="p-6 flex items-center justify-between hover:bg-gray-50/50 transition">
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">Custom Branding</p>
+                        <p class="text-[10px] text-gray-400 font-medium">Allow organizations to upload custom logos and themes.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="has_custom_branding" class="sr-only peer" {% if form.has_custom_branding.value %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div class="p-6 flex items-center justify-between hover:bg-gray-50/50 transition">
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">Priority Support</p>
+                        <p class="text-[10px] text-gray-400 font-medium">Direct line to ConnectFlow support team.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="has_priority_support" class="sr-only peer" {% if form.has_priority_support.value %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between bg-gray-100 p-6 rounded-2xl">
+            <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="id_is_active" class="w-4 h-4 text-indigo-600 border-gray-300 rounded" {% if form.is_active.value %}checked{% endif %}>
+                <label for="id_is_active" class="ml-2 text-xs font-bold text-gray-600 uppercase tracking-widest">Plan is Active and Public</label>
+            </div>
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest px-10 py-4 rounded-xl transition shadow-lg shadow-indigo-100">
+                {% if plan %}Save Tier Changes{% else %}Launch Tier{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

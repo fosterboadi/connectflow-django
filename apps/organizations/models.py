@@ -4,6 +4,37 @@ import uuid
 from cloudinary.models import CloudinaryField
 
 
+class SubscriptionPlan(models.Model):
+    """
+    Defines tiers and their benefits.
+    Managed by Super Admins via the Platform suite.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, unique=True)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    # Quantitative Limits
+    max_users = models.IntegerField(default=10, help_text=_("Maximum users allowed in the organization"))
+    max_projects = models.IntegerField(default=1, help_text=_("Maximum shared projects allowed"))
+    max_storage_mb = models.IntegerField(default=500, help_text=_("Storage limit in MB"))
+    
+    # Feature Toggles
+    has_analytics = models.BooleanField(default=False)
+    has_custom_branding = models.BooleanField(default=False)
+    has_priority_support = models.BooleanField(default=False)
+    
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} (${self.price_monthly}/mo)"
+
+    class Meta:
+        db_table = 'subscription_plans'
+        verbose_name = _('Subscription Plan')
+        verbose_name_plural = _('Subscription Plans')
+
+
 class Organization(models.Model):
     """
     Organization model - represents a company or organization.
@@ -14,6 +45,14 @@ class Organization(models.Model):
         primary_key=True,
         default=uuid.uuid4,
         editable=False
+    )
+
+    subscription_plan = models.ForeignKey(
+        'SubscriptionPlan',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='organizations'
     )
     
     name = models.CharField(

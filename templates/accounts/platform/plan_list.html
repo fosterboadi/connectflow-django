@@ -1,0 +1,75 @@
+{% extends 'accounts/platform/base_admin.html' %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">Subscription Tiers</h1>
+            <p class="text-sm text-gray-500 font-medium">Define platform plans and benefit limits.</p>
+        </div>
+        
+        <a href="{% url 'accounts:platform_plan_create' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-xl transition shadow-lg shadow-indigo-100 flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            Add New Tier
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for plan in plans %}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-gray-50 flex justify-between items-start bg-gray-50/50">
+                <div>
+                    <h3 class="font-black text-gray-800 text-lg tracking-tight">{{ plan.name }}</h3>
+                    <p class="text-2xl font-black text-indigo-600 mt-1">${{ plan.price_monthly }}<span class="text-xs text-gray-400 font-bold uppercase tracking-widest ml-1">/mo</span></p>
+                </div>
+                {% if plan.is_active %}
+                    <span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded uppercase tracking-widest">Active</span>
+                {% else %}
+                    <span class="px-2 py-1 bg-red-50 text-red-600 text-[10px] font-black rounded uppercase tracking-widest">Paused</span>
+                {% endif %}
+            </div>
+            
+            <div class="p-6 flex-1 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-xl">
+                        <p class="text-[10px] font-black text-gray-400 uppercase">Max Users</p>
+                        <p class="text-lg font-black text-gray-800">{{ plan.max_users }}</p>
+                    </div>
+                    <div class="text-center p-3 bg-gray-50 rounded-xl">
+                        <p class="text-[10px] font-black text-gray-400 uppercase">Max Projects</p>
+                        <p class="text-lg font-black text-gray-800">{{ plan.max_projects }}</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Features</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% if plan.has_analytics %}
+                            <span class="px-2 py-1 bg-indigo-50 text-indigo-600 text-[9px] font-black rounded border border-indigo-100">Analytics</span>
+                        {% endif %}
+                        {% if plan.has_custom_branding %}
+                            <span class="px-2 py-1 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100">Branding</span>
+                        {% endif %}
+                        {% if plan.has_priority_support %}
+                            <span class="px-2 py-1 bg-purple-50 text-purple-600 text-[9px] font-black rounded border border-purple-100">Priority Support</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-50/50 border-t border-gray-50 flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-400">{{ plan.org_count }} Organizations</span>
+                <a href="{% url 'accounts:platform_plan_edit' plan.pk %}" class="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 flex items-center">
+                    Edit Plan
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-white p-12 rounded-2xl border-2 border-dashed border-gray-200 text-center text-gray-400 font-bold italic">
+            No subscription tiers created yet.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

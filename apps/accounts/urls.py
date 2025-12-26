@@ -23,4 +23,9 @@ urlpatterns = [
     path('platform/organizations/<uuid:pk>/toggle/', platform_admin_views.platform_toggle_org_status, name='platform_toggle_org_status'),
     path('platform/users/', platform_admin_views.platform_user_list, name='platform_user_list'),
     path('platform/users/<str:pk>/permissions/', platform_admin_views.platform_user_permissions, name='platform_user_permissions'),
+    
+    # Subscription Tiers
+    path('platform/plans/', platform_admin_views.platform_plan_list, name='platform_plan_list'),
+    path('platform/plans/create/', platform_admin_views.platform_plan_edit, name='platform_plan_create'),
+    path('platform/plans/<uuid:pk>/edit/', platform_admin_views.platform_plan_edit, name='platform_plan_edit'),
 ]
