@@ -59,8 +59,11 @@
                     <td class="px-6 py-4">
                         <span class="text-xs text-gray-500 font-medium">{{ user_acc.date_joined|date:"M d, Y" }}</span>
                     </td>
-                    <td class="px-6 py-4 text-right">
-                        <a href="{% url 'accounts:profile_detail' user_acc.pk %}" class="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800">
+                    <td class="px-6 py-4 text-right space-x-4">
+                        <a href="{% url 'accounts:platform_user_permissions' user_acc.pk %}" class="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800">
+                            Manage Permissions
+                        </a>
+                        <a href="{% url 'accounts:profile_detail' user_acc.pk %}" class="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-600">
                             View Profile
                         </a>
                     </td>

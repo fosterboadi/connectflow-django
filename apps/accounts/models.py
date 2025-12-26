@@ -120,6 +120,13 @@ class User(AbstractUser):
         default=True,
         help_text=_("Get notified when mentioned")
     )
+
+    # Granular Module Permissions
+    module_permissions = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=_("Toggles for platform modules: dashboard, channels, projects, organization, members, analytics")
+    )
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -147,6 +154,16 @@ class User(AbstractUser):
     def is_manager(self):
         """Check if user is a Department Head or Team Manager."""
         return self.role in [self.Role.DEPT_HEAD, self.Role.TEAM_MANAGER]
+
+    def has_module_access(self, module_name):
+        """
+        Check if user has access to a specific module.
+        Super admins have access to everything.
+        Default is True for all modules if not explicitly set.
+        """
+        if self.role == self.Role.SUPER_ADMIN:
+            return True
+        return self.module_permissions.get(module_name, True)
 
 
 from django.db.models.signals import post_delete, pre_save

@@ -1,0 +1,7 @@
+feat: implement granular module permission toggles for internal staff
+
+- Added module_permissions JSONField to the User model.
+- Created UI in Platform Admin to toggle access to specific modules (Chat, Projects, Analytics, etc.).
+- Implemented has_module_access template filter for conditional navigation rendering.
+- Updated base.html (desktop and mobile) to respect individual user permissions.
+- Ensured SUPER_ADMINs retain global access regardless of toggles.

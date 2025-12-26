@@ -68,6 +68,38 @@ def platform_user_list(request):
 
 @login_required
 @user_passes_test(super_admin_check)
+def platform_user_permissions(request, pk):
+    """Manage granular module access for a specific user."""
+    target_user = get_object_or_404(User, pk=pk)
+    
+    modules = [
+        ('dashboard', 'Dashboard Overview'),
+        ('channels', 'Chat Channels'),
+        ('projects', 'Shared Projects'),
+        ('organization', 'Organization Overview'),
+        ('members', 'Member Directory'),
+        ('analytics', 'Project Analytics'),
+        ('meetings', 'Project Meetings'),
+        ('files', 'Project Files'),
+    ]
+    
+    if request.method == 'POST':
+        new_perms = {}
+        for mod_id, _ in modules:
+            new_perms[mod_id] = request.POST.get(mod_id) == 'on'
+        
+        target_user.module_permissions = new_perms
+        target_user.save()
+        messages.success(request, f"Permissions updated for {target_user.username}.")
+        return redirect('accounts:platform_user_list')
+        
+    return render(request, 'accounts/platform/user_permissions.html', {
+        'target_user': target_user,
+        'modules': modules
+    })
+
+@login_required
+@user_passes_test(super_admin_check)
 def platform_toggle_org_status(request, pk):
     """Quick toggle for organization active state."""
     org = get_object_or_404(Organization, pk=pk)
