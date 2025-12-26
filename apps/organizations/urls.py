@@ -33,6 +33,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/', views.shared_project_detail, name='shared_project_detail'),
     path('projects/<uuid:pk>/delete/', views.shared_project_delete, name='shared_project_delete'),
     path('projects/<uuid:pk>/files/', views.project_files, name='project_files'),
+    path('projects/<uuid:project_pk>/files/<uuid:file_pk>/delete/', views.project_file_delete, name='project_file_delete'),
     path('projects/<uuid:pk>/meetings/', views.project_meetings, name='project_meetings'),
     path('projects/<uuid:pk>/tasks/', views.project_tasks, name='project_tasks'),
     path('projects/<uuid:project_pk>/tasks/<uuid:task_pk>/edit/', views.project_task_edit, name='project_task_edit'),

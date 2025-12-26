@@ -1,7 +1,7 @@
-fix: resolve Cloudinary 401 and ensure universal file support
+feat: add delete functionality for project files
 
-- Switched ProjectFile model to FileField combined with RawMediaCloudinaryStorage.
-- Configured Cloudinary to force secure HTTPS URLs (SECURE: True).
-- Enabled RawMediaCloudinaryStorage as default to properly handle "raw" assets (non-images).
-- Verified fix with a successful test script generating correct 'raw/upload' HTTPS URLs.
-- Applied migrations for the model field update.
+- Implemented project_file_delete view with permission validation.
+- Added URL routing for file deletion.
+- Created project_file_confirm_delete.html template.
+- Updated project_files.html UI with a conditional delete button for authorized users.
+- Ensured automatic Cloudinary cleanup on file deletion.

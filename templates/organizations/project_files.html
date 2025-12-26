@@ -39,6 +39,11 @@
                                 <a href="{{ file.file.url }}" target="_blank" download="{{ file.name }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition shadow-sm">
                                     Download
                                 </a>
+                                {% if file.uploader == user or user.is_admin or project.created_by == user or user.is_manager %}
+                                    <a href="{% url 'organizations:project_file_delete' project.pk file.pk %}" class="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition">
+                                        Delete
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                     {% empty %}

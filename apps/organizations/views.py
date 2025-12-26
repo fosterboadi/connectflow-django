@@ -198,6 +198,35 @@ def project_files(request, pk):
 
 
 @login_required
+def project_file_delete(request, project_pk, file_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    project_file = get_object_or_404(ProjectFile, pk=file_pk, project=project)
+    user = request.user
+    
+    # Check permissions: Uploader, Org Admin, or Project Manager/Creator
+    can_delete = (
+        project_file.uploader == user or
+        user.is_admin or
+        project.created_by == user or
+        (user in project.members.all() and user.is_manager)
+    )
+    
+    if not can_delete:
+        messages.error(request, "You do not have permission to delete this file.")
+        return redirect('organizations:project_files', pk=project_pk)
+    
+    if request.method == 'POST':
+        project_file.delete()
+        messages.success(request, 'File deleted successfully.')
+        return redirect('organizations:project_files', pk=project_pk)
+    
+    return render(request, 'organizations/project_file_confirm_delete.html', {
+        'project': project,
+        'file': project_file
+    })
+
+
+@login_required
 def project_meetings(request, pk):
     project = get_object_or_404(SharedProject, pk=pk)
     if request.user not in project.members.all():
