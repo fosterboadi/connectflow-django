@@ -305,7 +305,7 @@ class Message(models.Model):
         db_table = 'messages'
         verbose_name = _('Message')
         verbose_name_plural = _('Messages')
-        ordering = ['created_at']
+        ordering = ['-is_pinned', 'created_at']
         indexes = [
             models.Index(fields=['channel', 'created_at']),
             models.Index(fields=['sender', 'created_at']),

@@ -18,7 +18,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
         channel = self.get_object()
-        messages = Message.objects.filter(channel=channel, parent_message__isnull=True).order_by('created_at')
+        messages = Message.objects.filter(channel=channel, parent_message__isnull=True).order_by('-is_pinned', 'created_at')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
@@ -153,7 +153,8 @@ class MessageViewSet(viewsets.ModelViewSet):
                 'voice_message_url': s_data['voice_message'],
                 'voice_duration': s_data['voice_duration'],
                 'attachments': s_data['attachments'],
-                'is_pinned': s_data['is_pinned']
+                'is_pinned': s_data['is_pinned'],
+                'is_starred': s_data['is_starred']
             })
         elif event_type in ['message_pinned', 'message_unpinned']:
             data['is_pinned'] = message.is_pinned

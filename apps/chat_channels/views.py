@@ -245,7 +245,7 @@ def channel_detail(request, pk):
             Q(sender__username__icontains=search_query)
         )
     
-    channel_messages = messages_query.order_by('created_at')
+    channel_messages = messages_query.order_by('-is_pinned', 'created_at')
     
     # Get active breakout rooms for this channel
     breakout_rooms = Channel.objects.filter(
