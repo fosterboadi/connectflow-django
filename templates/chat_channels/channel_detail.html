@@ -143,13 +143,13 @@
                 {% csrf_token %}
                 <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 transition-all focus-within:ring-2 focus-within:ring-indigo-500" id="input-container">
                     {{ form.content }}
-                    <div id="file-preview" class="hidden mt-2 p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-                        <div class="flex items-center justify-between mb-2">
-                            <span id="file-name" class="text-[10px] font-bold text-indigo-600 truncate max-w-[200px]"></span>
-                            <button type="button" onclick="clearFileUpload()" class="text-indigo-400 hover:text-red-500"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                    <div id="file-previews-container" class="hidden mt-2 p-2 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                        <div class="flex items-center justify-between mb-2 px-1">
+                            <span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Attached Files</span>
+                            <button type="button" onclick="clearAllFiles()" class="text-[9px] font-bold text-red-500 hover:text-red-600 uppercase">Clear All</button>
                         </div>
-                        <div id="image-preview-container" class="hidden">
-                            <img id="image-preview-img" src="" class="max-h-32 rounded-lg border border-indigo-100">
+                        <div id="preview-grid" class="flex flex-wrap gap-2">
+                            <!-- Previews injected here -->
                         </div>
                     </div>
                     <div id="voice-preview" class="hidden mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div><span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Recording...</span></div><button type="button" onclick="stopVoiceRecording()" class="text-[10px] font-black text-red-600 uppercase">Stop</button></div>
@@ -196,6 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let editingMessageId = null;
     let mediaRecorder, audioChunks = [], recordedBlob;
     let previewWaveform = null;
+    let selectedFiles = [];
     const waveforms = {};
 
     function connectWebSocket() {
@@ -314,7 +315,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function updateSendButtonState() {
         const hasText = messageInput.value.trim().length > 0;
-        const hasFiles = document.getElementById('file-upload').files.length > 0;
+        const hasFiles = selectedFiles.length > 0;
         const hasVoice = recordedBlob != null;
         submitBtn.disabled = !(hasText || hasFiles || hasVoice || isEditing);
     }
@@ -432,45 +433,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
     window.stopVoiceRecording = () => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); };
     window.clearVoiceRecording = () => { recordedBlob = null; if (previewWaveform) previewWaveform.destroy(); document.getElementById('voice-playback-preview').classList.add('hidden'); updateSendButtonState(); };
-    window.clearFileUpload = () => { 
-        const fileInput = document.getElementById('file-upload');
-        fileInput.value = ''; 
-        document.getElementById('file-preview').classList.add('hidden'); 
-        document.getElementById('image-preview-container').classList.add('hidden');
-        document.getElementById('image-preview-img').src = '';
-        updateSendButtonState(); 
+    
+    window.renderFilePreviews = () => {
+        const container = document.getElementById('file-previews-container');
+        const grid = document.getElementById('preview-grid');
+        grid.innerHTML = '';
+        if (selectedFiles.length === 0) { container.classList.add('hidden'); return; }
+        container.classList.remove('hidden');
+        selectedFiles.forEach((file, index) => {
+            const isImage = file.type.startsWith('image/');
+            const div = document.createElement('div');
+            div.className = 'relative group w-16 h-16 rounded-lg overflow-hidden border border-indigo-100 dark:border-indigo-800 bg-white dark:bg-gray-800 shadow-sm';
+            if (isImage) {
+                const img = document.createElement('img');
+                img.className = 'w-full h-full object-cover';
+                img.src = URL.createObjectURL(file);
+                div.appendChild(img);
+            } else {
+                div.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center p-1"><svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg><span class="text-[7px] font-black uppercase truncate w-full text-center mt-0.5 px-0.5">${file.name}</span></div>`;
+            }
+            const rb = document.createElement('button');
+            rb.type = 'button'; rb.onclick = (e) => { e.preventDefault(); removeFile(index); };
+            rb.className = 'absolute top-0 right-0 bg-red-500 text-white rounded-bl-md p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10';
+            rb.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            div.appendChild(rb); grid.appendChild(div);
+        });
     };
+    window.removeFile = (index) => { selectedFiles.splice(index, 1); renderFilePreviews(); updateSendButtonState(); };
+    window.clearAllFiles = () => { selectedFiles = []; renderFilePreviews(); updateSendButtonState(); };
 
     document.getElementById('file-upload').addEventListener('change', function() {
-        const filePreview = document.getElementById('file-preview');
-        const fileName = document.getElementById('file-name');
-        const imgPreviewContainer = document.getElementById('image-preview-container');
-        const imgPreview = document.getElementById('image-preview-img');
-
-        if (this.files && this.files.length > 0) { 
-            const file = this.files[0];
-            fileName.textContent = this.files.length === 1 ? file.name : `${this.files.length} files selected`; 
-            filePreview.classList.remove('hidden'); 
-            
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imgPreview.src = e.target.result;
-                    imgPreviewContainer.classList.remove('hidden');
+        if (this.files) {
+            Array.from(this.files).forEach(file => {
+                if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    selectedFiles.push(file);
                 }
-                reader.readAsDataURL(file);
-            } else {
-                imgPreviewContainer.classList.add('hidden');
-                imgPreview.src = '';
-            }
-        } else {
-            filePreview.classList.add('hidden');
+            });
+            renderFilePreviews();
+            this.value = '';
         }
         updateSendButtonState();
     });
 
     chatForm.onsubmit = async (e) => {
-        e.preventDefault(); const msg = messageInput.value.trim(); if (!msg && !recordedBlob && !document.getElementById('file-upload').files.length && !isEditing) return;
+        e.preventDefault(); const msg = messageInput.value.trim(); if (!msg && !recordedBlob && !selectedFiles.length && !isEditing) return;
         
         try {
             submitBtn.disabled = true;
@@ -480,12 +486,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 else { alert('Failed to edit message. Please try again.'); }
             } else {
                 const fd = new FormData(chatForm);
+                fd.delete('attachments');
+                selectedFiles.forEach(file => fd.append('attachments', file));
+
                 if (recordedBlob && recordedBlob.size > 0) {
                     fd.set('voice_message', new File([recordedBlob], 'voice.webm', { type: 'audio/webm' }));
                     if (previewWaveform) { fd.set('voice_duration', Math.ceil(previewWaveform.getDuration())); }
                 }
                 
-                if (recordedBlob || document.getElementById('file-upload').files.length) {
+                if (recordedBlob || selectedFiles.length) {
                     submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
                     
                     const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
@@ -495,7 +504,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (contentType && contentType.indexOf("application/json") !== -1) {
                         data = await res.json();
                     } else {
-                        // Handle non-JSON response (e.g. 413 Payload Too Large, 500 HTML)
                         const text = await res.text();
                         console.error("Non-JSON response:", text);
                         throw new Error(`Server returned status ${res.status}. Check console for details.`);
@@ -506,7 +514,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                     
                     if (data.success) { 
-                        clearVoiceRecording(); clearFileUpload(); messageInput.value = ''; 
+                        clearVoiceRecording(); 
+                        selectedFiles = [];
+                        renderFilePreviews();
+                        messageInput.value = ''; 
                         sendMessage({ 
                             type: 'chat_message', 
                             message_id: data.message_id, 
