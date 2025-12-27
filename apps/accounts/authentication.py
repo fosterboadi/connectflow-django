@@ -85,7 +85,7 @@ class FirebaseBackend:
     Django Authentication Backend for standard views (not just DRF).
     Usage: login(request, user, backend='apps.accounts.authentication.FirebaseBackend')
     """
-    def authenticate(self, request, id_token=None):
+    def authenticate(self, request, id_token=None, first_name=None, last_name=None):
         if not id_token:
             return None
             
@@ -105,32 +105,38 @@ class FirebaseBackend:
 
         try:
             user = User.objects.get(email=email)
-            # Sync verification status
+            # Sync verification status and names if they changed or were provided
+            changed = False
             if user.email_verified != email_verified:
                 user.email_verified = email_verified
-                user.save(update_fields=['email_verified'])
+                changed = True
+            
+            if first_name and not user.first_name:
+                user.first_name = first_name
+                changed = True
+            
+            if last_name and not user.last_name:
+                user.last_name = last_name
+                changed = True
+
+            if changed:
+                user.save()
             return user
         except User.DoesNotExist:
-            # Logic for new users via Google Sign In
-            # We can create a user instance but not save it yet? 
-            # Or save it with a default/null organization and redirect to "Complete Profile" page.
-            
-            # For now, let's create the user so they are logged in, 
-            # but they will need to be redirected to an onboarding flow if organization is missing.
-            
-            # Check if we have name data
-            first_name = decoded_token.get('name', '').split(' ')[0]
-            last_name = ' '.join(decoded_token.get('name', '').split(' ')[1:])
+            # Check if we have name data from token if not explicitly provided
+            if not first_name:
+                first_name = decoded_token.get('name', '').split(' ')[0]
+            if not last_name:
+                last_name = ' '.join(decoded_token.get('name', '').split(' ')[1:])
             
             user = User.objects.create_user(
                 username=email.split('@')[0], # Fallback username
                 email=email,
-                first_name=first_name,
-                last_name=last_name,
+                first_name=first_name or '',
+                last_name=last_name or '',
                 role='TEAM_MEMBER', # Default
                 email_verified=email_verified
             )
-            # user.set_unusable_password() # They use Firebase
             user.save()
             return user
 

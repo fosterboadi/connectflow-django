@@ -183,14 +183,19 @@
         div.classList.remove('hidden');
     }
 
-    async function createOrganizationOnBackend(idToken, orgName) {
+    async function createOrganizationOnBackend(idToken, orgName, firstName, lastName) {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         try {
             // We'll create a new endpoint for this: accounts:create_organization_api
             const response = await fetch("/accounts/api/create-organization/", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
-                body: JSON.stringify({ id_token: idToken, org_name: orgName })
+                body: JSON.stringify({ 
+                    id_token: idToken, 
+                    org_name: orgName,
+                    first_name: firstName,
+                    last_name: lastName
+                })
             });
 
             if (response.ok) {
@@ -228,7 +233,7 @@
             const idToken = await userCredential.user.getIdToken();
 
             // 5. Create Org on Backend
-            await createOrganizationOnBackend(idToken, orgNameInput.value);
+            await createOrganizationOnBackend(idToken, orgNameInput.value, firstNameInput.value, lastNameInput.value);
 
         } catch (error) {
             showMessage(errorMessageDiv, error.message);

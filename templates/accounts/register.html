@@ -196,7 +196,7 @@
         div.classList.remove('hidden');
     }
 
-    async function sendRegistrationToBackend(idToken, orgCode) {
+    async function sendRegistrationToBackend(idToken, orgCode, firstName, lastName) {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         try {
             const response = await fetch("{% url 'accounts:register_api' %}", {
@@ -204,7 +204,9 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify({ 
                     id_token: idToken,
-                    org_code: orgCode 
+                    org_code: orgCode,
+                    first_name: firstName,
+                    last_name: lastName
                 })
             });
 
@@ -254,7 +256,7 @@
             await sendEmailVerification(userCredential.user);
             
             const idToken = await userCredential.user.getIdToken();
-            await sendRegistrationToBackend(idToken, orgCodeInput.value);
+            await sendRegistrationToBackend(idToken, orgCodeInput.value, firstNameInput.value, lastNameInput.value);
             
         } catch (error) {
             showMessage(errorMessageDiv, error.message);

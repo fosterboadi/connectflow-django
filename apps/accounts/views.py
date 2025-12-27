@@ -107,6 +107,8 @@ class RegisterAPIView(View):
             data = json.loads(request.body)
             id_token = data.get('id_token')
             org_code = data.get('org_code')
+            first_name = data.get('first_name')
+            last_name = data.get('last_name')
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
@@ -119,8 +121,8 @@ class RegisterAPIView(View):
         except Organization.DoesNotExist:
             return JsonResponse({'error': 'Invalid or inactive organization code.'}, status=400)
 
-        # 2. Authenticate User (creates them via FirebaseBackend if new)
-        user = authenticate(request, id_token=id_token)
+        # 2. Authenticate User (syncs status and captures names if provided)
+        user = authenticate(request, id_token=id_token, first_name=first_name, last_name=last_name)
         if not user:
             return JsonResponse({'error': 'Authentication failed.'}, status=403)
         
@@ -157,6 +159,8 @@ class CreateOrganizationView(View):
             data = json.loads(request.body)
             id_token = data.get('id_token')
             org_name = data.get('org_name')
+            first_name = data.get('first_name')
+            last_name = data.get('last_name')
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
@@ -164,7 +168,7 @@ class CreateOrganizationView(View):
             return JsonResponse({'error': 'ID token and Organization Name are required.'}, status=400)
 
         # Authenticate user first
-        user = authenticate(request, id_token=id_token)
+        user = authenticate(request, id_token=id_token, first_name=first_name, last_name=last_name)
         if not user:
             return JsonResponse({'error': 'Authentication failed.'}, status=403)
 
