@@ -541,9 +541,11 @@ document.addEventListener("DOMContentLoaded", function () {
     {% for message in messages %}{% if message.voice_message %}initWaveform('{{ message.pk }}', '{{ message.voice_message.url }}', {% if message.sender == user %}true{% else %}false{% endif %});{% endif %}{% endfor %}
     connectWebSocket(); messagesContainer.scrollTop = messagesContainer.scrollHeight; bindActions(document);
     
-    // Auto-hide desktop sidebar when entering a channel detail view to maximize space
-    if (window.innerWidth >= 1024) {
+    // Auto-hide desktop sidebar when entering a channel detail view to maximize space, 
+    // but only if the user hasn't explicitly set a preference for this session.
+    if (window.innerWidth >= 1024 && localStorage.getItem('sidebar_hidden') === null) {
         document.body.classList.add('sidebar-hidden');
+        localStorage.setItem('sidebar_hidden', 'true');
     }
 });
 function toggleSidebar() { document.getElementById('info-sidebar').classList.toggle('hidden'); }
