@@ -18,6 +18,7 @@ urlpatterns = [
     path('toggle-theme/', views.toggle_theme, name='toggle_theme'),
     path('notifications/mark-read/', views.mark_notifications_as_read, name='mark_notifications_read'),
     path('setup/promote/', views.promote_me, name='promote_me'),
+    path('global-search/', views.GlobalSearchView.as_view(), name='global_search'),
     
     # Platform Admin (Super Admin only)
     path('platform/dashboard/', platform_admin_views.platform_dashboard, name='platform_dashboard'),

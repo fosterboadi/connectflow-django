@@ -13,8 +13,88 @@ import os
 from django.contrib.auth import get_user_model
 from .forms import ProfileSettingsForm
 from apps.organizations.models import Organization
+from django.db.models import Q
+from django.urls import reverse
 
 User = get_user_model()
+
+class GlobalSearchView(View):
+    """
+    Search across users, channels, projects and messages.
+    Returns JSON for the live dropdown.
+    """
+    @method_decorator(login_required)
+    def get(self, request):
+        query = request.GET.get('q', '').strip()
+        if not query or len(query) < 2:
+            return JsonResponse({'results': []})
+
+        results = []
+        user_org = request.user.organization
+        
+        # 1. Search Users in the same organization
+        users = User.objects.filter(
+            organization=user_org
+        ).filter(
+            Q(username__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(professional_role__icontains=query)
+        )[:5]
+
+        for u in users:
+            results.append({
+                'type': 'User',
+                'title': u.get_full_name() or u.username,
+                'subtitle': u.professional_role or u.email,
+                'url': reverse('accounts:profile_detail', kwargs={'pk': u.pk}),
+                'icon': 'user'
+            })
+
+        # 2. Search Channels
+        from apps.chat_channels.models import Channel
+        channels = Channel.objects.filter(
+            organization=user_org,
+            is_archived=False
+        ).filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query)
+        ).distinct()
+        
+        # Filter by permission
+        viewable_channels = [c for c in channels if c.can_user_view(request.user)][:5]
+        
+        for c in viewable_channels:
+            results.append({
+                'type': 'Channel',
+                'title': f"#{c.name}",
+                'subtitle': c.get_channel_type_display(),
+                'url': reverse('chat_channels:channel_detail', kwargs={'pk': c.pk}),
+                'icon': 'hashtag'
+            })
+
+        # 3. Search Shared Projects
+        from apps.organizations.models import SharedProject
+        projects = SharedProject.objects.filter(
+            Q(host_organization=user_org) | Q(guest_organizations=user_org)
+        ).filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query)
+        ).distinct()
+        
+        # Only show if user is a member
+        my_projects = projects.filter(members=request.user)[:5]
+        
+        for p in my_projects:
+            results.append({
+                'type': 'Project',
+                'title': p.name,
+                'subtitle': f"Hosted by {p.host_organization.name}",
+                'url': reverse('organizations:shared_project_detail', kwargs={'pk': p.pk}),
+                'icon': 'folder'
+            })
+
+        return JsonResponse({'results': results})
 
 class VerifyEmailView(View):
     """
