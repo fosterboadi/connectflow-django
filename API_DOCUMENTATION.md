@@ -37,41 +37,52 @@ ConnectFlow Pro has evolved from a traditional Django website into a **Multi-Pla
 
 ---
 
-## 📡 Core API Endpoints
+## 📡 Complete REST API Reference (v1)
 
-### **1. User & Profile Management**
+### **1. Identity & Profile**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/users/me/` | Get current authenticated user details |
-| `GET` | `/users/` | List all users in your organization |
-| `POST` | `/users/toggle_theme/` | Switch between LIGHT/DARK theme |
+| `GET` | `/users/me/` | Identify current user, role, and org context. |
+| `GET` | `/users/` | List all members within your organization. |
+| `GET` | `/users/{id}/` | Retrieve a specific member's professional profile. |
+| `POST` | `/users/toggle_theme/` | Toggle between LIGHT and DARK UI modes. |
 
-### **2. Organization & Billing**
+### **2. Organization Structure**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/organizations/` | Get current organization details & subscription status |
-| `GET` | `/departments/` | List all departmental units |
-| `GET` | `/teams/` | List team spaces you belong to |
+| `GET` | `/organizations/` | View organization metadata (branding, industry, status). |
+| `GET` | `/departments/` | List all departmental units in the organization. |
+| `POST` | `/departments/` | Create a new department (Managers only). |
+| `GET` | `/teams/` | List all internal teams. |
+| `POST` | `/teams/` | Form a new internal team. |
 
-### **3. Collaborative Projects & Analytics**
+### **3. Shared Projects & Analytics**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/projects/` | List all active shared projects |
-| `POST` | `/projects/` | Create workspace (**Gatekeeper protected**: Checks plan project limit) |
-| `GET` | `/projects/{id}/` | Get project milestones and roster |
-| `GET` | `/projects/{id}/analytics/` | **Premium Feature**: Returns statistics (Forbidden on lower tiers) |
+| `GET` | `/projects/` | List workspaces shared between organizations. |
+| `POST` | `/projects/` | Launch workspace (**Gatekeeper**: Validates plan project limits). |
+| `GET` | `/projects/{id}/` | Retrieve roster, milestones, and status of a project. |
+| `GET` | `/projects/{id}/analytics/`| **Premium**: Returns collaboration maps and KPI data. |
 
-### **4. Channels & Messaging**
+### **4. Real-time Communication**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/channels/` | List all accessible chat channels |
-| `GET` | `/channels/{id}/messages/` | Retrieve full message history |
-| `POST` | `/messages/` | Send text or media (**Universal file support**) |
-| `DELETE` | `/messages/{id}/` | **Soft Delete** a message (tracks who deleted) |
+| `GET` | `/channels/` | List all accessible private and project channels. |
+| `GET` | `/channels/{id}/messages/` | Retrieve message history for a specific channel. |
+| `POST` | `/messages/` | Send message (**Universal Support**: text, image, file, voice). |
+| `PATCH` | `/messages/{id}/` | Edit a previously sent message. |
+| `DELETE` | `/messages/{id}/` | **Soft Delete**: Archives message and broadcasts delete receipt. |
+
+### **5. SaaS Management & Billing**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/billing/plans/` | List available subscription tiers and their benefits. |
+| `POST` | `/billing/paystack/{plan_id}/` | Initialize a Paystack transaction for tier upgrade. |
+| `POST` | `/webhooks/paystack/` | System listener for automated plan activation. |
 
 ---
 
-## 🛡️ SaaS Gatekeeper & Business Logic
+## 🛡️ SaaS Gatekeeper Logic
 
 The API is architected to protect your business model automatically.
 
