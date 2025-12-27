@@ -87,24 +87,48 @@ Endpoints like `/projects/{id}/analytics/` use the **HasSubscriptionFeature** pe
 
 ---
 
-## 🧪 Postman & Browser Testing Guide
+## 🧪 Postman Presentation Guide
 
-### **Method A: The Browser (Easiest)**
-1. Log into the ConnectFlow web dashboard.
-2. In the same browser, navigate to: `https://connectflow-pro.onrender.com/api/v1/`
-3. You will see the **Django REST Framework Browsable API**.
-4. You can click on endpoints and even perform `POST/PUT` actions using the forms at the bottom of the page.
+This guide walks you through the exact steps to demonstrate the **ConnectFlow Pro API** during a live presentation using Postman.
 
-### **Method B: Postman (Professional)**
-1. **Login:** Perform a `POST` to `/accounts/login/` with your Firebase token (or simply log in via the web app first, as Postman will share your browser's cookies if you use the Postman Interceptor).
-2. **CSRF Protection:** For `POST/PATCH/DELETE` requests, you must include the `X-CSRFToken` header.
-   *   Get the token from your browser cookies (`csrftoken`).
-3. **Environment Setup:**
-   *   `BASE_URL`: `https://connectflow-pro.onrender.com/api/v1`
-   *   **Auth:** Set to "No Auth" if using browser cookies, or "Bearer Token" if using Firebase ID tokens.
-4. **Testing Analytics:**
-   *   Navigate to `{{BASE_URL}}/projects/[YOUR_PROJECT_ID]/analytics/`.
-   *   Observe how the response changes when you toggle the `has_analytics` benefit in the **Platform Admin Suite**.
+### **Phase 1: The Firebase Handshake (Getting your Token)**
+ConnectFlow Pro uses Firebase for secure identity. You first need a valid **ID Token**.
+
+1.  Open your browser and log into **ConnectFlow Pro**.
+2.  Open the **Browser Console** (F12) and run:
+    ```javascript
+    firebase.auth().currentUser.getIdToken().then(token => console.log(token))
+    ```
+3.  **Copy the long string of text** that appears.
+
+### **Phase 2: Postman Authorization Login**
+Tell the backend that Postman should be treated as an authorized device.
+
+1.  Open **Postman** and create a new **POST** request.
+2.  **URL:** `https://connectflow-pro.onrender.com/accounts/login/`
+3.  **Headers:** `Content-Type: application/json`
+4.  **Body (Raw JSON):**
+    ```json
+    { "id_token": "PASTE_YOUR_COPIED_TOKEN_HERE" }
+    ```
+5.  **Click Send.** You should receive a `{"status": "ok"}` response. Postman has now saved your **Session Cookie**.
+
+### **Phase 3: CSRF Security (Required for POST/DELETE)**
+1.  In the browser Console, run:
+    ```javascript
+    document.cookie.split('; ').find(row => row.startsWith('csrftoken=')).split('=')[1]
+    ```
+2.  In Postman, for any `POST/DELETE` request, add this header:
+    *   **Key:** `X-CSRFToken`
+    *   **Value:** `(The code you just copied)`
+
+### **Phase 4: Presentation Endpoints**
+
+| Action | URL | Talking Point |
+|--------|-----|---------------|
+| **GET Identity** | `/api/v1/users/me/` | "Server identifies the user, role, and organization context independently of the UI." |
+| **GET Projects** | `/api/v1/projects/` | "Demonstrating organization isolation and secure data multi-tenancy." |
+| **GET Analytics**| `/projects/{id}/analytics/` | "Showcasing the **Gatekeeper**. Returns 403 on basic plans, data on premium tiers." |
 
 ---
 
