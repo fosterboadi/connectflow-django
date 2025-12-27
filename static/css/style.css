@@ -82,6 +82,17 @@ body, aside, nav, main, div, p, span, h1, h2, h3, a, button {
     }
 }
 
+/* Sidebar Hidden State (Desktop) */
+@media (min-width: 1024px) {
+    body.sidebar-hidden .app-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    body.sidebar-hidden .main-content-wrapper {
+        margin-left: 0;
+    }
+}
+
 /* Mobile Bottom Navigation */
 .mobile-bottom-nav {
     position: fixed;

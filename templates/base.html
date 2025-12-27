@@ -294,6 +294,11 @@
                         <svg id="close-icon" class="hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                     
+                    <!-- Desktop Sidebar Toggle -->
+                    <button id="sidebar-toggle" class="hidden lg:flex p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    
                     <h2 class="hidden lg:block text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
                         {{ request.resolver_match.url_name|replace_string:"_, "|title }}
                     </h2>
@@ -602,6 +607,20 @@
                     hamburgerIcon.classList.remove('hidden');
                     closeIcon.classList.add('hidden');
                 });
+            });
+        }
+
+        // --- Desktop Sidebar Toggle ---
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        if (sidebarToggle) {
+            // Apply initial state
+            if (localStorage.getItem('sidebar_hidden') === 'true') {
+                document.body.classList.add('sidebar-hidden');
+            }
+
+            sidebarToggle.addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-hidden');
+                localStorage.setItem('sidebar_hidden', document.body.classList.contains('sidebar-hidden'));
             });
         }
 
