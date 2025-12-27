@@ -163,7 +163,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'timestamp': event['timestamp'],
             'voice_message_url': event.get('voice_message_url'),
             'voice_duration': event.get('voice_duration'),
-            'attachments': event.get('attachments', [])
+            'attachments': event.get('attachments', []),
+            'is_pinned': event.get('is_pinned', False)
         }))
 
     async def user_typing(self, event):
@@ -191,6 +192,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message_id': event['message_id'],
             'deleted_at': event.get('deleted_at'),
             'deleted_by': event.get('deleted_by')
+        }))
+
+    async def message_pinned(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'message_pinned',
+            'message_id': event['message_id'],
+            'is_pinned': True
+        }))
+
+    async def message_unpinned(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'message_unpinned',
+            'message_id': event['message_id'],
+            'is_pinned': False
         }))
 
     async def user_status_change(self, event):

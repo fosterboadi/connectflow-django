@@ -255,6 +255,27 @@ class Message(models.Model):
         default=False,
         help_text=_("Has this message been edited?")
     )
+
+    is_pinned = models.BooleanField(
+        default=False,
+        help_text=_("Is this message pinned?")
+    )
+
+    starred_by = models.ManyToManyField(
+        User,
+        related_name='starred_messages',
+        blank=True,
+        help_text=_("Users who starred this message")
+    )
+
+    forwarded_from = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='forwards',
+        help_text=_("Original message if this was forwarded")
+    )
     
     is_deleted = models.BooleanField(
         default=False,

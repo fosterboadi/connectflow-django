@@ -4,6 +4,10 @@ from rest_framework.response import Response
 from .models import Channel, Message
 from .serializers import ChannelSerializer, MessageSerializer
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from .models import Channel, Message, Attachment
+
 class ChannelViewSet(viewsets.ModelViewSet):
     serializer_class = ChannelSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -31,3 +35,130 @@ class MessageViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         # Use our soft delete logic
         instance.delete(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def pin(self, request, pk=None):
+        message = self.get_object()
+        message.is_pinned = not message.is_pinned
+        message.save()
+        
+        self._broadcast(message, 'message_pinned' if message.is_pinned else 'message_unpinned')
+        
+        return Response({'status': 'pinned' if message.is_pinned else 'unpinned', 'is_pinned': message.is_pinned})
+
+    @action(detail=True, methods=['post'])
+    def star(self, request, pk=None):
+        message = self.get_object()
+        user = request.user
+        if message.starred_by.filter(id=user.id).exists():
+            message.starred_by.remove(user)
+            status = 'unstarred'
+        else:
+            message.starred_by.add(user)
+            status = 'starred'
+        
+        return Response({'status': status, 'is_starred': status == 'starred'})
+
+    @action(detail=True, methods=['post'])
+    def forward(self, request, pk=None):
+        message = self.get_object()
+        target_channel_id = request.data.get('target_channel_id')
+        if not target_channel_id:
+            return Response({'error': 'Target channel ID required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            target_channel = Channel.objects.get(id=target_channel_id, members=request.user)
+        except (Channel.DoesNotExist, ValueError):
+            return Response({'error': 'Target channel not found or access denied'}, status=status.HTTP_404_NOT_FOUND)
+        
+        new_message = Message.objects.create(
+            channel=target_channel,
+            sender=request.user,
+            content=message.content,
+            forwarded_from=message
+        )
+        
+        if message.voice_message:
+            new_message.voice_message = message.voice_message
+            new_message.voice_duration = message.voice_duration
+            new_message.save()
+            
+        for att in message.attachments.all():
+            Attachment.objects.create(message=new_message, file=att.file)
+
+        self._broadcast(new_message, 'chat_message')
+
+        return Response(MessageSerializer(new_message).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def reply(self, request, pk=None):
+        parent_message = self.get_object()
+        content = request.data.get('content', '')
+        
+        if not content and 'voice_message' not in request.FILES:
+            return Response({'error': 'Content or voice message required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        new_message = Message.objects.create(
+            channel=parent_message.channel,
+            sender=request.user,
+            content=content,
+            parent_message=parent_message
+        )
+        
+        if 'voice_message' in request.FILES:
+            new_message.voice_message = request.FILES['voice_message']
+            new_message.voice_duration = request.data.get('voice_duration')
+            new_message.save()
+
+        self._broadcast(new_message, 'chat_message')
+
+        return Response(MessageSerializer(new_message, context={'request': request}).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def create_task(self, request, pk=None):
+        message = self.get_object()
+        channel = message.channel
+        if not channel.shared_project:
+            return Response({'error': 'Channel not linked to a project'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        from apps.organizations.models import ProjectTask
+        task = ProjectTask.objects.create(
+            project=channel.shared_project,
+            creator=request.user,
+            title=f"Task from chat: {message.content[:50]}...",
+            description=message.content,
+        )
+        
+        return Response({'status': 'task_created', 'task_id': str(task.id)})
+
+    def _broadcast(self, message, event_type):
+        channel_layer = get_channel_layer()
+        channel_id = str(message.channel.id)
+        
+        data = {
+            'type': event_type,
+            'message_id': str(message.id),
+        }
+        
+        if event_type == 'chat_message':
+            serializer = MessageSerializer(message)
+            # Match the format expected by consumer's chat_message handler
+            s_data = serializer.data
+            data.update({
+                'message': s_data['content'],
+                'sender_id': s_data['sender'],
+                'sender_name': s_data['sender_details']['full_name'] if s_data['sender_details'] else 'Unknown',
+                'sender_avatar': s_data['sender_details']['avatar'] if s_data['sender_details'] else None,
+                'timestamp': s_data['created_at'],
+                'voice_message_url': s_data['voice_message'],
+                'voice_duration': s_data['voice_duration'],
+                'attachments': s_data['attachments'],
+                'is_pinned': s_data['is_pinned']
+            })
+        elif event_type in ['message_pinned', 'message_unpinned']:
+            data['is_pinned'] = message.is_pinned
+            
+        async_to_sync(channel_layer.group_send)(
+            f'chat_{channel_id}',
+            data
+        )
