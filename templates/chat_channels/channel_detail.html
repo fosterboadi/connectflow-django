@@ -432,34 +432,41 @@ document.addEventListener("DOMContentLoaded", function () {
     window.stopVoiceRecording = () => { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); };
     window.clearVoiceRecording = () => { recordedBlob = null; if (previewWaveform) previewWaveform.destroy(); document.getElementById('voice-playback-preview').classList.add('hidden'); updateSendButtonState(); };
     window.clearFileUpload = () => { 
-        document.getElementById('file-upload').value = ''; 
+        const fileInput = document.getElementById('file-upload');
+        fileInput.value = ''; 
         document.getElementById('file-preview').classList.add('hidden'); 
         document.getElementById('image-preview-container').classList.add('hidden');
         document.getElementById('image-preview-img').src = '';
         updateSendButtonState(); 
     };
 
-    document.getElementById('file-upload').onchange = function() {
-        if (this.files.length) { 
+    document.getElementById('file-upload').addEventListener('change', function() {
+        const filePreview = document.getElementById('file-preview');
+        const fileName = document.getElementById('file-name');
+        const imgPreviewContainer = document.getElementById('image-preview-container');
+        const imgPreview = document.getElementById('image-preview-img');
+
+        if (this.files && this.files.length > 0) { 
             const file = this.files[0];
-            document.getElementById('file-name').textContent = this.files.length === 1 ? file.name : `${this.files.length} files`; 
-            document.getElementById('file-preview').classList.remove('hidden'); 
+            fileName.textContent = this.files.length === 1 ? file.name : `${this.files.length} files selected`; 
+            filePreview.classList.remove('hidden'); 
             
-            // Show image preview if first file is an image
-            if (file && file.type.startsWith('image/')) {
+            if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    document.getElementById('image-preview-img').src = e.target.result;
-                    document.getElementById('image-preview-container').classList.remove('hidden');
+                    imgPreview.src = e.target.result;
+                    imgPreviewContainer.classList.remove('hidden');
                 }
                 reader.readAsDataURL(file);
             } else {
-                document.getElementById('image-preview-container').classList.add('hidden');
+                imgPreviewContainer.classList.add('hidden');
+                imgPreview.src = '';
             }
+        } else {
+            filePreview.classList.add('hidden');
         }
-        else { document.getElementById('file-preview').classList.add('hidden'); }
         updateSendButtonState();
-    };
+    });
 
     chatForm.onsubmit = async (e) => {
         e.preventDefault(); const msg = messageInput.value.trim(); if (!msg && !recordedBlob && !document.getElementById('file-upload').files.length && !isEditing) return;
