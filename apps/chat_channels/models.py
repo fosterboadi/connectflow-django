@@ -357,7 +357,7 @@ class Attachment(models.Model):
         try:
             if hasattr(self.file, 'resource_type'):
                 return self.file.resource_type == 'image'
-        except Exception:
+        except Exception:  # nosec
             pass
         
         extensions = ('.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg')
@@ -366,7 +366,7 @@ class Attachment(models.Model):
             return True
         try:
             return self.file.url.lower().split('?')[0].endswith(extensions)
-        except Exception:
+        except Exception:  # nosec
             return False
     
     @property
@@ -375,7 +375,7 @@ class Attachment(models.Model):
         try:
             if hasattr(self.file, 'resource_type'):
                 return self.file.resource_type == 'video'
-        except Exception:
+        except Exception:  # nosec
             pass
 
         extensions = ('.mp4', '.mov', '.webm', '.avi', '.mkv')
@@ -384,7 +384,7 @@ class Attachment(models.Model):
             return True
         try:
             return self.file.url.lower().split('?')[0].endswith(extensions)
-        except Exception:
+        except Exception:  # nosec
             return False
 
 

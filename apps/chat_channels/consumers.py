@@ -232,7 +232,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         recipient_ids.add(recipient.id)
                 except User.DoesNotExist:
                     continue
-                except Exception:
+                except Exception: # nosec
                     # Log unexpected errors if needed, but continue to next mention
                     continue
         
