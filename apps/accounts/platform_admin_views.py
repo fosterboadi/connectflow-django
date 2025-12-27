@@ -76,7 +76,12 @@ def platform_dashboard(request):
 
     # 3. Cloudinary Check
     import os
-    if not os.environ.get('CLOUDINARY_URL'):
+    is_cloudinary_configured = os.environ.get('CLOUDINARY_URL') or (
+        os.environ.get('CLOUDINARY_CLOUD_NAME') and 
+        os.environ.get('CLOUDINARY_API_KEY') and 
+        os.environ.get('CLOUDINARY_API_SECRET')
+    )
+    if not is_cloudinary_configured:
         health_status = "DEGRADED"
         health_issues.append("Cloudinary storage not configured")
 
