@@ -46,10 +46,7 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
 
         try:
             # System prompt to give context
-            user_info = f"User: {self.user.get_full_name()} ({self.user.username})"
-            if self.user.organization:
-                user_info += f"\nOrganization: {self.user.organization.name}"
-            user_info += f"\nRole: {self.user.get_role_display()}"
+            user_info = await self.get_user_context()
 
             system_context = (
                 "You are the ConnectFlow Pro Support Assistant. "
@@ -72,6 +69,16 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
                 'type': 'bot_message',
                 'message': f"I encountered an error while processing your request: {str(e)}"
             }))
+
+    @database_sync_to_async
+    def get_user_context(self):
+        """Fetch user details safely in a sync context."""
+        user_info = f"User: {self.user.get_full_name()} ({self.user.username})"
+        # Accessing foreign keys triggers DB queries, so this must be sync
+        if self.user.organization:
+            user_info += f"\nOrganization: {self.user.organization.name}"
+        user_info += f"\nRole: {self.user.get_role_display()}"
+        return user_info
 
     async def get_ai_response(self, prompt):
         # Run the blocking API call in a thread
