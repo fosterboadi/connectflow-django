@@ -109,7 +109,11 @@
                             {% endif %}
                         </div>
                         <div class="relative">
-                            {% if message.voice_message %}
+                            {% if message.is_deleted %}
+                                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl px-4 py-2 border border-dashed border-gray-200 dark:border-gray-700">
+                                    <p class="text-xs italic text-gray-400">This message was deleted.</p>
+                                </div>
+                            {% elif message.voice_message %}
                                 <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 min-w-[260px]">
                                     <div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('{{ message.pk }}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-{{ message.pk }}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-{{ message.pk }}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-{{ message.pk }}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-{{ message.pk }}">0:00</span></div>
                                     <audio id="audio-{{ message.pk }}" src="{{ message.voice_message.url }}" class="hidden" preload="metadata"></audio>
@@ -140,6 +144,7 @@
                             {% elif message.content|is_emoji_only %}<div class="message-content {% if message.sender == user %}text-right{% endif %}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">{{ message.content }}</span></div>
                             {% elif message.content %}<div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p></div>{% endif %}
                             
+                            {% if not message.is_deleted %}
                             <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 {% if message.sender == user %}right-full mr-2{% else %}left-full ml-2{% endif %} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
                                 <button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
                                 <button type="button" class="message-menu-trigger p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg></button>
@@ -161,6 +166,7 @@
                                     {% endif %}
                                 </ul>
                             </div>
+                            {% endif %}
                         </div>
                         {% if message.reaction_summary %}<div class="flex flex-wrap gap-1 mt-1 {% if message.sender == user %}justify-end{% endif %}">{% for emoji, count in message.reaction_summary.items %}<span class="inline-flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-1.5 py-0.5 rounded-full text-[10px] shadow-sm"><span class="mr-1">{{ emoji }}</span> <span class="font-bold text-gray-500">{{ count }}</span></span>{% endfor %}</div>{% endif %}
                         <form id="reaction-form-{{ message.pk }}" method="post" action="{% url 'chat_channels:message_react' message.pk %}" class="hidden">{% csrf_token %}<input type="hidden" name="emoji" id="emoji-input-{{ message.pk }}"></form>

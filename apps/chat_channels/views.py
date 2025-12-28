@@ -223,15 +223,14 @@ def channel_detail(request, pk):
         messages.error(request, 'You do not have permission to view this channel.')
         return redirect('chat_channels:channel_list')
     
-    # Get messages (excluding deleted and replies - they'll be shown with parent)
+    # Get messages (excluding replies - they'll be shown with parent)
     from django.db.models import Prefetch
-    messages_query = Message.objects.filter(
+    messages_query = Message.all_objects.filter(
         channel=channel,
-        is_deleted=False,
         parent_message__isnull=True
     ).select_related('sender').prefetch_related(
         'reactions',
-        Prefetch('replies', queryset=Message.objects.filter(is_deleted=False).select_related('sender')),
+        Prefetch('replies', queryset=Message.all_objects.filter(is_deleted=False).select_related('sender')),
         'attachments'
     )
     
