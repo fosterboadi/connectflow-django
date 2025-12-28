@@ -54,6 +54,12 @@ ALLOWED_HOSTS = [
     # Add your custom domain here when ready
 ]
 
+# AI Configuration
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+
+# Debug: Print to logs
+print(f"[AI DEBUG] GEMINI_API_KEY: {'SET' if GEMINI_API_KEY else 'NOT SET'}")
+
 # Database - PostgreSQL (Render provides this automatically)
 DATABASES = {
     'default': dj_database_url.config(
