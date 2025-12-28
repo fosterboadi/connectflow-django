@@ -522,7 +522,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (data.voice_message_url) {
-            content = `<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 min-w-[260px]">${quoteHtml}<div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('${data.message_id}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-${data.message_id}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-${data.message_id}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-${data.message_id}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-${data.message_id}">0:00</span></div></div>`;
+            content = `${quoteHtml}<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 min-w-[260px]"><div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('${data.message_id}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-${data.message_id}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-${data.message_id}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-${data.message_id}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-${data.message_id}">0:00</span></div></div>`;
         } else if (data.attachments && data.attachments.length > 0) {
             content = `<div class="space-y-2">`;
             content += quoteHtml;
@@ -543,7 +543,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (isEmojiOnly(data.message)) {
             content = `${quoteHtml}<div class="message-content ${isMe ? 'text-right' : ''}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">${data.message}</span></div>`;
         } else {
-            content = `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3">${quoteHtml}<p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
+            content = `${quoteHtml}<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
         }
         
         const actions = `<div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 ${isMe ? 'right-full mr-2' : 'left-full ml-2'} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
@@ -601,8 +601,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (isHidden) {
                 menu.classList.remove('hidden');
                 
-                // Smart positioning
-                const rect = menu.getBoundingClientRect();
                 const isMobile = window.innerWidth < 768;
                 
                 if (isMobile) {
@@ -615,15 +613,39 @@ document.addEventListener("DOMContentLoaded", function () {
                     menu.style.bottom = 'auto';
                     // Add a backdrop if needed, but let's keep it simple for now
                 } else {
-                    menu.style.position = 'absolute';
+                    // Use fixed positioning to avoid overflow clipping
+                    menu.style.position = 'fixed';
                     menu.style.transform = 'none';
-                    if (rect.bottom > window.innerHeight) {
-                        menu.style.top = 'auto';
-                        menu.style.bottom = '0';
+                    
+                    const msgEl = document.getElementById(`message-${messageId}`);
+                    const rect = msgEl.getBoundingClientRect();
+                    const menuRect = menu.getBoundingClientRect();
+                    const isMe = msgEl.classList.contains('flex-row-reverse');
+                    
+                    let top = rect.top;
+                    let left;
+                    
+                    if (isMe) {
+                        // Place to the left of the message
+                        left = rect.left - menuRect.width - 8;
                     } else {
-                        menu.style.top = '0';
-                        menu.style.bottom = 'auto';
+                        // Place to the right of the message
+                        left = rect.right + 8;
                     }
+                    
+                    // Boundary checks
+                    if (left < 10) left = 10;
+                    if (left + menuRect.width > window.innerWidth - 10) left = window.innerWidth - menuRect.width - 10;
+                    
+                    if (top + menuRect.height > window.innerHeight - 10) {
+                        top = window.innerHeight - menuRect.height - 10;
+                    }
+                    if (top < 10) top = 10;
+                    
+                    menu.style.top = `${top}px`;
+                    menu.style.left = `${left}px`;
+                    menu.style.right = 'auto';
+                    menu.style.bottom = 'auto';
                 }
             }
         };
