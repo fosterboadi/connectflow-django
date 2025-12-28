@@ -84,7 +84,7 @@
         </header>
 
         <div class="message-history" id="messages-container">
-            {% for message in messages %}
+            {% for message in chat_messages %}
                 <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %} message-wrapper" id="message-{{ message.pk }}" data-message-id="{{ message.pk }}">
                     <div class="flex-shrink-0">{% if message.sender.avatar %}<img src="{{ message.sender.avatar.url }}" class="w-9 h-9 rounded-xl object-cover shadow-sm">{% else %}<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">{{ message.sender.username.0|upper }}</div>{% endif %}</div>
                     <div class="flex-1 max-w-2xl group relative">
@@ -979,7 +979,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     
     messageInput.addEventListener('input', updateSendButtonState);
-    {% for message in messages %}{% if message.voice_message %}initWaveform('{{ message.pk }}', '{{ message.voice_message.url }}', {% if message.sender == user %}true{% else %}false{% endif %});{% endif %}{% endfor %}
+    {% for message in chat_messages %}{% if message.voice_message %}initWaveform('{{ message.pk }}', '{{ message.voice_message.url }}', {% if message.sender == user %}true{% else %}false{% endif %});{% endif %}{% endfor %}
     connectWebSocket(); messagesContainer.scrollTop = messagesContainer.scrollHeight; bindActions(document); observeMessages();
     
     // Auto-hide desktop sidebar when entering a channel detail view to maximize space, 

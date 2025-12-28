@@ -223,14 +223,11 @@ def channel_detail(request, pk):
         messages.error(request, 'You do not have permission to view this channel.')
         return redirect('chat_channels:channel_list')
     
-    # Get messages (excluding replies - they'll be shown with parent)
-    from django.db.models import Prefetch
+    # Get messages (WhatsApp style: all messages in one stream)
     messages_query = Message.all_objects.filter(
-        channel=channel,
-        parent_message__isnull=True
-    ).select_related('sender').prefetch_related(
+        channel=channel
+    ).select_related('sender', 'parent_message').prefetch_related(
         'reactions',
-        Prefetch('replies', queryset=Message.all_objects.filter(is_deleted=False).select_related('sender')),
         'attachments'
     )
     
@@ -344,7 +341,7 @@ def channel_detail(request, pk):
     
     context = {
         'channel': channel,
-        'messages': channel_messages,
+        'chat_messages': channel_messages,
         'breakout_rooms': breakout_rooms,
         'user_channels': user_channels,
         'direct_messages': direct_messages,
