@@ -291,6 +291,128 @@ def project_meetings(request, pk):
 
 
 @login_required
+def project_meeting_edit(request, project_pk, meeting_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    meeting = get_object_or_404(ProjectMeeting, pk=meeting_pk, project=project)
+    user = request.user
+    
+    # Check permissions: Organizer, Admin, or Project Manager/Creator
+    can_edit = (
+        meeting.organizer == user or
+        user.is_admin or
+        project.created_by == user or
+        (user in project.members.all() and user.is_manager)
+    )
+    
+    if not can_edit:
+        messages.error(request, "You do not have permission to edit this meeting.")
+        return redirect('organizations:project_meetings', pk=project_pk)
+    
+    if request.method == 'POST':
+        form = ProjectMeetingForm(request.POST, instance=meeting)
+        if form.is_valid():
+            meeting = form.save()
+            
+            # Notify members about update
+            from apps.accounts.models import Notification
+            from asgiref.sync import async_to_sync
+            from channels.layers import get_channel_layer
+            channel_layer = get_channel_layer()
+            
+            for member in project.members.all():
+                if member == request.user: continue
+                notification = Notification.notify(
+                    recipient=member,
+                    sender=request.user,
+                    title=f"Meeting Updated: {meeting.title}",
+                    content=f"Details for the meeting '{meeting.title}' have been updated.",
+                    notification_type='PROJECT',
+                    link=reverse('organizations:project_meetings', kwargs={'pk': project.pk})
+                )
+                async_to_sync(channel_layer.group_send)(
+                    f"notifications_{member.id}",
+                    {
+                        'type': 'send_notification',
+                        'id': str(notification.id),
+                        'title': notification.title,
+                        'content': notification.content,
+                        'notification_type': notification.notification_type,
+                        'link': notification.link,
+                    }
+                )
+                
+            messages.success(request, 'Meeting updated.')
+            return redirect('organizations:project_meetings', pk=project_pk)
+    else:
+        form = ProjectMeetingForm(instance=meeting)
+    
+    return render(request, 'organizations/project_meeting_form.html', {
+        'form': form, 
+        'project': project, 
+        'meeting': meeting
+    })
+
+
+@login_required
+def project_meeting_delete(request, project_pk, meeting_pk):
+    project = get_object_or_404(SharedProject, pk=project_pk)
+    meeting = get_object_or_404(ProjectMeeting, pk=meeting_pk, project=project)
+    user = request.user
+    
+    # Check permissions
+    can_delete = (
+        meeting.organizer == user or
+        user.is_admin or
+        project.created_by == user or
+        (user in project.members.all() and user.is_manager)
+    )
+    
+    if not can_delete:
+        messages.error(request, "You do not have permission to delete this meeting.")
+        return redirect('organizations:project_meetings', pk=project_pk)
+    
+    if request.method == 'POST':
+        meeting_title = meeting.title
+        meeting.delete()
+        
+        # Notify members about cancellation
+        from apps.accounts.models import Notification
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        channel_layer = get_channel_layer()
+        
+        for member in project.members.all():
+            if member == request.user: continue
+            notification = Notification.notify(
+                recipient=member,
+                sender=request.user,
+                title=f"Meeting Cancelled: {meeting_title}",
+                content=f"The meeting '{meeting_title}' has been cancelled.",
+                notification_type='PROJECT',
+                link=reverse('organizations:project_meetings', kwargs={'pk': project.pk})
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_{member.id}",
+                {
+                    'type': 'send_notification',
+                    'id': str(notification.id),
+                    'title': notification.title,
+                    'content': notification.content,
+                    'notification_type': notification.notification_type,
+                    'link': notification.link,
+                }
+            )
+
+        messages.success(request, 'Meeting cancelled.')
+        return redirect('organizations:project_meetings', pk=project_pk)
+    
+    return render(request, 'organizations/project_meeting_confirm_delete.html', {
+        'project': project,
+        'meeting': meeting
+    })
+
+
+@login_required
 def project_tasks(request, pk):
     project = get_object_or_404(SharedProject, pk=pk)
     if request.user not in project.members.all():
