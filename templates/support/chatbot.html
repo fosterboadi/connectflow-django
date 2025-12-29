@@ -43,35 +43,76 @@
     const chatContainer = document.getElementById('ai-chat-messages');
     const chatForm = document.getElementById('ai-chat-form');
     const chatInput = document.getElementById('ai-chat-input');
+    const sendBtn = chatForm.querySelector('button');
 
-    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsUrl = `${wsScheme}://${window.location.host}/ws/support/ai/`;
-    const socket = new WebSocket(wsUrl);
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
 
-    socket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        if (data.type === 'bot_message') {
+    function connectWebSocket() {
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const wsUrl = `${wsScheme}://${window.location.host}/ws/support/ai/`;
+        
+        console.log("Connecting to AI Chat WebSocket...");
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = function() {
+            console.log("AI Chat connected!");
+            reconnectAttempts = 0;
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.placeholder = "Ask me about projects, channels, or roles...";
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'bot_message') {
+                hideTypingIndicator();
+                appendMessage('bot', data.message);
+            }
+        };
+
+        socket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
             hideTypingIndicator();
-            appendMessage('bot', data.message);
-        }
-    };
+            
+            if (reconnectAttempts < maxReconnectAttempts) {
+                reconnectAttempts++;
+                chatInput.placeholder = `Reconnecting (Attempt ${reconnectAttempts})...`;
+                setTimeout(connectWebSocket, 2000);
+            } else {
+                appendMessage('system', 'Connection lost. Please refresh the page.');
+                chatInput.placeholder = "Connection lost.";
+            }
+        };
 
-    socket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-        hideTypingIndicator();
-        appendMessage('system', 'Connection lost. Please refresh the page.');
-    };
+        socket.onerror = function(err) {
+            console.error("WebSocket Error:", err);
+            socket.close();
+        };
+    }
+
+    // Initial connection
+    chatInput.disabled = true;
+    sendBtn.disabled = true;
+    chatInput.placeholder = "Connecting to Assistant...";
+    connectWebSocket();
 
     chatForm.onsubmit = function(e) {
         e.preventDefault();
         const message = chatInput.value.trim();
-        if (message) {
+        
+        if (message && socket && socket.readyState === WebSocket.OPEN) {
             appendMessage('user', message);
             showTypingIndicator();
             socket.send(JSON.stringify({
                 'message': message
             }));
             chatInput.value = '';
+        } else if (socket && socket.readyState === WebSocket.CONNECTING) {
+            console.warn("Still connecting...");
         }
     };
 
