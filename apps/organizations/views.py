@@ -12,7 +12,8 @@ from .models import (
 )
 from .forms import (
     DepartmentForm, TeamForm, InviteMemberForm, SharedProjectForm, JoinProjectForm,
-    ProjectFileForm, ProjectMeetingForm, ProjectTaskForm, ProjectMilestoneForm, OrganizationForm
+    ProjectFileForm, ProjectMeetingForm, ProjectTaskForm, ProjectMilestoneForm, OrganizationForm,
+    ProjectRiskForm, AuditTrailForm, ControlTestForm, ComplianceEvidenceForm
 )
 
 
@@ -47,6 +48,10 @@ def project_risk_dashboard(request, pk):
         'risks': risks,
         'audits': audits,
         'compliance_reqs': compliance_reqs,
+        'risk_form': ProjectRiskForm(project=project),
+        'audit_form': AuditTrailForm(),
+        'control_form': ControlTestForm(),
+        'evidence_form': ComplianceEvidenceForm(),
         'metrics': {
             'financial_risks': risks.filter(category='FIN').order_by('-impact'),
             'compliance_risks': risks.filter(category='COM').order_by('-impact'),
@@ -56,6 +61,94 @@ def project_risk_dashboard(request, pk):
         }
     }
     return render(request, 'organizations/risk_dashboard.html', context)
+
+
+@login_required
+@require_POST
+def add_project_risk(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return JsonResponse({'success': False}, status=403)
+    
+    form = ProjectRiskForm(request.POST, project=project)
+    if form.is_valid():
+        risk = form.save(commit=False)
+        risk.project = project
+        risk.save()
+        messages.success(request, 'Risk added to the register.')
+        return redirect('organizations:project_risk_dashboard', pk=pk)
+    messages.error(request, 'Failed to add risk. Please check the form.')
+    return redirect('organizations:project_risk_dashboard', pk=pk)
+
+
+@login_required
+@require_POST
+def add_audit_trail(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all() or request.user.role != 'AUDITOR' and not request.user.is_admin:
+        return JsonResponse({'success': False}, status=403)
+    
+    form = AuditTrailForm(request.POST)
+    if form.is_valid():
+        audit = form.save(commit=False)
+        audit.project = project
+        audit.auditor = request.user
+        
+        # Handle findings as a list if it's text
+        findings_raw = form.cleaned_data['findings']
+        if isinstance(findings_raw, str):
+            import json
+            try:
+                # Try to parse as JSON list
+                audit.findings = json.loads(findings_raw)
+                if not isinstance(audit.findings, list):
+                    audit.findings = [findings_raw]
+            except json.JSONDecodeError:
+                # If not JSON, split by lines or just wrap in list
+                audit.findings = [f.strip() for f in findings_raw.split('\n') if f.strip()]
+        
+        audit.save()
+        messages.success(request, 'Audit trail recorded.')
+        return redirect('organizations:project_risk_dashboard', pk=pk)
+    return redirect('organizations:project_risk_dashboard', pk=pk)
+
+
+@login_required
+@require_POST
+def add_control_test(request, pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    if request.user not in project.members.all():
+        return JsonResponse({'success': False}, status=403)
+    
+    form = ControlTestForm(request.POST)
+    if form.is_valid():
+        test = form.save(commit=False)
+        test.project = project
+        test.tester = request.user
+        test.save()
+        messages.success(request, 'Control test results saved.')
+        return redirect('organizations:project_risk_dashboard', pk=pk)
+    return redirect('organizations:project_risk_dashboard', pk=pk)
+
+
+@login_required
+@require_POST
+def add_compliance_evidence(request, pk, req_pk):
+    project = get_object_or_404(SharedProject, pk=pk)
+    requirement = get_object_or_404(ComplianceRequirement, pk=req_pk, project=project)
+    
+    if request.user not in project.members.all():
+        return JsonResponse({'success': False}, status=403)
+    
+    form = ComplianceEvidenceForm(request.POST, request.FILES)
+    if form.is_valid():
+        evidence = form.save(commit=False)
+        evidence.requirement = requirement
+        evidence.uploaded_by = request.user
+        evidence.save()
+        messages.success(request, 'Compliance evidence uploaded.')
+        return redirect('organizations:project_risk_dashboard', pk=pk)
+    return redirect('organizations:project_risk_dashboard', pk=pk)
 
 
 @login_required

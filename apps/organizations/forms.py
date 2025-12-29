@@ -2,10 +2,70 @@ from django import forms
 from django.contrib.auth import get_user_model
 from .models import (
     Organization, Department, Team, SharedProject, ProjectFile, 
-    ProjectMeeting, ProjectTask, ProjectMilestone, SubscriptionPlan
+    ProjectMeeting, ProjectTask, ProjectMilestone, SubscriptionPlan,
+    ProjectRiskRegister, AuditTrail, ControlTest, ComplianceRequirement, ComplianceEvidence
 )
 
 User = get_user_model()
+
+
+class ProjectRiskForm(forms.ModelForm):
+    class Meta:
+        model = ProjectRiskRegister
+        fields = ['category', 'description', 'probability', 'impact', 'mitigation_plan', 'owner', 'status']
+        widgets = {
+            'category': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'description': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'rows': 2}),
+            'probability': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'impact': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'mitigation_plan': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'rows': 2}),
+            'owner': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'status': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+        }
+
+    def __init__(self, *args, project=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if project:
+            self.fields['owner'].queryset = project.members.all()
+
+
+class AuditTrailForm(forms.ModelForm):
+    class Meta:
+        model = AuditTrail
+        fields = ['audit_type', 'audit_date', 'findings', 'recommendations', 'risk_rating', 'follow_up_date']
+        widgets = {
+            'audit_type': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'audit_date': forms.DateTimeInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'type': 'datetime-local'}),
+            'findings': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'rows': 3, 'placeholder': 'Enter findings as a JSON list or plain text...'}),
+            'recommendations': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'rows': 2}),
+            'risk_rating': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'follow_up_date': forms.DateInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'type': 'date'}),
+        }
+
+
+class ControlTestForm(forms.ModelForm):
+    class Meta:
+        model = ControlTest
+        fields = ['control_objective', 'test_procedure', 'sample_size', 'exceptions_found', 'test_result', 'evidence_reference']
+        widgets = {
+            'control_objective': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'test_procedure': forms.Textarea(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'rows': 2}),
+            'sample_size': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'exceptions_found': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'test_result': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900'}),
+            'evidence_reference': forms.URLInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'placeholder': 'https://...'}),
+        }
+
+
+class ComplianceEvidenceForm(forms.ModelForm):
+    class Meta:
+        model = ComplianceEvidence
+        fields = ['evidence_type', 'document', 'validity_period']
+        widgets = {
+            'evidence_type': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'placeholder': 'e.g., Audit Log, Policy Document'}),
+            'document': forms.FileInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg'}),
+            'validity_period': forms.DateInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900', 'type': 'date'}),
+        }
 
 
 class SubscriptionPlanForm(forms.ModelForm):

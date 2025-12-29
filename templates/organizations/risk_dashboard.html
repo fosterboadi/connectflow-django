@@ -64,10 +64,49 @@
     <div id="view-pm" class="persona-view space-y-8">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-md border border-gray-100">
-                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    Critical Risk Register
-                </h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Critical Risk Register
+                    </h3>
+                    <button onclick="toggleElement('form-add-risk')" class="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition">Manage Risks</button>
+                </div>
+
+                <!-- Add Risk Form -->
+                <div id="form-add-risk" class="hidden mb-8 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 shadow-inner">
+                    <h4 class="text-xs font-black text-indigo-900 uppercase tracking-widest mb-4">Log New Project Risk</h4>
+                    <form method="post" action="{% url 'organizations:add_project_risk' project.pk %}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="text-[10px] font-black text-indigo-400 uppercase">Category</label>
+                            {{ risk_form.category }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-indigo-400 uppercase">Owner</label>
+                            {{ risk_form.owner }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-black text-indigo-400 uppercase">Description</label>
+                            {{ risk_form.description }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-indigo-400 uppercase">Probability (%)</label>
+                            {{ risk_form.probability }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-indigo-400 uppercase">Impact Level</label>
+                            {{ risk_form.impact }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-black text-indigo-400 uppercase">Mitigation Plan</label>
+                            {{ risk_form.mitigation_plan }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-indigo-600 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-widest shadow-md hover:bg-indigo-700 transition">Register Risk</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
@@ -133,10 +172,49 @@
     <div id="view-auditor" class="persona-view hidden space-y-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="bg-white p-8 rounded-2xl shadow-md border border-gray-100">
-                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    Recent Audit Trails
-                </h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Recent Audit Trails
+                    </h3>
+                    <button onclick="toggleElement('form-add-audit')" class="text-xs font-black uppercase tracking-widest text-orange-600 hover:text-orange-800 transition">Log Audit</button>
+                </div>
+
+                <!-- Add Audit Form -->
+                <div id="form-add-audit" class="hidden mb-8 p-6 bg-orange-50 rounded-2xl border border-orange-100 shadow-inner">
+                    <h4 class="text-xs font-black text-orange-900 uppercase tracking-widest mb-4">Record New Audit Finding</h4>
+                    <form method="post" action="{% url 'organizations:add_audit_trail' project.pk %}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="text-[10px] font-black text-orange-400 uppercase">Audit Type</label>
+                            {{ audit_form.audit_type }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-orange-400 uppercase">Audit Date</label>
+                            {{ audit_form.audit_date }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-black text-orange-400 uppercase">Findings (List)</label>
+                            {{ audit_form.findings }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-black text-orange-400 uppercase">Recommendations</label>
+                            {{ audit_form.recommendations }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-orange-400 uppercase">Risk Rating</label>
+                            {{ audit_form.risk_rating }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-orange-400 uppercase">Follow-up Date</label>
+                            {{ audit_form.follow_up_date }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-orange-600 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-widest shadow-md hover:bg-orange-700 transition">Save Audit Trail</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="space-y-4">
                     {% for audit in audits %}
                     <div class="p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition">
@@ -167,10 +245,49 @@
             </div>
 
             <div class="bg-white p-8 rounded-2xl shadow-md border border-gray-100">
-                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Control Testing Results
-                </h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Control Testing Results
+                    </h3>
+                    <button onclick="toggleElement('form-add-control')" class="text-xs font-black uppercase tracking-widest text-green-600 hover:text-green-800 transition">Test Control</button>
+                </div>
+
+                <!-- Add Control Test Form -->
+                <div id="form-add-control" class="hidden mb-8 p-6 bg-green-50 rounded-2xl border border-green-100 shadow-inner">
+                    <h4 class="text-xs font-black text-green-900 uppercase tracking-widest mb-4">New Control Test</h4>
+                    <form method="post" action="{% url 'organizations:add_control_test' project.pk %}" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% csrf_token %}
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-black text-green-400 uppercase">Control Objective</label>
+                            {{ control_form.control_objective }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-[10px] font-black text-green-400 uppercase">Test Procedure</label>
+                            {{ control_form.test_procedure }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-green-400 uppercase">Sample Size</label>
+                            {{ control_form.sample_size }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-green-400 uppercase">Exceptions Found</label>
+                            {{ control_form.exceptions_found }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-green-400 uppercase">Test Result</label>
+                            {{ control_form.test_result }}
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-green-400 uppercase">Evidence URL</label>
+                            {{ control_form.evidence_reference }}
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-green-600 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-widest shadow-md hover:bg-green-700 transition">Record Results</button>
+                        </div>
+                    </form>
+                </div>
+
                 <div class="space-y-6">
                     {% for test in project.control_tests.all %}
                     <div>
@@ -240,16 +357,28 @@
                             </td>
                             <td class="py-4">
                                 {% if req.evidence.exists %}
-                                    <div class="flex -space-x-2">
+                                    <div class="flex -space-x-2 mb-2">
                                         {% for ev in req.evidence.all %}
-                                            <div class="w-8 h-8 rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center text-indigo-600" title="{{ ev.evidence_type }}">
+                                            <a href="{{ ev.document.url }}" target="_blank" class="w-8 h-8 rounded-full bg-indigo-50 border-2 border-white flex items-center justify-center text-indigo-600 hover:bg-indigo-600 hover:text-white transition" title="{{ ev.evidence_type }}">
                                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"></path></svg>
-                                            </div>
+                                            </a>
                                         {% endfor %}
                                     </div>
-                                {% else %}
-                                    <span class="text-xs text-red-400 font-bold">MISSING</span>
                                 {% endif %}
+                                <button onclick="toggleElement('form-evidence-{{ req.id }}')" class="text-[9px] font-black text-indigo-500 uppercase hover:underline">+ Add Evidence</button>
+                                
+                                <div id="form-evidence-{{ req.id }}" class="hidden mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100 shadow-inner">
+                                    <form method="post" action="{% url 'organizations:add_compliance_evidence' project.pk req.id %}" enctype="multipart/form-data" class="space-y-2">
+                                        {% csrf_token %}
+                                        {{ evidence_form.evidence_type }}
+                                        {{ evidence_form.document }}
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[8px] font-black text-gray-400 uppercase">Expires:</span>
+                                            {{ evidence_form.validity_period }}
+                                        </div>
+                                        <button type="submit" class="w-full bg-indigo-600 text-white font-black py-1 rounded text-[10px] uppercase">Upload</button>
+                                    </form>
+                                </div>
                             </td>
                             <td class="py-4 text-gray-600 font-medium">
                                 {{ req.owner.username|default:"Unassigned" }}
@@ -281,6 +410,11 @@
         const activeBtn = document.getElementById('btn-' + persona);
         activeBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
         activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-200');
+    }
+
+    function toggleElement(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('hidden');
     }
 </script>
 {% endblock %}
