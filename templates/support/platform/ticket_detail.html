@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Ticket: {{ ticket.subject }} - ConnectFlow Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4">
+    <!-- Breadcrumbs & Header -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-2 text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
+                <a href="{% url 'support:platform_ticket_list' %}" class="hover:text-indigo-600 transition">Support Management</a>
+                <span>/</span>
+                <span class="text-gray-600">Ticket #{{ ticket.id|stringformat:"s"|slice:":8" }}</span>
+            </div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">{{ ticket.subject }}</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Platform Admin</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content: Messages -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Requester Info -->
+            <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 flex items-start space-x-4">
+                <div class="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-indigo-600 font-black text-xl shadow-sm">
+                    {{ ticket.requester.username|slice:":1"|upper }}
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">{{ ticket.requester.get_full_name }}</h3>
+                        <span class="text-[10px] text-gray-400 font-medium">{{ ticket.created_at|date:"F d, Y @ H:i" }}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 font-medium mb-2">{{ ticket.requester.email }} • Organization: {{ ticket.organization.name|default:"None" }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-white text-indigo-600 rounded-lg border border-indigo-100">{{ ticket.get_category_display }}</span>
+                        {% if ticket.is_priority_support %}
+                            <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-amber-100 text-amber-700 rounded-lg border border-amber-200">Priority Support Plan</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Thread -->
+            <div class="space-y-4">
+                {% for message in messages %}
+                <div class="{% if message.is_internal_note %}bg-amber-50 border-amber-200{% else %}bg-white border-gray-100 shadow-sm{% endif %} rounded-2xl p-6 border relative">
+                    {% if message.is_internal_note %}
+                    <div class="absolute -top-2 -right-2 bg-amber-200 text-amber-800 text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg">Internal Note</div>
+                    {% endif %}
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-black text-gray-800">{{ message.sender.get_full_name|default:message.sender.username }}</span>
+                            {% if message.sender == ticket.requester %}
+                                <span class="bg-gray-100 text-gray-600 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Customer</span>
+                            {% else %}
+                                <span class="bg-indigo-100 text-indigo-600 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded">Staff</span>
+                            {% endif %}
+                        </div>
+                        <span class="text-[10px] text-gray-400 font-medium">{{ message.created_at|timesince }} ago</span>
+                    </div>
+                    
+                    <div class="prose prose-sm max-w-none text-gray-700 font-medium">
+                        {{ message.content|linebreaks }}
+                    </div>
+                    
+                    {% if message.attachment %}
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <a href="{{ message.attachment.url }}" target="_blank" class="inline-flex items-center text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            View Attachment
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Reply Form -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Respond to Ticket</h3>
+                <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="send_message" value="1">
+                    
+                    {{ message_form.content }}
+                    
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex-1">
+                            {{ message_form.attachment }}
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_internal_note" class="sr-only peer">
+                                <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-400 relative"></div>
+                                <span class="ml-2 text-[10px] font-black uppercase tracking-widest text-gray-500">Internal Note</span>
+                            </label>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg shadow-indigo-100">
+                                Send Reply
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar: Management Actions -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest mb-6">Management</h3>
+                <form method="POST" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="update_ticket" value="1">
+                    
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Ticket Status</label>
+                        {{ admin_form.status }}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Priority Level</label>
+                        {{ admin_form.priority }}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Assigned Staff</label>
+                        {{ admin_form.assigned_to }}
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-gray-800 hover:bg-black text-white text-xs font-black uppercase tracking-widest py-4 rounded-2xl transition">
+                        Update Ticket
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest mb-4">Quick Stats</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400 font-bold">Total Messages</span>
+                        <span class="font-black text-gray-800">{{ messages.count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400 font-bold">Total Internal Notes</span>
+                        <span class="font-black text-amber-600">
+                            {% with notes=0 %}
+                                {% for m in messages %}{% if m.is_internal_note %}{% increment notes %}{% endif %}{% endfor %}
+                                {{ notes }}
+                            {% endwith %}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400 font-bold">First Response Time</span>
+                        <span class="font-black text-gray-800">
+                            {% with first_reply=ticket.messages.exclude(sender=ticket.requester).first %}
+                                {% if first_reply %}
+                                    {{ first_reply.created_at|timesince:ticket.created_at }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            {% endwith %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

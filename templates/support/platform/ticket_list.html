@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Platform Ticket Management - ConnectFlow Pro{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-8 px-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">Support Management</h1>
+            <p class="text-gray-500 font-medium">Global view of all user requests.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Platform Admin</span>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="relative">
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search subject, user, org..." 
+                       class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
+                <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            
+            <select name="status" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
+                <option value="">All Statuses</option>
+                {% for val, label in statuses %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="priority" class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none transition font-medium text-sm">
+                <option value="">All Priorities</option>
+                {% for val, label in priorities %}
+                    <option value="{{ val }}" {% if priority_filter == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="bg-gray-800 hover:bg-black text-white font-black text-[10px] uppercase tracking-widest py-2 rounded-xl transition">
+                Apply Filters
+            </button>
+        </form>
+    </div>
+
+    {% if tickets %}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Ticket</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Requester</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Organization</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Priority</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Assigned To</th>
+                        <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Created</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for ticket in tickets %}
+                    <tr class="hover:bg-gray-50/50 transition cursor-pointer" onclick="window.location='{% url 'support:platform_ticket_detail' ticket.pk %}'">
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-gray-800">{{ ticket.subject }}</span>
+                                <span class="text-[10px] text-gray-400 font-mono">#{{ ticket.id|stringformat:"s"|slice:":8" }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black text-xs">
+                                    {{ ticket.requester.username|slice:":1"|upper }}
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-sm font-bold text-gray-700">{{ ticket.requester.get_full_name }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ ticket.requester.email }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if ticket.organization %}
+                                <span class="text-xs font-bold text-gray-600">{{ ticket.organization.name }}</span>
+                            {% else %}
+                                <span class="text-xs italic text-gray-400">Individual</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if ticket.status == 'OPEN' %}
+                                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg uppercase tracking-widest">Open</span>
+                            {% elif ticket.status == 'IN_PROGRESS' %}
+                                <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg uppercase tracking-widest">In Progress</span>
+                            {% elif ticket.status == 'RESOLVED' %}
+                                <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg uppercase tracking-widest">Resolved</span>
+                            {% elif ticket.status == 'CLOSED' %}
+                                <span class="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-lg uppercase tracking-widest">Closed</span>
+                            {% else %}
+                                <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg uppercase tracking-widest">{{ ticket.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if ticket.priority == 'URGENT' %}
+                                <div class="flex items-center">
+                                    <span class="w-2 h-2 bg-red-600 rounded-full animate-pulse mr-2"></span>
+                                    <span class="text-xs font-black text-red-600 uppercase tracking-widest">Urgent</span>
+                                </div>
+                            {% elif ticket.priority == 'HIGH' %}
+                                <span class="text-xs font-bold text-orange-600 uppercase tracking-widest">High</span>
+                            {% else %}
+                                <span class="text-xs font-medium text-gray-500">{{ ticket.get_priority_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if ticket.assigned_to %}
+                                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{{ ticket.assigned_to.username }}</span>
+                            {% else %}
+                                <span class="text-xs italic text-gray-400">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-xs font-medium text-gray-500">
+                            {{ ticket.created_at|date:"M d, Y" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+        <h3 class="text-lg font-black text-gray-800 mb-2">No tickets found</h3>
+        <p class="text-gray-500 max-w-sm mx-auto">Try adjusting your filters or search query.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

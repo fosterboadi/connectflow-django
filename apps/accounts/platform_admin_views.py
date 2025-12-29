@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from apps.accounts.models import User
 from apps.organizations.models import Organization, SharedProject, SubscriptionPlan
+from apps.support.models import Ticket
 from apps.organizations.forms import SubscriptionPlanForm
 
 def super_admin_check(user):
@@ -90,6 +91,8 @@ def platform_dashboard(request):
         'active_orgs': Organization.objects.filter(is_active=True).count() if total_orgs else 0,
         'total_users': User.objects.count() if total_orgs else 0,
         'total_projects': SharedProject.objects.count() if total_orgs else 0,
+        'open_tickets': Ticket.objects.filter(status=Ticket.Status.OPEN).count() if total_orgs else 0,
+        'total_tickets': Ticket.objects.count() if total_orgs else 0,
         'health_status': health_status,
         'health_issues': health_issues
     }
