@@ -102,9 +102,15 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
                 'message': response
             }))
         except Exception as e:
+            error_msg = str(e)
+            if "429" in error_msg:
+                friendly_msg = "I'm currently overwhelmed with requests (Daily/Minute Quota Exceeded). Please try again in a few minutes."
+            else:
+                friendly_msg = f"I encountered an error while processing your request: {error_msg}"
+
             await self.send(text_data=json.dumps({
                 'type': 'bot_message',
-                'message': f"I encountered an error while processing your request: {str(e)}"
+                'message': friendly_msg
             }))
 
     @database_sync_to_async
