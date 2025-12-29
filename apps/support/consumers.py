@@ -65,8 +65,10 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
                 # Fetch user info safely
                 self.user_context_str = await self.get_user_context()
                 
-                # Start
-                self._init_chat(self.primary_model_name, self.user_context_str)
+                # Start (Wrap initialization in sync_to_async to be 100% safe)
+                print(f"[AI DEBUG] Setting up chat with {self.primary_model_name}...")
+                await database_sync_to_async(self._init_chat)(self.primary_model_name, self.user_context_str)
+                print("[AI DEBUG] Chat initialization complete")
                 
                 # Send welcome message
                 await self.send(text_data=json.dumps({
