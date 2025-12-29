@@ -56,11 +56,14 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
             ]
 
             # Model Strategy
-            self.primary_model_name = 'gemini-flash-latest'
-            self.backup_model_name = 'gemini-1.5-flash'
+            # Primary: The high-speed 2.0 version confirmed in your list
+            self.primary_model_name = 'gemini-2.0-flash' 
+            # Backup: The stable production alias (which points to current stable Flash)
+            self.backup_model_name = 'gemini-flash-latest'
             
             # Start with primary
-            self._init_chat(self.primary_model_name)
+            self.current_model_name = self.primary_model_name
+            self._init_chat(self.current_model_name)
             
             # Send welcome message
             await self.send(text_data=json.dumps({
