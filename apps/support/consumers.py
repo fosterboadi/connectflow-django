@@ -10,102 +10,116 @@ from .ai_tools import (
 
 class SupportAIConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.user = self.scope["user"]
-        if not self.user.is_authenticated:
+        try:
+            self.user = self.scope["user"]
+            print(f"[AI DEBUG] Connecting user: {self.user}")
+            if not self.user.is_authenticated:
+                print("[AI DEBUG] Rejecting: User not authenticated")
+                await self.close()
+                return
+
+            await self.accept()
+            print("[AI DEBUG] WebSocket accepted")
+            
+            # Initialize Gemini
+            if settings.GEMINI_API_KEY:
+                print("[AI DEBUG] Initializing Gemini tools...")
+                genai.configure(api_key=settings.GEMINI_API_KEY)
+                
+                # --- Define User-Bound Tools ---
+                def get_my_tickets():
+                    """Fetch the list of my recent support tickets and their status."""
+                    return _db_get_tickets(self.user)
+
+                def get_my_projects():
+                    """List the shared projects I am currently a member of."""
+                    return _db_get_projects(self.user)
+
+                def get_project_milestones(project_id_prefix: str):
+                    """Get the progress and milestones for a specific project. Use the first few characters of the project ID."""
+                    return _db_get_project_milestones(self.user, project_id_prefix)
+
+                def get_upcoming_meetings():
+                    """List all scheduled meetings for projects I am involved in."""
+                    return _db_get_upcoming_meetings(self.user)
+
+                def list_colleagues():
+                    """List the people in my organization and their professional roles."""
+                    return _db_get_colleagues(self.user)
+
+                def find_experts_by_skill(skill_name: str):
+                    """Search for colleagues who have a specific skill or expertise (e.g. 'Python', 'Design')."""
+                    return _db_find_experts(self.user, skill_name)
+
+                self.tools = [
+                    get_my_tickets, 
+                    get_my_projects, 
+                    get_project_milestones, 
+                    get_upcoming_meetings, 
+                    list_colleagues, 
+                    find_experts_by_skill
+                ]
+
+                # Model Strategy
+                self.primary_model_name = 'gemini-2.0-flash'
+                self.backup_model_name = 'gemini-flash-latest'
+                
+                # Start with primary
+                print(f"[AI DEBUG] Setting up chat with {self.primary_model_name}...")
+                self._init_chat(self.primary_model_name)
+                print("[AI DEBUG] Chat initialization complete")
+                
+                # Send welcome message
+                await self.send(text_data=json.dumps({
+                    'type': 'bot_message',
+                    'message': f"Hello {self.user.first_name or self.user.username}! I'm your ConnectFlow Assistant. How can I help you today?"
+                }))
+            else:
+                print("[AI DEBUG] Warning: GEMINI_API_KEY missing")
+                await self.send(text_data=json.dumps({
+                    'type': 'bot_message',
+                    'message': "I'm sorry, but the AI Assistant is currently unavailable (API key missing). Please create a support ticket instead."
+                }))
+        except Exception as e:
+            import traceback
+            print(f"[AI DEBUG] CRITICAL ERROR IN CONNECT: {str(e)}")
+            traceback.print_exc()
             await self.close()
-            return
-
-        await self.accept()
-        
-        # Initialize Gemini
-        if settings.GEMINI_API_KEY:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            
-            # --- Define User-Bound Tools ---
-            def get_my_tickets():
-                """Fetch the list of my recent support tickets and their status."""
-                return _db_get_tickets(self.user)
-
-            def get_my_projects():
-                """List the shared projects I am currently a member of."""
-                return _db_get_projects(self.user)
-
-            def get_project_milestones(project_id_prefix: str):
-                """Get the progress and milestones for a specific project. Use the first few characters of the project ID."""
-                return _db_get_project_milestones(self.user, project_id_prefix)
-
-            def get_upcoming_meetings():
-                """List all scheduled meetings for projects I am involved in."""
-                return _db_get_upcoming_meetings(self.user)
-
-            def list_colleagues():
-                """List the people in my organization and their professional roles."""
-                return _db_get_colleagues(self.user)
-
-            def find_experts_by_skill(skill_name: str):
-                """Search for colleagues who have a specific skill or expertise (e.g. 'Python', 'Design')."""
-                return _db_find_experts(self.user, skill_name)
-
-            self.tools = [
-                get_my_tickets, 
-                get_my_projects, 
-                get_project_milestones, 
-                get_upcoming_meetings, 
-                list_colleagues, 
-                find_experts_by_skill
-            ]
-
-            # Model Strategy
-            # Primary: The high-speed 2.0 version confirmed in your list
-            self.primary_model_name = 'gemini-2.0-flash' 
-            # Backup: The stable production alias (which points to current stable Flash)
-            self.backup_model_name = 'gemini-flash-latest'
-            
-            # Start with primary
-            self.current_model_name = self.primary_model_name
-            self._init_chat(self.current_model_name)
-            
-            # Send welcome message
-            await self.send(text_data=json.dumps({
-                'type': 'bot_message',
-                'message': f"Hello {self.user.first_name or self.user.username}! I'm your ConnectFlow Assistant. How can I help you today?"
-            }))
-        else:
-            await self.send(text_data=json.dumps({
-                'type': 'bot_message',
-                'message': "I'm sorry, but the AI Assistant is currently unavailable (API key missing). Please create a support ticket instead."
-            }))
 
     def _init_chat(self, model_name, history=[]):
         """Initialize chat session with a specific model and history."""
-        # Get user info for system instruction
-        user_info = f"User: {self.user.get_full_name()} ({self.user.username})"
-        if self.user.organization:
-            user_info += f"\nOrganization: {self.user.organization.name}"
-        user_info += f"\nRole: {self.user.get_role_display()}"
+        try:
+            # Get user info for system instruction
+            user_info = f"User: {self.user.get_full_name()} ({self.user.username})"
+            if self.user.organization:
+                user_info += f"\nOrganization: {self.user.organization.name}"
+            user_info += f"\nRole: {self.user.get_role_display()}"
 
-        system_instruction = (
-            "You are the ConnectFlow Pro Support Assistant. "
-            "ConnectFlow Pro is an organizational communication platform with real-time messaging, "
-            "role-based access control, file uploads (Cloudinary), and project management features. "
-            "Help the user with their questions about using the platform. "
-            "Be professional, concise, and helpful. "
-            "You have access to tools to look up the user's tickets and projects. "
-            "ALWAYS check these tools if the user asks about their specific data. "
-            "If you cannot help, suggest they create a support ticket.\n\n"
-            f"Context about the user you are chatting with:\n{user_info}"
-        )
+            system_instruction = (
+                "You are the ConnectFlow Pro Support Assistant. "
+                "ConnectFlow Pro is an organizational communication platform with real-time messaging, "
+                "role-based access control, file uploads (Cloudinary), and project management features. "
+                "Help the user with their questions about using the platform. "
+                "Be professional, concise, and helpful. "
+                "You have access to tools to look up the user's tickets and projects. "
+                "ALWAYS check these tools if the user asks about their specific data. "
+                "If you cannot help, suggest they create a support ticket.\n\n"
+                f"Context about the user you are chatting with:\n{user_info}"
+            )
 
-        self.model = genai.GenerativeModel(
-            model_name,
-            tools=self.tools,
-            system_instruction=system_instruction
-        )
-        self.chat = self.model.start_chat(
-            history=history,
-            enable_automatic_function_calling=True
-        )
-        self.current_model_name = model_name
+            self.model = genai.GenerativeModel(
+                model_name,
+                tools=self.tools,
+                system_instruction=system_instruction
+            )
+            self.chat = self.model.start_chat(
+                history=history,
+                enable_automatic_function_calling=True
+            )
+            self.current_model_name = model_name
+        except Exception as e:
+            print(f"[AI DEBUG] ERROR IN _INIT_CHAT: {str(e)}")
+            raise e
 
     async def receive(self, text_data):
         print(f"[AI DEBUG] Received message from user: {self.user.username}")
