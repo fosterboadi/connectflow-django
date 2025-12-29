@@ -1,4 +1,5 @@
 import json
+import time
 import google.generativeai as genai
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.conf import settings
@@ -60,12 +61,19 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
                 self.tools = [get_my_tickets, get_my_projects, get_project_milestones, get_upcoming_meetings, list_colleagues, find_experts_by_skill]
 
                 # Initialize chat with primary model
-                await self.initialize_chat_session(self.primary_model_name)
-                
-                await self.send(text_data=json.dumps({
-                    'type': 'bot_message',
-                    'message': f"Hello {self.display_name}! I'm your ConnectFlow Assistant. How can I help you today?"
-                }))
+                try:
+                    await self.initialize_chat_session(self.primary_model_name)
+                    
+                    await self.send(text_data=json.dumps({
+                        'type': 'bot_message',
+                        'message': f"Hello {self.display_name}! I'm your ConnectFlow Assistant. How can I help you today?"
+                    }))
+                except Exception as e:
+                    print(f"[AI ERROR] Initialization failed: {str(e)}")
+                    await self.send(text_data=json.dumps({
+                        'type': 'bot_message',
+                        'message': "I'm sorry, I'm having trouble initializing. Please check the server logs."
+                    }))
             else:
                 await self.send(text_data=json.dumps({
                     'type': 'bot_message',
@@ -130,7 +138,15 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
                 'message': response_text
             }))
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
             print(f"[AI ERROR] Receive loop error: {str(e)}")
+            # Log to a file we can read
+            with open("ai_debug.log", "a") as f:
+                f.write(f"\n--- ERROR at {time.ctime()} ---\n")
+                f.write(error_details)
+                f.write("\n---------------------------\n")
+
             await self.send(text_data=json.dumps({
                 'type': 'bot_message',
                 'message': "I encountered an error. Please try again."
