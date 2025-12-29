@@ -78,9 +78,28 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
 
     def _init_chat(self, model_name, history=[]):
         """Initialize chat session with a specific model and history."""
+        # Get user info for system instruction
+        user_info = f"User: {self.user.get_full_name()} ({self.user.username})"
+        if self.user.organization:
+            user_info += f"\nOrganization: {self.user.organization.name}"
+        user_info += f"\nRole: {self.user.get_role_display()}"
+
+        system_instruction = (
+            "You are the ConnectFlow Pro Support Assistant. "
+            "ConnectFlow Pro is an organizational communication platform with real-time messaging, "
+            "role-based access control, file uploads (Cloudinary), and project management features. "
+            "Help the user with their questions about using the platform. "
+            "Be professional, concise, and helpful. "
+            "You have access to tools to look up the user's tickets and projects. "
+            "ALWAYS check these tools if the user asks about their specific data. "
+            "If you cannot help, suggest they create a support ticket.\n\n"
+            f"Context about the user you are chatting with:\n{user_info}"
+        )
+
         self.model = genai.GenerativeModel(
             model_name,
-            tools=self.tools
+            tools=self.tools,
+            system_instruction=system_instruction
         )
         self.chat = self.model.start_chat(
             history=history,
@@ -103,23 +122,9 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
             return
 
         try:
-            # System prompt to give context
-            user_info = await self.get_user_context()
-
-            system_context = (
-                "You are the ConnectFlow Pro Support Assistant. "
-                "ConnectFlow Pro is an organizational communication platform with real-time messaging, "
-                "role-based access control, file uploads (Cloudinary), and project management features. "
-                "Help the user with their questions about using the platform. "
-                "Be professional, concise, and helpful. "
-                "You have access to tools to look up the user's tickets and projects. "
-                "ALWAYS check these tools if the user asks about their specific data. "
-                "If you cannot help, suggest they create a support ticket.\n\n"
-                f"Context about the user you are chatting with:\n{user_info}"
-            )
-            
-            # Use fallback-aware response getter
-            response = await self.get_ai_response(f"{system_context}\n\nUser says: {user_message}")
+            # We no longer need to prepend system context here!
+            # The model already knows it via system_instruction.
+            response = await self.get_ai_response(user_message)
             
             await self.send(text_data=json.dumps({
                 'type': 'bot_message',
