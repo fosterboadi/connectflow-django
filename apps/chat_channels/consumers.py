@@ -407,7 +407,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Allow sender or admin to delete
             message = Message.objects.get(id=message_id)
             if message.sender == self.user or self.user.is_admin:
-                message.delete(user=self.user) # Uses the soft delete implemented in models.py
+                message.soft_delete(user=self.user) # Uses the soft delete implemented in models.py
                 return True, message.deleted_at
             return False, None
         except Message.DoesNotExist:
