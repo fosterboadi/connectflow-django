@@ -17,6 +17,8 @@ class User(AbstractUser):
         DEPT_HEAD = 'DEPT_HEAD', _('Department Head')
         TEAM_MANAGER = 'TEAM_MANAGER', _('Team Manager')
         TEAM_MEMBER = 'TEAM_MEMBER', _('Team Member')
+        AUDITOR = 'AUDITOR', _('Auditor')
+        COMPLIANCE_OFFICER = 'COMPLIANCE_OFFICER', _('Compliance Officer')
     
     class Status(models.TextChoices):
         ONLINE = 'ONLINE', _('Online')

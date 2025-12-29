@@ -482,6 +482,137 @@ class ProjectMilestone(models.Model):
         return f"{self.title} - {self.project.name}"
 
 
+class ProjectRiskRegister(models.Model):
+    """Tracks risks associated with a project."""
+    class RiskCategory(models.TextChoices):
+        FINANCIAL = 'FIN', _('Financial')
+        SCHEDULE = 'SCH', _('Schedule')
+        TECHNICAL = 'TEC', _('Technical')
+        OPERATIONAL = 'OPE', _('Operational')
+        COMPLIANCE = 'COM', _('Compliance')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='risks')
+    category = models.CharField(max_length=3, choices=RiskCategory.choices)
+    description = models.TextField()
+    probability = models.IntegerField(choices=[(i, f'{i}%') for i in range(0, 101, 10)], help_text=_("Probability of occurrence"))
+    impact = models.IntegerField(choices=[(1, _('Low')), (2, _('Medium')), (3, _('High')), (4, _('Critical'))])
+    mitigation_plan = models.TextField()
+    owner = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='owned_risks')
+    status = models.CharField(max_length=20, default='Open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'project_risks'
+        verbose_name = _('Project Risk')
+        verbose_name_plural = _('Project Risks')
+
+
+class AuditTrail(models.Model):
+    """Records audit activities and findings for a project."""
+    class AuditType(models.TextChoices):
+        PROJECT = 'PROJ', _('Project')
+        DOCUMENT = 'DOC', _('Document')
+        FINANCIAL = 'FIN', _('Financial')
+        COMPLIANCE = 'COMP', _('Compliance')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='audits')
+    audit_type = models.CharField(max_length=4, choices=AuditType.choices)
+    auditor = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='audits_conducted')
+    audit_date = models.DateTimeField()
+    findings = models.JSONField(default=list, help_text=_("Structured findings and observations"))
+    recommendations = models.TextField()
+    risk_rating = models.CharField(max_length=20, choices=[
+        ('LOW', _('Low')),
+        ('MEDIUM', _('Medium')),
+        ('HIGH', _('High')),
+        ('CRITICAL', _('Critical')),
+    ])
+    follow_up_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'audit_trails'
+        verbose_name = _('Audit Trail')
+        verbose_name_plural = _('Audit Trails')
+
+
+class ControlTest(models.Model):
+    """Tests specific controls within a project."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='control_tests')
+    control_objective = models.TextField()
+    test_procedure = models.TextField()
+    sample_size = models.IntegerField()
+    exceptions_found = models.IntegerField(default=0)
+    test_result = models.CharField(max_length=20, choices=[
+        ('PASS', _('Pass')),
+        ('FAIL', _('Fail')),
+        ('PARTIAL', _('Partially Effective')),
+    ])
+    evidence_reference = models.URLField(blank=True, help_text=_("Link to evidence document or location"))
+    tester = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='controls_tested')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'control_tests'
+        verbose_name = _('Control Test')
+        verbose_name_plural = _('Control Tests')
+
+
+class ComplianceRequirement(models.Model):
+    """Regulatory requirements applicable to a project."""
+    REGULATIONS = [
+        ('SOX', 'Sarbanes-Oxley'),
+        ('GDPR', 'GDPR'),
+        ('HIPAA', 'HIPAA'),
+        ('PCI', 'PCI-DSS'),
+        ('ISO27001', 'ISO 27001'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='compliance_requirements')
+    regulation = models.CharField(max_length=20, choices=REGULATIONS)
+    requirement_id = models.CharField(max_length=50)
+    requirement_text = models.TextField()
+    applicable = models.BooleanField(default=True)
+    owner = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, related_name='owned_compliance_reqs')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'compliance_requirements'
+        verbose_name = _('Compliance Requirement')
+        verbose_name_plural = _('Compliance Requirements')
+
+
+class ComplianceEvidence(models.Model):
+    """Evidence supporting compliance with a requirement."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    requirement = models.ForeignKey(ComplianceRequirement, on_delete=models.CASCADE, related_name='evidence')
+    evidence_type = models.CharField(max_length=50)
+    document = CloudinaryField(
+        'document',
+        folder='compliance_evidence',
+        resource_type='auto',
+        null=True,
+        blank=True
+    )
+    uploaded_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True)
+    upload_date = models.DateTimeField(auto_now_add=True)
+    validity_period = models.DateField(help_text=_("When this evidence expires"))
+    review_status = models.CharField(max_length=20, default='Pending', choices=[
+        ('PENDING', _('Pending')),
+        ('APPROVED', _('Approved')),
+        ('REJECTED', _('Rejected')),
+    ])
+
+    class Meta:
+        db_table = 'compliance_evidence'
+        verbose_name = _('Compliance Evidence')
+        verbose_name_plural = _('Compliance Evidences')
+
+
 from django.db.models.signals import m2m_changed, post_delete, pre_save
 from django.dispatch import receiver
 from django.urls import reverse

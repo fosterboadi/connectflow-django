@@ -5,11 +5,19 @@ from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
-from .models import Organization, Department, Team, SharedProject, ProjectFile, ProjectMeeting, ProjectTask, ProjectMilestone
+from .models import (
+    Organization, Department, Team, SharedProject, ProjectFile, ProjectMeeting, 
+    ProjectTask, ProjectMilestone, ProjectRiskRegister, AuditTrail, ControlTest, 
+    ComplianceRequirement, ComplianceEvidence
+)
 from .forms import (
     DepartmentForm, TeamForm, InviteMemberForm, SharedProjectForm, JoinProjectForm,
     ProjectFileForm, ProjectMeetingForm, ProjectTaskForm, ProjectMilestoneForm, OrganizationForm
 )
+
+
+@login_required
+def project_risk_dashboard(request, pk):
 
 
 @login_required

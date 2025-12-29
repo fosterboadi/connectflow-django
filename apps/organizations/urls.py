@@ -48,6 +48,7 @@ urlpatterns = [
     path('projects/<uuid:project_pk>/tasks/<uuid:task_pk>/edit/', views.project_task_edit, name='project_task_edit'),
     path('projects/<uuid:project_pk>/tasks/<uuid:task_pk>/delete/', views.project_task_delete, name='project_task_delete'),
     path('projects/<uuid:pk>/analytics/', views.project_analytics, name='project_analytics'),
+    path('projects/<uuid:pk>/risks/', views.project_risk_dashboard, name='project_risk_dashboard'),
     path('projects/<uuid:pk>/milestones/', views.project_milestones, name='project_milestones'),
     path('projects/<uuid:project_pk>/milestones/<uuid:milestone_pk>/edit/', views.project_milestone_edit, name='project_milestone_edit'),
     path('projects/<uuid:project_pk>/milestones/<uuid:milestone_pk>/delete/', views.project_milestone_delete, name='project_milestone_delete'),
