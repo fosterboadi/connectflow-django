@@ -108,34 +108,41 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
         self.current_model_name = model_name
 
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        user_message = data.get('message')
-
-        if not user_message:
-            return
-
-        if not hasattr(self, 'chat'):
-            await self.send(text_data=json.dumps({
-                'type': 'bot_message',
-                'message': "AI Assistant is not properly configured."
-            }))
-            return
-
+        print(f"[AI DEBUG] Received message from user: {self.user.username}")
         try:
-            # We no longer need to prepend system context here!
-            # The model already knows it via system_instruction.
+            data = json.loads(text_data)
+            user_message = data.get('message')
+
+            if not user_message:
+                return
+
+            if not hasattr(self, 'chat'):
+                print("[AI DEBUG] Error: Chat object not initialized")
+                await self.send(text_data=json.dumps({
+                    'type': 'bot_message',
+                    'message': "AI Assistant is not properly configured."
+                }))
+                return
+
+            # Use fallback-aware response getter
+            print(f"[AI DEBUG] Sending request to Gemini (Model: {self.current_model_name})...")
             response = await self.get_ai_response(user_message)
+            print("[AI DEBUG] Gemini responded successfully.")
             
             await self.send(text_data=json.dumps({
                 'type': 'bot_message',
                 'message': response
             }))
         except Exception as e:
+            import traceback
+            print(f"[AI DEBUG] EXCEPTION in receive: {str(e)}")
+            traceback.print_exc()
+            
             error_msg = str(e)
-            if "429" in error_msg:
+            if "429" in error_msg or "ResourceExhausted" in error_msg:
                 friendly_msg = "I'm currently overwhelmed with requests (Daily/Minute Quota Exceeded). Please try again in a few minutes."
             else:
-                friendly_msg = f"I encountered an error while processing your request: {error_msg}"
+                friendly_msg = f"I encountered an error while processing your request. Please try again."
 
             await self.send(text_data=json.dumps({
                 'type': 'bot_message',
