@@ -27,6 +27,11 @@ def project_risk_dashboard(request, pk):
         messages.error(request, 'You do not have access to this project.')
         return redirect('organizations:shared_project_list')
 
+    # Gatekeeper: Check Governance Suite Access
+    if not project.host_organization.has_feature('has_governance_suite'):
+        messages.warning(request, f"The Governance Suite (Risk & Compliance) is a premium feature. Please upgrade the host organization's ({project.host_organization.name}) plan to gain access.")
+        return redirect('organizations:shared_project_detail', pk=pk)
+
     risks = project.risks.all()
     audits = project.audits.all()
     compliance_reqs = project.compliance_requirements.all()
@@ -1250,6 +1255,9 @@ def member_edit_role(request, pk):
             # Security: ORG_ADMIN cannot promote someone to SUPER_ADMIN
             if new_role == User.Role.SUPER_ADMIN and user.role != User.Role.SUPER_ADMIN:
                 messages.error(request, "You cannot promote users to Platform Super Admin.")
+            # Gatekeeper: Check Advanced Roles (Auditor/Compliance)
+            elif new_role in ['AUDITOR', 'COMPLIANCE_OFFICER'] and not user.organization.has_feature('has_advanced_roles'):
+                messages.error(request, f"The Auditor and Compliance Officer roles are part of the Advanced Roles suite. Please upgrade your plan ({user.organization.get_plan().name}) to access them.")
             else:
                 member.role = new_role
                 member.save()
@@ -1259,9 +1267,13 @@ def member_edit_role(request, pk):
         return redirect('organizations:member_directory')
     
     # Filter out SUPER_ADMIN role for non-superadmin org admins
+    # And filter out Advanced Roles if not in plan
+    has_advanced = user.organization.has_feature('has_advanced_roles')
     roles = []
     for r in User.Role.choices:
         if r[0] == User.Role.SUPER_ADMIN and user.role != User.Role.SUPER_ADMIN:
+            continue
+        if r[0] in ['AUDITOR', 'COMPLIANCE_OFFICER'] and not has_advanced:
             continue
         roles.append(r)
 

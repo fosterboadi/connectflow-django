@@ -101,8 +101,8 @@ class SubscriptionPlanForm(forms.ModelForm):
         fields = [
             'name', 'price_monthly', 'paystack_plan_code',
             'max_users', 'max_projects', 'max_storage_mb', 
-            'has_analytics', 'has_custom_branding', 
-            'has_priority_support', 'is_active'
+            'has_analytics', 'has_governance_suite', 'has_advanced_roles',
+            'has_custom_branding', 'has_priority_support', 'is_active'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500'}),

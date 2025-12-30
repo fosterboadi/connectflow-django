@@ -23,6 +23,8 @@ class SubscriptionPlan(models.Model):
     
     # Feature Toggles
     has_analytics = models.BooleanField(default=False)
+    has_governance_suite = models.BooleanField(default=False, help_text=_("Access to Risk & Compliance Dashboard"))
+    has_advanced_roles = models.BooleanField(default=False, help_text=_("Ability to assign Auditor and Compliance Officer roles"))
     has_custom_branding = models.BooleanField(default=False)
     has_priority_support = models.BooleanField(default=False)
     
@@ -161,7 +163,9 @@ class Organization(models.Model):
             max_users=5, 
             max_projects=0, 
             max_storage_mb=50,
-            has_analytics=False
+            has_analytics=False,
+            has_governance_suite=False,
+            has_advanced_roles=False
         )
 
     def can_add_user(self):
