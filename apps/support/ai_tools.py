@@ -107,3 +107,89 @@ def _db_find_experts(user, skill_query):
         results.append(f"- {e.get_full_name()} ({e.username}): {e.skills}")
     return "\n".join(results)
 
+def get_platform_revenue(user):
+    """
+    (Admin Only) Fetch the total platform revenue and recent transactions.
+    """
+    # 1. Security Check
+    if not user.is_superuser:
+        return "Access Denied: You do not have permission to view platform revenue details."
+
+    from apps.organizations.models import SubscriptionTransaction
+    from django.db.models import Sum
+
+    # 2. Calculate Total
+    total = SubscriptionTransaction.objects.aggregate(total=Sum('amount'))['total'] or 0
+
+    # 3. Get Recent Transactions
+    recent_txns = SubscriptionTransaction.objects.select_related('organization').order_by('-created_at')[:5]
+
+    if not recent_txns.exists() and total == 0:
+        return "No revenue recorded yet."
+
+    # 4. Format Output
+    response = [f"💰 Total Platform Revenue: ${total:,.2f}\n"]
+    
+    if recent_txns.exists():
+        response.append("Recent Transactions:")
+        for txn in recent_txns:
+            response.append(f"- ${txn.amount} from {txn.organization.name} on {txn.created_at.strftime('%Y-%m-%d')}")
+    
+    return "\n".join(response)
+
+def _db_get_tasks(user, status_filter=None):
+    """Fetch tasks assigned to the user or within their projects."""
+    from apps.organizations.models import ProjectTask
+    tasks = ProjectTask.objects.filter(project__members=user)
+    
+    if status_filter:
+        tasks = tasks.filter(status__icontains=status_filter)
+    
+    tasks = tasks.order_by('due_date')[:10]
+    
+    if not tasks.exists():
+        return "No tasks found."
+    
+    results = ["Recent Tasks:"]
+    for t in tasks:
+        due = t.due_date.strftime('%b %d') if t.due_date else "No due date"
+        results.append(f"- [{t.status}] {t.title} (Due: {due}) | Project: {t.project.name}")
+    return "\n".join(results)
+
+def _db_get_risks(user, project_name=None):
+    """Fetch identified risks for a project."""
+    from apps.organizations.models import ProjectRiskRegister
+    risks = ProjectRiskRegister.objects.filter(project__members=user)
+    
+    if project_name:
+        risks = risks.filter(project__name__icontains=project_name)
+    
+    risks = risks.order_by('-impact', '-probability')[:5]
+    
+    if not risks.exists():
+        return "No risks found for this project."
+    
+    results = [f"Identified Risks:"]
+    for r in risks:
+        results.append(f"- {r.description} | Impact: {r.get_impact_display()} | Category: {r.get_category_display()}")
+    return "\n".join(results)
+
+def _db_get_compliance(user, project_name=None):
+    """Fetch compliance requirements and their status."""
+    from apps.organizations.models import ComplianceRequirement
+    reqs = ComplianceRequirement.objects.filter(project__members=user)
+    
+    if project_name:
+        reqs = reqs.filter(project__name__icontains=project_name)
+    
+    reqs = reqs[:10]
+    
+    if not reqs.exists():
+        return "No compliance requirements found."
+    
+    results = ["Compliance Requirements:"]
+    for r in reqs:
+        applicable = "Yes" if r.applicable else "No"
+        results.append(f"- {r.regulation} ({r.requirement_id}): {r.requirement_text[:50]}... | Applicable: {applicable}")
+    return "\n".join(results)
+

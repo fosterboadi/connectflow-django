@@ -6,7 +6,8 @@ from django.conf import settings
 from channels.db import database_sync_to_async
 from .ai_tools import (
     _db_get_tickets, _db_get_projects, _db_get_project_milestones, 
-    _db_get_upcoming_meetings, _db_get_colleagues, _db_find_experts
+    _db_get_upcoming_meetings, _db_get_colleagues, _db_find_experts,
+    get_platform_revenue, _db_get_tasks, _db_get_risks, _db_get_compliance
 )
 
 class SupportAIConsumer(AsyncWebsocketConsumer):
@@ -58,7 +59,27 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
                     """Search for colleagues who have a specific skill (e.g. 'Python')."""
                     return _db_find_experts(self.user, skill_name)
 
-                self.tools = [get_my_tickets, get_my_projects, get_project_milestones, get_upcoming_meetings, list_colleagues, find_experts_by_skill]
+                def get_revenue_data():
+                    """(Admin Only) Get total platform revenue and recent payments."""
+                    return get_platform_revenue(self.user)
+
+                def get_my_tasks(status: str = None):
+                    """Get the list of tasks assigned to me or in my projects. Status can be 'TODO', 'IN_PROGRESS', etc."""
+                    return _db_get_tasks(self.user, status)
+
+                def get_project_risks(project_name: str = None):
+                    """Get the identified risks for a project."""
+                    return _db_get_risks(self.user, project_name)
+
+                def get_compliance_requirements(project_name: str = None):
+                    """Get compliance requirements and regulations for a project."""
+                    return _db_get_compliance(self.user, project_name)
+
+                self.tools = [
+                    get_my_tickets, get_my_projects, get_project_milestones, 
+                    get_upcoming_meetings, list_colleagues, find_experts_by_skill, 
+                    get_revenue_data, get_my_tasks, get_project_risks, get_compliance_requirements
+                ]
 
                 # Initialize chat with primary model
                 try:
