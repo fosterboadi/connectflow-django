@@ -1,3 +1,4 @@
+from django.db import models
 from apps.support.models import Ticket
 from apps.organizations.models import SharedProject
 
