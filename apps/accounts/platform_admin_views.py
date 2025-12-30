@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Q, Sum
 from apps.accounts.models import User
-from apps.organizations.models import Organization, SharedProject, SubscriptionPlan
+from apps.organizations.models import Organization, SharedProject, SubscriptionPlan, SubscriptionTransaction
 from apps.support.models import Ticket
 from apps.organizations.forms import SubscriptionPlanForm
 
@@ -230,4 +230,14 @@ def platform_manage_org_subscription(request, pk):
     return render(request, 'accounts/platform/manage_org_subscription.html', {
         'organization': org,
         'plans': plans
+    })
+
+@login_required
+@user_passes_test(super_admin_check)
+def platform_payment_list(request):
+    """List all subscription payments."""
+    transactions = SubscriptionTransaction.objects.select_related('organization', 'plan').order_by('-created_at')
+    
+    return render(request, 'accounts/platform/payment_list.html', {
+        'transactions': transactions
     })

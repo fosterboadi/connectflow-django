@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.urls import reverse
-from .models import SubscriptionPlan, Organization
+from .models import SubscriptionPlan, Organization, SubscriptionTransaction
 
 @login_required
 def billing_select_plan(request):
@@ -82,6 +82,19 @@ def paystack_webhook(request):
         org.paystack_subscription_code = data['data']['subscription_code']
         org.subscription_status = 'active'
         org.save()
+        
+        # Record Transaction
+        amount_kobo = data['data'].get('amount', 0)
+        final_amount = (amount_kobo / 100) if amount_kobo > 0 else plan.price_monthly
+        
+        SubscriptionTransaction.objects.create(
+            organization=org,
+            plan=plan,
+            amount=final_amount,
+            reference=data['data'].get('subscription_code'),
+            provider='paystack',
+            status='success'
+        )
         
     return HttpResponse(status=200)
 

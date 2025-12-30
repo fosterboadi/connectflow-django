@@ -1,0 +1,60 @@
+{% extends 'accounts/platform/base_admin.html' %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tight">Payment History</h1>
+            <p class="text-sm text-gray-500 font-medium">All received subscription payments.</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Organization</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Plan</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Amount</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Provider / Ref</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Date</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for txn in transactions %}
+                <tr class="hover:bg-gray-50/50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm font-bold text-gray-800">{{ txn.organization.name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs font-bold text-gray-600">{{ txn.plan.name }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <span class="text-sm font-black text-green-600">${{ txn.amount }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-bold text-gray-800 uppercase">{{ txn.provider }}</span>
+                            <span class="text-[10px] font-mono text-gray-400">{{ txn.reference }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-[10px] text-gray-400 font-medium">{{ txn.created_at|date:"M d, Y H:i" }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] font-black rounded uppercase tracking-widest">{{ txn.status }}</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500 italic">No payments recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

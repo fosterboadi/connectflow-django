@@ -27,6 +27,7 @@ urlpatterns = [
     path('platform/organizations/<uuid:pk>/subscription/', platform_admin_views.platform_manage_org_subscription, name='platform_manage_org_subscription'),
     path('platform/users/', platform_admin_views.platform_user_list, name='platform_user_list'),
     path('platform/users/<str:pk>/permissions/', platform_admin_views.platform_user_permissions, name='platform_user_permissions'),
+    path('platform/payments/', platform_admin_views.platform_payment_list, name='platform_payment_list'),
     
     # Subscription Tiers
     path('platform/plans/', platform_admin_views.platform_plan_list, name='platform_plan_list'),

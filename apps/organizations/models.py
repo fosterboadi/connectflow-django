@@ -40,6 +40,27 @@ class SubscriptionPlan(models.Model):
         verbose_name_plural = _('Subscription Plans')
 
 
+class SubscriptionTransaction(models.Model):
+    """Records payments received from organizations."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey('Organization', on_delete=models.CASCADE, related_name='transactions')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text=_("Amount paid"))
+    reference = models.CharField(max_length=255, unique=True, help_text=_("Payment provider reference/ID"))
+    provider = models.CharField(max_length=50, default='paystack', choices=[('paystack', 'Paystack'), ('stripe', 'Stripe')])
+    status = models.CharField(max_length=20, default='success')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'subscription_transactions'
+        verbose_name = _('Subscription Transaction')
+        verbose_name_plural = _('Subscription Transactions')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.organization.name} - {self.amount} ({self.created_at.date()})"
+
+
 class Organization(models.Model):
     """
     Organization model - represents a company or organization.
