@@ -27,9 +27,9 @@ class SupportAIConsumer(AsyncWebsocketConsumer):
             self.current_key_index = 0
             
             if self.api_keys:
-                # Use gemini-2.0-flash as primary for better tool calling reliability
-                self.primary_model_name = 'gemini-2.0-flash'
-                self.backup_model_name = 'gemini-flash-latest'
+                # Use stable aliases for the highest possible quota (1,500/day)
+                self.primary_model_name = 'gemini-flash-latest'
+                self.backup_model_name = 'gemini-pro-latest'
                 
                 context_data = await self.get_user_context()
                 self.user_context_str = context_data['instruction']
