@@ -404,9 +404,15 @@ def project_files(request, pk):
                 )
 
             messages.success(request, 'File uploaded successfully.')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
             return redirect('organizations:project_files', pk=pk)
     else:
         form = ProjectFileForm()
+        
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and request.method == 'POST':
+        # Handle form errors for AJAX
+        return JsonResponse({'success': False, 'error': 'Invalid form data.'}, status=400)
         
     return render(request, 'organizations/project_files.html', {
         'project': project,

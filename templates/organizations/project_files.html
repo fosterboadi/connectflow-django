@@ -97,6 +97,18 @@
                         <p id="warningText" class="text-xs text-red-800 font-bold"></p>
                     </div>
 
+                    <!-- Upload Progress Bar -->
+                    <div id="progressContainer" class="hidden space-y-2">
+                        <div class="flex justify-between items-end">
+                            <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest animate-pulse">Uploading...</span>
+                            <span id="progressPercent" class="text-xs font-black text-gray-900">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden border border-gray-200">
+                            <div id="progressBar" class="bg-indigo-600 h-full w-0 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
+                        </div>
+                        <p id="uploadStatus" class="text-[9px] text-gray-400 font-bold text-center uppercase tracking-tighter">Please do not close this window</p>
+                    </div>
+
                     <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                         Share with Project
                     </button>
@@ -117,6 +129,11 @@
         const nameDisplay = document.getElementById('fileNameDisplay');
         const sizeDisplay = document.getElementById('fileSizeDisplay');
         const submitBtn = document.getElementById('submitBtn');
+        
+        // Progress elements
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
 
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         {% with org=project.host_organization %}
@@ -147,6 +164,7 @@
             if (error) {
                 warningDiv.classList.remove('hidden');
                 warningText.textContent = error;
+                submitBtn.disabled = true;
                 submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
                 submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
             } else {
@@ -155,6 +173,63 @@
                 submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                 submitBtn.disabled = false;
             }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            // Final sanity check
+            if (file.size > MAX_FILE_SIZE || file.size > REMAINING_SPACE) return;
+
+            // UI Prep
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            progressContainer.classList.remove('hidden');
+            warningDiv.classList.add('hidden');
+
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressPercent.textContent = percent + '%';
+                    
+                    if (percent === 100) {
+                        document.getElementById('uploadStatus').textContent = 'Syncing with Cloudinary...';
+                    }
+                }
+            });
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        // Success - reload to show the new file
+                        window.location.reload();
+                    } else {
+                        // Error handling
+                        let errorMsg = 'An error occurred during upload.';
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.error) errorMsg = response.error;
+                        } catch (e) {}
+                        
+                        warningDiv.classList.remove('hidden');
+                        warningText.textContent = errorMsg;
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Share with Project';
+                        progressContainer.classList.add('hidden');
+                    }
+                }
+            };
+
+            xhr.open('POST', window.location.href, true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.send(formData);
         });
     });
 </script>
