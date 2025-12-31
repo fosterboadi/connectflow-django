@@ -372,6 +372,7 @@ def project_files(request, pk):
             project_file = form.save(commit=False)
             project_file.project = project
             project_file.uploader = request.user
+            # For CloudinaryField, form validation handles the upload
             project_file.save()
 
             # Notification logic

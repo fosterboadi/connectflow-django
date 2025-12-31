@@ -216,19 +216,25 @@ class Organization(models.Model):
                 # Standard Project Files
                 for project_file in project.files.all():
                     try:
-                        if project_file.file and hasattr(project_file.file, 'size'):
-                            total_bytes += project_file.file.size
-                    except Exception as e:
-                        # Log error if needed, but don't crash
+                        if project_file.file:
+                            # CloudinaryResource uses .bytes
+                            if hasattr(project_file.file, 'bytes'):
+                                total_bytes += project_file.file.bytes
+                            elif hasattr(project_file.file, 'size'):
+                                total_bytes += project_file.file.size
+                    except Exception:
                         continue
                 
                 # Compliance Evidence Files
                 for requirement in project.compliance_requirements.all():
                     for evidence in requirement.evidence.all():
                         try:
-                            if evidence.document and hasattr(evidence.document, 'size'):
-                                total_bytes += evidence.document.size
-                        except Exception as e:
+                            if evidence.document:
+                                if hasattr(evidence.document, 'bytes'):
+                                    total_bytes += evidence.document.bytes
+                                elif hasattr(evidence.document, 'size'):
+                                    total_bytes += evidence.document.size
+                        except Exception:
                             continue
         except Exception:
             # Final fallback to ensure no 500 error
@@ -476,8 +482,10 @@ class ProjectFile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(SharedProject, on_delete=models.CASCADE, related_name='files')
     uploader = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
-    file = models.FileField(
-        upload_to='projects/files',
+    file = CloudinaryField(
+        'file',
+        folder='projects/files',
+        resource_type='auto',
         help_text=_("Shared file")
     )
     name = models.CharField(max_length=255)
@@ -723,10 +731,12 @@ def delete_org_logo_from_cloudinary(sender, instance, **kwargs):
 def delete_project_file_from_cloudinary(sender, instance, **kwargs):
     if instance.file:
         try:
-            # This calls the storage backend's delete method (RawMediaCloudinaryStorage)
-            instance.file.delete(save=False)
+            cloudinary.uploader.destroy(instance.file.public_id, resource_type="auto")
         except Exception as e:
-            print(f"File deletion error: {e}")
+            try:
+                cloudinary.uploader.destroy(instance.file.name, resource_type="auto")
+            except:
+                print(f"Project file deletion error: {e}")
 
 @receiver(m2m_changed, sender=Team.members.through)
 def notify_members_added_to_team(sender, instance, action, pk_set, **kwargs):
