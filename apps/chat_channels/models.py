@@ -194,6 +194,22 @@ class Message(models.Model):
     Supports text, files, mentions, reactions, and threading.
     """
     
+    class MessageType(models.TextChoices):
+        TEXT = 'TEXT', _('Text')
+        EMOJI = 'EMOJI', _('Emoji')
+        VOICE = 'VOICE', _('Voice Note')
+        IMAGE = 'IMAGE', _('Image')
+        VIDEO = 'VIDEO', _('Video')
+        FILE = 'FILE', _('File')
+        SYSTEM = 'SYSTEM', _('System Notice')
+
+    class MessageStatus(models.TextChoices):
+        SENDING = 'SENDING', _('Sending')
+        SENT = 'SENT', _('Sent')
+        DELIVERED = 'DELIVERED', _('Delivered')
+        READ = 'READ', _('Read')
+        FAILED = 'FAILED', _('Failed')
+
     # Managers
     objects = MessageManager()
     all_objects = models.Manager() # Default manager to access everything
@@ -204,6 +220,18 @@ class Message(models.Model):
         editable=False
     )
     
+    message_type = models.CharField(
+        max_length=10,
+        choices=MessageType.choices,
+        default=MessageType.TEXT
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=MessageStatus.choices,
+        default=MessageStatus.SENT
+    )
+
     channel = models.ForeignKey(
         Channel,
         on_delete=models.CASCADE,
@@ -323,6 +351,8 @@ class Message(models.Model):
         from django.utils import timezone
         self.is_deleted = True
         self.deleted_at = timezone.now()
+        self.message_type = self.MessageType.SYSTEM
+        self.content = 'This message was deleted.'
         if user:
             self.deleted_by = user
         self.save()

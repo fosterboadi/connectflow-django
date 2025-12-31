@@ -283,19 +283,20 @@ def channel_detail(request, pk):
         if form.is_valid():
             message = form.save(commit=False)
             message.channel = channel
-            message.sender = user
+            message.sender = request.user
             
-            # Handle parent message for threading
-            parent_id = request.POST.get('parent_message')
-            if parent_id:
-                try:
-                    message.parent_message = Message.objects.get(id=parent_id)
-                except Message.DoesNotExist:
-                    pass
-            if message.voice_message and not message.content.strip():
-                message.content = ''  # Empty string for voice-only messages
+            # Identify message type
+            if request.FILES.get('voice_message'):
+                message.message_type = 'VOICE'
+            elif request.FILES.getlist('attachments'):
+                first_file = request.FILES.getlist('attachments')[0]
+                if first_file.content_type.startswith('image/'):
+                    message.message_type = 'IMAGE'
+                elif first_file.content_type.startswith('video/'):
+                    message.message_type = 'VIDEO'
+                else:
+                    message.message_type = 'FILE'
             
-            # Save the message first
             message.save()
             
             processed_attachments = []
@@ -322,13 +323,14 @@ def channel_detail(request, pk):
                 return JsonResponse({
                     'success': True,
                     'message_id': str(message.id),
+                    'message_type': message.message_type,
                     'content': message.content,
-                    'sender_name': user.get_full_name(),
-                    'sender_avatar': user.avatar.url if user.avatar else None,
-                    'timestamp': message.created_at.strftime('%b %d, %I:%M %p'),
+                    'sender_avatar': request.user.avatar.url if request.user.avatar else None,
                     'voice_message_url': message.voice_message.url if message.voice_message else None,
-                    'voice_duration': message.voice_duration,
-                    'attachments': processed_attachments
+                    'timestamp': message.created_at.strftime('%b %d, %I:%M %p'),
+                    'attachments': [
+                        {'name': att.file.name, 'url': att.file.url} for att in message.attachments.all()
+                    ]
                 })
             
             return redirect('chat_channels:channel_detail', pk=pk)

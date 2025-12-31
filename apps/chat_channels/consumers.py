@@ -82,6 +82,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             broadcast_data = {
                 'type': 'chat_message',
                 'message': content,
+                'message_type': data.get('message_type', 'TEXT'),
+                'status': 'SENT',
                 'sender_id': self.user.id,
                 'sender_name': self.user.get_full_name(),
                 'sender_organization': org_name,
@@ -100,10 +102,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 # Fetch parent details if it exists
                 if parent_id:
                     broadcast_data['parent_details'] = await self.get_message_summary(parent_id)
+                
+                # Update status if needed
+                await self.update_message_type_status(message_id, broadcast_data['message_type'], 'SENT')
+                
                 await self.channel_layer.group_send(self.room_group_name, broadcast_data)
             elif content or voice_url:
                 # New message to save
-                saved_message = await self.save_message(content, parent_id)
+                msg_type = broadcast_data['message_type']
+                saved_message = await self.save_message(content, parent_id, msg_type)
                 broadcast_data['message_id'] = str(saved_message.id)
                 broadcast_data['timestamp'] = saved_message.created_at.strftime('%b %d, %I:%M %p')
                 if parent_id:
@@ -187,6 +194,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'chat_message',
             'message': event.get('message', ''),
+            'message_type': event.get('message_type', 'TEXT'),
+            'status': event.get('status', 'SENT'),
             'sender_id': event['sender_id'],
             'sender_name': event['sender_name'],
             'sender_avatar': event['sender_avatar'],
@@ -374,7 +383,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def save_message(self, content, parent_id=None):
+    def save_message(self, content, parent_id=None, message_type='TEXT'):
         channel = Channel.objects.get(id=self.channel_id)
         parent = None
         if parent_id:
@@ -387,8 +396,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
             channel=channel,
             sender=self.user,
             content=content,
-            parent_message=parent
+            parent_message=parent,
+            message_type=message_type
         )
+
+    @database_sync_to_async
+    def update_message_type_status(self, message_id, message_type, status):
+        try:
+            Message.objects.filter(id=message_id).update(
+                message_type=message_type,
+                status=status
+            )
+            return True
+        except Exception:
+            return False
 
     @database_sync_to_async
     def edit_message(self, message_id, content):

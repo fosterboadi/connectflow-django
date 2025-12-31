@@ -56,3 +56,8 @@ def float_sub(value, arg):
         return round(float(value) - float(arg), 2)
     except (ValueError, TypeError):
         return value
+
+@register.simple_tag(takes_context=True)
+def define_var(context, name, value):
+    context[name] = value
+    return ''

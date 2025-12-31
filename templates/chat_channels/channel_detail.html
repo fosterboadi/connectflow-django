@@ -21,6 +21,19 @@
     
     .context-menu { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
     .message-wrapper.pinned { border-left: 2px solid #4f46e5; background-color: rgba(79, 70, 229, 0.05); }
+    
+    /* Grouping & Rules */
+    .message-wrapper.grouped { margin-top: -1.25rem; }
+    .message-wrapper.grouped .avatar-container { visibility: hidden; }
+    .message-wrapper.grouped .sender-info { display: none; }
+    
+    .system-notice { align-self: center; background: #f3f4f6; color: #6b7280; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.75rem; rounded: 9999px; border: 1px solid #e5e7eb; margin: 1rem 0; }
+    .dark .system-notice { background: #374151; color: #9ca3af; border-color: #4b5563; }
+    
+    .new-messages-indicator { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4f46e5; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 10px; font-weight: 800; cursor: pointer; z-index: 40; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    
+    /* Emoji scaling */
+    .emoji-large { font-size: 4rem; line-height: 1; }
 </style>
 {% endblock %}
 
@@ -85,30 +98,34 @@
 
         <div class="message-history" id="messages-container">
             {% for message in chat_messages %}
-                <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %} message-wrapper" id="message-{{ message.pk }}" data-message-id="{{ message.pk }}">
-                    <div class="flex-shrink-0">{% if message.sender.avatar %}<img src="{{ message.sender.avatar.url }}" class="w-9 h-9 rounded-xl object-cover shadow-sm">{% else %}<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">{{ message.sender.username.0|upper }}</div>{% endif %}</div>
+                {% with prev_msg=chat_messages|get_item:forloop.counter0|add:"-1" %}
+                {% define_var "is_grouped" "false" %}
+                {# Simplified grouping logic for template - real grouping handled by JS for new messages #}
+                
+                <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %} message-wrapper" 
+                     id="message-{{ message.pk }}" 
+                     data-message-id="{{ message.pk }}"
+                     data-sender-id="{{ message.sender.id }}"
+                     data-timestamp="{{ message.created_at|date:'U' }}">
+                    
+                    <div class="flex-shrink-0 avatar-container">
+                        {% if message.sender.avatar %}
+                            <img src="{{ message.sender.avatar.url }}" class="w-9 h-9 rounded-xl object-cover shadow-sm">
+                        {% else %}
+                            <div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">
+                                {{ message.sender.username.0|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+
                     <div class="flex-1 max-w-2xl group relative">
-                        <div class="flex items-center space-x-2 mb-1 {% if message.sender == user %}justify-end{% endif %}">
+                        <div class="flex items-center space-x-2 mb-1 sender-info {% if message.sender == user %}justify-end{% endif %}">
                             <span class="font-bold text-xs text-gray-700 dark:text-gray-200">{{ message.sender.get_full_name }}</span>
                             {% if message.is_pinned %}<span class="text-indigo-500 pin-indicator"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"></path></svg></span>{% endif %}
-                            <span class="star-indicator {% if not user in message.starred_by.all %}hidden{% endif %} text-yellow-400">
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                            </span>
-                            {% if channel.shared_project and message.sender.organization %}
-                                <span class="ml-1 text-[9px] text-gray-400 font-bold uppercase tracking-tighter border border-gray-200 dark:border-gray-600 px-1 rounded">{{ message.sender.organization.name }}</span>
-                            {% endif %}
                             <span class="text-[9px] text-gray-400 font-medium">{{ message.created_at|date:"h:i A" }}</span>
-                            {% if message.sender == user %}
-                                <span class="read-receipt text-gray-300" data-message-id="{{ message.pk }}">
-                                    {% if message.read_receipts.exists %}
-                                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
-                                    {% else %}
-                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
-                                    {% endif %}
-                                </span>
-                            {% endif %}
                         </div>
-                        <div class="relative">
+
+                        <div class="relative message-body-container" data-message-type="{{ message.message_type }}">
                             {% if message.is_deleted %}
                                 <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl px-4 py-2 border border-dashed border-gray-200 dark:border-gray-700">
                                     <p class="text-xs italic text-gray-400">This message was deleted.</p>
@@ -121,37 +138,61 @@
                                     </div>
                                 {% endif %}
 
-                                {% if message.voice_message %}
-                                <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 min-w-[260px]">
-                                    <div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('{{ message.pk }}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-{{ message.pk }}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-{{ message.pk }}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-{{ message.pk }}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-{{ message.pk }}">0:00</span></div>
-                                    <audio id="audio-{{ message.pk }}" src="{{ message.voice_message.url }}" class="hidden" preload="metadata"></audio>
-                                </div>
-                            {% elif message.attachments.all %}
-                                <div class="space-y-2">
-                                    {% for att in message.attachments.all %}
-                                        {% if att.is_image %}
-                                            <a href="{{ att.file.url }}" target="_blank" class="block mb-2 group relative">
-                                                <img src="{{ att.file.url }}" alt="{{ att.file.name|basename }}" class="rounded-lg max-h-80 w-auto object-cover border border-gray-200 dark:border-gray-700 hover:opacity-95 transition shadow-sm">
-                                            </a>
-                                        {% elif att.is_video %}
-                                            <div class="block mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black shadow-sm max-w-sm">
-                                                <video controls class="w-full max-h-80" preload="metadata">
-                                                    <source src="{{ att.file.url }}">
-                                                    Your browser does not support the video tag.
-                                                </video>
-                                            </div>
-                                        {% else %}
-                                            <a href="{{ att.file.url }}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm">
-                                                <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                                <span class="text-[10px] font-black uppercase truncate max-w-[120px]">{{ att.file.name|basename }}</span>
-                                            </a>
+                                {% if message.message_type == 'VOICE' %}
+                                    <div class="voice-player-shell {% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 min-w-[260px]">
+                                        <div class="flex items-center space-x-3 py-1">
+                                            <button type="button" onclick="toggleWaveform('{{ message.pk }}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-{{ message.pk }}">
+                                                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-{{ message.pk }}"><path d="M8 5v14l11-7z"/></svg>
+                                            </button>
+                                            <div class="flex-1"><div id="waveform-{{ message.pk }}" class="h-10"></div></div>
+                                            <span class="text-[10px] font-black opacity-70" id="duration-{{ message.pk }}">0:00</span>
+                                        </div>
+                                        {% if message.voice_message %}
+                                            <audio id="audio-{{ message.pk }}" src="{{ message.voice_message.url }}" class="hidden" preload="metadata"></audio>
                                         {% endif %}
-                                    {% endfor %}
-                                    {% if message.content %}<div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 mt-2"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p></div>{% endif %}
-                                </div>
-                            {% elif message.content|is_emoji_only %}<div class="message-content {% if message.sender == user %}text-right{% endif %}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">{{ message.content }}</span></div>
-                            {% elif message.content %}<div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p></div>{% endif %}
+                                    </div>
+                                {% elif message.message_type == 'EMOJI' %}
+                                    <div class="message-content {% if message.sender == user %}text-right{% endif %}">
+                                        <span class="{% if message.content|emoji_count <= 3 %}emoji-large{% else %}text-2xl{% endif %} leading-none inline-block hover:scale-110 transition-transform cursor-default">
+                                            {{ message.content }}
+                                        </span>
+                                    </div>
+                                {% elif message.message_type == 'IMAGE' or message.attachments.exists %}
+                                    <div class="space-y-2">
+                                        {% for att in message.attachments.all %}
+                                            {% if att.is_image %}
+                                                <a href="{{ att.file.url }}" target="_blank" class="block mb-2 group relative">
+                                                    <img src="{{ att.file.url }}" class="rounded-lg max-h-80 w-auto object-cover border border-gray-200 dark:border-gray-700 hover:opacity-95 transition shadow-sm">
+                                                </a>
+                                            {% else %}
+                                                <a href="{{ att.file.url }}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm">
+                                                    <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                                    <span class="text-[10px] font-black uppercase truncate max-w-[120px]">{{ att.file.name|basename }}</span>
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if message.content %}<div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3 mt-2"><p class="whitespace-pre-wrap break-words message-content text-sm">{{ message.content }}</p></div>{% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3">
+                                        <p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p>
+                                    </div>
+                                {% endif %}
                             {% endif %}
+                            
+                            {% if not message.is_deleted %}
+                                <div class="message-status-indicator mt-1 flex {% if message.sender == user %}justify-end{% endif %}">
+                                    <span class="text-[8px] font-bold uppercase tracking-tighter text-gray-400" id="status-{{ message.pk }}">
+                                        {{ message.get_status_display }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
                             
                             {% if not message.is_deleted %}
                             <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 {% if message.sender == user %}right-full mr-2{% else %}left-full ml-2{% endif %} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
@@ -486,98 +527,141 @@ document.addEventListener("DOMContentLoaded", function () {
         submitBtn.disabled = !(hasText || hasFiles || hasVoice || isEditing);
     }
 
-    function appendMessage(data) {
-        console.log("Incoming message data:", data);
-        if (document.getElementById(`message-${data.message_id}`)) return;
-        const isMe = data.sender_id.toString() === userId.toString();
-        const div = document.createElement('div');
-        div.className = `flex space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} message-wrapper`;
-        div.id = `message-${data.message_id}`;
-        div.setAttribute('data-message-id', data.message_id);
-        const avatar = data.sender_avatar ? `<img src="${data.sender_avatar}" class="w-9 h-9 rounded-xl object-cover shadow-sm">` : `<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">${data.sender_name[0].toUpperCase()}</div>`;
-        
-        let content = '';
-        const imgExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'];
-        const vidExtensions = ['.mp4', '.mov', '.webm', '.avi', '.mkv'];
-        
-        const hasImgExt = (url) => {
-            if (!url) return false;
-            const path = url.toLowerCase().split('?')[0];
-            return imgExtensions.some(ext => path.endsWith(ext));
-        };
-        const hasVidExt = (url) => {
-            if (!url) return false;
-            const path = url.toLowerCase().split('?')[0];
-            return vidExtensions.some(ext => path.endsWith(ext));
-        };
+    function appendMessage(data, isPlaceholder = false) {
+        console.log("Appending message:", data);
+        const existingMsg = document.getElementById(`message-${data.message_id}`);
+        if (existingMsg && !isPlaceholder) {
+            // Update placeholder with real data
+            existingMsg.classList.remove('opacity-50');
+            existingMsg.id = `message-${data.message_id}`;
+            const statusEl = existingMsg.querySelector('.message-status-indicator span');
+            if (statusEl) statusEl.textContent = 'Sent';
+            return;
+        }
 
-        let quoteHtml = '';
-        if (data.parent_details) {
-            quoteHtml = `
-                <div class="mb-1 bg-gray-50/80 dark:bg-gray-800/50 border-l-4 border-indigo-500 rounded-lg p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors" onclick="jumpToMessage('${data.parent_details.id}')">
-                    <p class="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-0.5">${data.parent_details.sender_name}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${data.parent_details.content}</p>
+        const isMe = data.sender_id.toString() === userId.toString();
+        const lastMsg = messagesContainer.lastElementChild;
+        let isGrouped = false;
+
+        if (lastMsg && lastMsg.classList.contains('message-wrapper')) {
+            const lastSenderId = lastMsg.dataset.senderId;
+            const lastTimestamp = parseInt(lastMsg.dataset.timestamp);
+            const currentTimestamp = Math.floor(Date.now() / 1000);
+            
+            // Group if same sender and within 5 minutes
+            if (lastSenderId === data.sender_id.toString() && (currentTimestamp - lastTimestamp) < 300) {
+                isGrouped = true;
+            }
+        }
+
+        const div = document.createElement('div');
+        div.className = `flex space-x-3 ${isMe ? 'flex-row-reverse space-x-reverse' : ''} message-wrapper ${isGrouped ? 'grouped' : ''} ${isPlaceholder ? 'opacity-50' : ''}`;
+        div.id = isPlaceholder ? `temp-${Date.now()}` : `message-${data.message_id}`;
+        div.dataset.messageId = data.message_id;
+        div.dataset.senderId = data.sender_id;
+        div.dataset.timestamp = Math.floor(Date.now() / 1000);
+
+        const avatar = isGrouped ? '' : (data.sender_avatar ? `<img src="${data.sender_avatar}" class="w-9 h-9 rounded-xl object-cover shadow-sm">` : `<div class="w-9 h-9 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xs">${data.sender_name[0].toUpperCase()}</div>`);
+        
+        let bodyContent = '';
+        const msgType = data.message_type || 'TEXT';
+
+        if (msgType === 'VOICE') {
+            bodyContent = `
+                <div class="voice-player-shell ${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm'} rounded-2xl px-4 py-3 min-w-[260px]">
+                    <div class="flex items-center space-x-3 py-1">
+                        <button type="button" class="text-current hover:scale-110 transition flex-shrink-0" onclick="toggleWaveform('${data.message_id}')">
+                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-${data.message_id}"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                        <div class="flex-1"><div id="waveform-${data.message_id}" class="h-10"></div></div>
+                        <span class="text-[10px] font-black opacity-70" id="duration-${data.message_id}">0:00</span>
+                    </div>
+                </div>
+            `;
+        } else if (msgType === 'EMOJI') {
+            const count = data.message.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\S/g)?.length || 0;
+            bodyContent = `
+                <div class="message-content ${isMe ? 'text-right' : ''}">
+                    <span class="${count <= 3 ? 'emoji-large' : 'text-2xl'} leading-none inline-block hover:scale-110 transition-transform cursor-default">
+                        ${data.message}
+                    </span>
+                </div>
+            `;
+        } else if (msgType === 'SYSTEM') {
+            div.className = 'system-notice';
+            div.innerHTML = data.message;
+            messagesContainer.appendChild(div);
+            return;
+        } else {
+            // TEXT or fallback
+            bodyContent = `
+                <div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm'} rounded-2xl px-4 py-3">
+                    <p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p>
                 </div>
             `;
         }
 
-        if (data.voice_message_url) {
-            content = `${quoteHtml}<div class="${isMe ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 min-w-[260px]"><div class="flex items-center space-x-3 py-1"><button type="button" onclick="toggleWaveform('${data.message_id}')" class="text-current hover:scale-110 transition flex-shrink-0" id="play-btn-${data.message_id}"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" id="icon-${data.message_id}"><path d="M8 5v14l11-7z"/></svg></button><div class="flex-1"><div id="waveform-${data.message_id}" class="h-10"></div></div><span class="text-[10px] font-black opacity-70" id="duration-${data.message_id}">0:00</span></div></div>`;
-        } else if (data.attachments && data.attachments.length > 0) {
-            content = `<div class="space-y-2">`;
-            content += quoteHtml;
-            data.attachments.forEach(att => {
-                const isImg = att.is_image || hasImgExt(att.url) || hasImgExt(att.name);
-                const isVid = att.is_video || hasVidExt(att.url) || hasVidExt(att.name);
-                
-                if (isImg) {
-                    content += `<a href="${att.url}" target="_blank" class="block mb-2 group relative"><img src="${att.url}" class="rounded-lg max-h-80 w-auto object-cover border border-gray-200 dark:border-gray-700 hover:opacity-95 transition shadow-sm"></a>`;
-                } else if (isVid) {
-                    content += `<div class="block mb-2 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-black shadow-sm max-w-sm"><video controls class="w-full max-h-80" preload="metadata"><source src="${att.url}">Your browser does not support the video tag.</video></div>`;
-                } else {
-                    content += `<a href="${att.url}" target="_blank" class="flex items-center p-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-600 transition shadow-sm"><svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><span class="text-[10px] font-black uppercase truncate max-w-[120px]">${att.name}</span></a>`;
-                }
-            });
-            if (data.message) content += `<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3 mt-2"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
-            content += `</div>`;
-        } else if (isEmojiOnly(data.message)) {
-            content = `${quoteHtml}<div class="message-content ${isMe ? 'text-right' : ''}"><span class="text-5xl leading-none inline-block hover:scale-110 transition-transform cursor-default">${data.message}</span></div>`;
-        } else {
-            content = `${quoteHtml}<div class="${isMe ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'} rounded-2xl px-4 py-3"><p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">${data.message}</p></div>`;
-        }
+        const senderInfo = isGrouped ? '' : `
+            <div class="flex items-center space-x-2 mb-1 sender-info ${isMe ? 'justify-end' : ''}">
+                <span class="font-bold text-xs text-gray-700 dark:text-gray-200">${data.sender_name}</span>
+                <span class="text-[9px] text-gray-400 font-medium">Just now</span>
+            </div>
+        `;
+
+        const status = isMe ? `
+            <div class="message-status-indicator mt-1 flex justify-end">
+                <span class="text-[8px] font-bold uppercase tracking-tighter text-gray-400">
+                    ${isPlaceholder ? 'Sending...' : (data.status || 'Sent')}
+                </span>
+            </div>
+        ` : '';
+
+        div.innerHTML = `
+            <div class="flex-shrink-0 avatar-container" style="width: 36px">${avatar}</div>
+            <div class="flex-1 max-w-2xl group relative">
+                ${senderInfo}
+                <div class="relative">
+                    ${bodyContent}
+                    ${status}
+                </div>
+            </div>
+        `;
+
+        // Scroll logic
+        const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 100;
         
-        const actions = `<div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 ${isMe ? 'right-full mr-2' : 'left-full ml-2'} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
-            <button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="${data.message_id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-            <button type="button" class="message-menu-trigger p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="${data.message_id}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg></button>
-        </div>`;
-
-        const menu = `<div id="context-menu-${data.message_id}" class="hidden context-menu absolute z-[60] w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 top-0 ${isMe ? 'right-full mr-2' : 'left-full ml-2'}">
-            <ul>
-                <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('reply', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l5 5m-5-5l5-5"></path></svg>Reply</button></li>
-                <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('react', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>React</button></li>
-                <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('copy', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3"></path></svg>Copy Text</button></li>
-                <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('forward', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316"></path></svg>Forward</button></li>
-                <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('pin', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>${data.is_pinned ? 'Unpin' : 'Pin'}</button></li>
-                <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('star', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>Star</button></li>
-                ${ {{ channel.shared_project|yesno:"true,false" }} ? `<li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center border-t border-gray-50 dark:border-gray-700 mt-1" onclick="handleMenuAction('add-task', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>Create Project Task</button></li>` : ''}
-                ${isMe ? `<li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center border-t border-gray-50 dark:border-gray-700 mt-1" onclick="handleMenuAction('delete', '${data.message_id}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Delete</button></li>` : ''}
-            </ul>
-        </div>`;
-
-        const pinIcon = data.is_pinned ? '<span class="text-indigo-500 pin-indicator"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"></path></svg></span>' : '';
-        const starIcon = `<span class="star-indicator ${data.is_starred ? '' : 'hidden'} text-yellow-400"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg></span>`;
-        const readReceipt = isMe ? `<span class="read-receipt text-gray-300" data-message-id="${data.message_id}"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg></span>` : '';
-
-        div.innerHTML = `<div class="flex-shrink-0">${avatar}</div><div class="flex-1 max-w-2xl group relative"><div class="flex items-center space-x-2 mb-1 ${isMe ? 'justify-end' : ''}"><span class="font-bold text-xs text-gray-700 dark:text-gray-200">${data.sender_name}</span>${pinIcon}${starIcon}<span class="text-[9px] text-gray-400 font-medium">Just now</span>${readReceipt}</div><div class="relative">${content}${actions}${menu}</div></div>`;
-        if (data.is_pinned) {
-            div.classList.add('pinned');
-            messagesContainer.prepend(div);
+        messagesContainer.appendChild(div);
+        
+        if (isAtBottom || isMe) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } else {
-            messagesContainer.appendChild(div);
+            showNewMessageIndicator();
         }
-        bindActions(div);
-        observeMessages();
+
+        if (data.voice_message_url) {
+            initWaveform(data.message_id, data.voice_message_url, isMe);
+        }
     }
+
+    function showNewMessageIndicator() {
+        if (document.getElementById('new-messages-indicator')) return;
+        const indicator = document.createElement('div');
+        indicator.id = 'new-messages-indicator';
+        indicator.className = 'new-messages-indicator';
+        indicator.textContent = 'New Messages ↓';
+        indicator.onclick = () => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            indicator.remove();
+        };
+        messagesPanel.appendChild(indicator);
+    }
+
+    messagesContainer.onscroll = () => {
+        const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50;
+        if (isAtBottom) {
+            document.getElementById('new-messages-indicator')?.remove();
+        }
+    };
 
     function bindActions(el) {
         el.querySelectorAll('.edit-message-btn').forEach(b => b.onclick = () => startEditing(b.dataset.messageId));
@@ -860,15 +944,45 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     chatForm.onsubmit = async (e) => {
-        e.preventDefault(); const msg = messageInput.value.trim(); if (!msg && !recordedBlob && !selectedFiles.length && !isEditing) return;
+        e.preventDefault(); 
+        const msg = messageInput.value.trim(); 
+        if (!msg && !recordedBlob && !selectedFiles.length && !isEditing) return;
         
         try {
-            submitBtn.disabled = true;
             if (isEditing) {
+                submitBtn.disabled = true;
                 const res = await fetch(`/channels/message/${editingMessageId}/edit/`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }, body: `content=${encodeURIComponent(msg)}` });
                 if (res.ok) { sendMessage({ type: 'message_edit', message_id: editingMessageId, message: msg }); cancelEditing(); }
                 else { alert('Failed to edit message. Please try again.'); }
             } else {
+                // Rule 2 & 3: Detect type and render immediately
+                let messageType = 'TEXT';
+                if (isEmojiOnly(msg)) messageType = 'EMOJI';
+                if (recordedBlob) messageType = 'VOICE';
+                if (selectedFiles.length > 0) {
+                    const firstFile = selectedFiles[0];
+                    if (firstFile.type.startsWith('image/')) messageType = 'IMAGE';
+                    else if (firstFile.type.startsWith('video/')) messageType = 'VIDEO';
+                    else messageType = 'FILE';
+                }
+
+                // Placeholder for immediate rendering
+                const placeholderData = {
+                    message_id: 'temp-' + Date.now(),
+                    message: msg,
+                    message_type: messageType,
+                    sender_id: userId,
+                    sender_name: userName,
+                    sender_avatar: '{{ user.avatar.url|default:"" }}',
+                    status: 'SENDING',
+                    timestamp: 'Just now'
+                };
+                
+                // Don't append placeholder for voice/file yet as they need real URLs
+                if (messageType === 'TEXT' || messageType === 'EMOJI') {
+                    appendMessage(placeholderData, true);
+                }
+
                 const fd = new FormData(chatForm);
                 fd.delete('attachments');
                 selectedFiles.forEach(file => fd.append('attachments', file));
@@ -883,25 +997,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 
                 if (recordedBlob || selectedFiles.length) {
+                    submitBtn.disabled = true;
                     submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
                     
                     const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
-                    
-                    let data;
-                    const contentType = res.headers.get("content-type");
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
-                        data = await res.json();
-                    } else {
-                        const text = await res.text();
-                        console.error("Non-JSON response:", text);
-                        throw new Error(`Server returned status ${res.status}. Check console for details.`);
-                    }
+                    const data = await res.json();
 
-                    if (!res.ok) {
-                        throw new Error(data.error || 'Server error');
-                    }
-                    
-                    if (data.success) { 
+                    if (res.ok && data.success) { 
                         clearVoiceRecording(); 
                         selectedFiles = [];
                         renderFilePreviews();
@@ -910,6 +1012,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         sendMessage({ 
                             type: 'chat_message', 
                             message_id: data.message_id, 
+                            message_type: messageType,
                             sender_id: userId, 
                             sender_name: userName, 
                             sender_avatar: data.sender_avatar, 
@@ -922,7 +1025,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         alert('Upload failed: ' + (data.error || 'Unknown error'));
                     }
                 } else { 
-                    const msgData = { 'message': msg };
+                    const msgData = { 
+                        'message': msg,
+                        'message_type': messageType
+                    };
                     if (isReplying) msgData['parent_message_id'] = replyingToId;
                     sendMessage(msgData); 
                     messageInput.value = ''; 
