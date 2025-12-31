@@ -48,3 +48,11 @@ def replace_string(value, arg):
         return value
     old, new = arg.split(',', 1)
     return value.replace(old, new)
+
+@register.filter
+def float_sub(value, arg):
+    """Subtracts the arg from the value."""
+    try:
+        return round(float(value) - float(arg), 2)
+    except (ValueError, TypeError):
+        return value

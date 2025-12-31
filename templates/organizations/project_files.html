@@ -56,8 +56,24 @@
         <!-- Upload Form -->
         <div>
             <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 sticky top-8">
+                <div class="mb-6 pb-6 border-b border-gray-50">
+                    <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Storage Capacity</h3>
+                    {% with org=project.host_organization %}
+                    {% with usage=org.get_storage_usage limit=org.get_plan.max_storage_mb %}
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-2xl font-black text-gray-900">{{ usage }} MB</span>
+                        <span class="text-xs font-bold text-gray-400">of {{ limit }} MB used</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div class="bg-indigo-600 h-full transition-all duration-500" style="width: {{ org.get_storage_usage_percentage }}%"></div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Remaining: <span class="text-indigo-600 font-bold">{{ limit|add:"-0"|float_sub:usage }} MB</span></p>
+                    {% endwith %}
+                    {% endwith %}
+                </div>
+
                 <h3 class="text-xl font-bold text-gray-800 mb-4">Upload New File</h3>
-                <form method="post" enctype="multipart/form-data" class="space-y-4">
+                <form id="uploadForm" method="post" enctype="multipart/form-data" class="space-y-4">
                     {% csrf_token %}
                     {% for field in form %}
                         <div>
@@ -68,12 +84,77 @@
                             {% endif %}
                         </div>
                     {% endfor %}
-                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition shadow-md">
+                    
+                    <div id="fileInfo" class="hidden bg-blue-50 border border-blue-100 p-3 rounded-lg">
+                        <p class="text-[10px] font-bold text-blue-700 uppercase tracking-tight">Selected File Info:</p>
+                        <p id="fileNameDisplay" class="text-xs text-blue-900 font-medium truncate"></p>
+                        <p id="fileSizeDisplay" class="text-xs text-blue-800"></p>
+                    </div>
+
+                    <div id="uploadWarning" class="hidden bg-red-50 border border-red-100 p-3 rounded-lg">
+                        <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1 italic">⚠️ Warning</p>
+                        <p id="warningText" class="text-xs text-red-800 font-bold"></p>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                         Share with Project
                     </button>
+                    <p class="text-[10px] text-center text-gray-400 font-medium">Max individual file size: 10MB</p>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.querySelector('input[type="file"]');
+        const form = document.getElementById('uploadForm');
+        const warningDiv = document.getElementById('uploadWarning');
+        const warningText = document.getElementById('warningText');
+        const infoDiv = document.getElementById('fileInfo');
+        const nameDisplay = document.getElementById('fileNameDisplay');
+        const sizeDisplay = document.getElementById('fileSizeDisplay');
+        const submitBtn = document.getElementById('submitBtn');
+
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        {% with org=project.host_organization %}
+        const REMAINING_SPACE = ({{ org.get_plan.max_storage_mb }} - {{ org.get_storage_usage }}) * 1024 * 1024;
+        {% endwith %}
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) {
+                warningDiv.classList.add('hidden');
+                infoDiv.classList.add('hidden');
+                submitBtn.disabled = false;
+                return;
+            }
+
+            // Show Info
+            infoDiv.classList.remove('hidden');
+            nameDisplay.textContent = file.name;
+            sizeDisplay.textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            let error = '';
+            if (file.size > MAX_FILE_SIZE) {
+                error = 'This file exceeds the 10MB individual limit. It will be rejected by the server.';
+            } else if (file.size > REMAINING_SPACE) {
+                error = 'This file exceeds your organization\'s remaining storage space.';
+            }
+
+            if (error) {
+                warningDiv.classList.remove('hidden');
+                warningText.textContent = error;
+                submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                submitBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            } else {
+                warningDiv.classList.add('hidden');
+                submitBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                submitBtn.disabled = false;
+            }
+        });
+    });
+</script>
 {% endblock %}

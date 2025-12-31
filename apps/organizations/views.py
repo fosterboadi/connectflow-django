@@ -185,12 +185,16 @@ def add_compliance_evidence(request, pk, req_pk):
         return JsonResponse({'success': False}, status=403)
     
     # Check Storage Limit
-    current_usage = project.host_organization.get_storage_usage()
-    max_storage = project.host_organization.get_plan().max_storage_mb
+    org = project.host_organization
+    current_usage_mb = org.get_storage_usage()
+    max_storage_mb = org.get_plan().max_storage_mb
     
-    if current_usage >= max_storage:
-        messages.error(request, f"Upload failed: Storage limit reached ({max_storage} MB).")
-        return redirect('organizations:project_risk_dashboard', pk=pk)
+    uploaded_file = request.FILES.get('document')
+    if uploaded_file:
+        file_size_mb = uploaded_file.size / (1024 * 1024)
+        if (current_usage_mb + file_size_mb) > max_storage_mb:
+            messages.error(request, f"Upload failed: File would exceed storage limit. You have {round(max_storage_mb - current_usage_mb, 2)} MB remaining.")
+            return redirect('organizations:project_risk_dashboard', pk=pk)
 
     form = ComplianceEvidenceForm(request.POST, request.FILES)
     if form.is_valid():
@@ -350,13 +354,18 @@ def project_files(request, pk):
         return redirect('organizations:shared_project_list')
     
     if request.method == 'POST':
-        # Check Storage Limit
-        current_usage = project.host_organization.get_storage_usage()
-        max_storage = project.host_organization.get_plan().max_storage_mb
+        # Check Organization Storage Limit
+        org = project.host_organization
+        current_usage_mb = org.get_storage_usage()
+        max_storage_mb = org.get_plan().max_storage_mb
         
-        if current_usage >= max_storage:
-            messages.error(request, f"Upload failed: Your organization has reached its storage limit of {max_storage} MB. Please delete old files or upgrade your plan.")
-            return redirect('organizations:project_files', pk=pk)
+        # Get incoming file size
+        uploaded_file = request.FILES.get('file')
+        if uploaded_file:
+            file_size_mb = uploaded_file.size / (1024 * 1024)
+            if (current_usage_mb + file_size_mb) > max_storage_mb:
+                messages.error(request, f"Upload failed: This file ({round(file_size_mb, 2)} MB) would exceed your remaining storage space. You have {round(max_storage_mb - current_usage_mb, 2)} MB left.")
+                return redirect('organizations:project_files', pk=pk)
 
         form = ProjectFileForm(request.POST, request.FILES)
         if form.is_valid():
