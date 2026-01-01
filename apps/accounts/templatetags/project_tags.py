@@ -11,10 +11,18 @@ def calculate_completion(milestones):
     return int((completed / total) * 100)
 
 @register.filter
-def get_item(dictionary, key):
-    if not dictionary:
+def get_item(obj, key):
+    """Get item from dictionary or list."""
+    if not obj:
         return None
-    return dictionary.get(key)
+    try:
+        # Try as dictionary
+        if hasattr(obj, 'get'):
+            return obj.get(key)
+        # Try as list/indexable
+        return obj[int(key)]
+    except (TypeError, ValueError, IndexError, KeyError):
+        return None
 
 @register.filter
 def has_module_access(user, module_name):

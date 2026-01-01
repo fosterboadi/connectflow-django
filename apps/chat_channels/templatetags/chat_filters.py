@@ -60,7 +60,7 @@ def is_emoji_only(value):
     
     # If nothing remains and we had emojis, it's emoji-only
     has_emojis = bool(emoji_pattern.search(text))
-    return has_emojis and not text_without_emoji and len(text) <= 20  # Max 20 chars for emoji-only
+    return has_emojis and not text_without_emoji
 
 @register.filter
 def emoji_count(value):

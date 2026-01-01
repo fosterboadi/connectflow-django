@@ -285,6 +285,8 @@ def channel_detail(request, pk):
             message.channel = channel
             message.sender = request.user
             
+            content = message.content.strip()
+            
             # Identify message type
             if request.FILES.get('voice_message'):
                 message.message_type = 'VOICE'
@@ -296,6 +298,32 @@ def channel_detail(request, pk):
                     message.message_type = 'VIDEO'
                 else:
                     message.message_type = 'FILE'
+            else:
+                # Check for Emoji-only
+                import re
+                emoji_pattern = re.compile(
+                    "["
+                    "\U0001F600-\U0001F64F"  # emoticons
+                    "\U0001F300-\U0001F5FF"  # symbols & pictographs
+                    "\U0001F680-\U0001F6FF"  # transport & map symbols
+                    "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                    "\U00002702-\U000027B0"  # dingbats
+                    "\U000024C2-\U0001F251"
+                    "\U0001F900-\U0001F9FF"  # supplemental symbols
+                    "\U0001FA00-\U0001FA6F"  # extended symbols
+                    "\U00002600-\U000026FF"  # miscellaneous symbols
+                    "\U00002700-\U000027BF"  # dingbats
+                    "\U0001F191-\U0001F19A"  # enclosed characters
+                    "]+", 
+                    flags=re.UNICODE
+                )
+                text_without_emoji = emoji_pattern.sub('', content).strip()
+                has_emojis = bool(emoji_pattern.search(content))
+                
+                if has_emojis and not text_without_emoji:
+                    message.message_type = 'EMOJI'
+                else:
+                    message.message_type = 'TEXT'
             
             message.save()
             

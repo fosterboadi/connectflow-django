@@ -99,17 +99,13 @@
 
         <div class="message-history" id="messages-container">
             {% for message in chat_messages %}
-                {% with prev_msg=chat_messages|get_item:forloop.counter0|add:"-1" %}
-                {% define_var "is_grouped" "false" %}
-                {# Simplified grouping logic for template - real grouping handled by JS for new messages #}
-                
                 <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %} message-wrapper" 
                      id="message-{{ message.pk }}" 
                      data-message-id="{{ message.pk }}"
                      data-sender-id="{{ message.sender.id }}"
                      data-timestamp="{{ message.created_at|date:'U' }}">
                     
-                    <div class="flex-shrink-0 avatar-container">
+                    <div class="flex-shrink-0 avatar-container" style="width: 36px">
                         {% if message.sender.avatar %}
                             <img src="{{ message.sender.avatar.url }}" class="w-9 h-9 rounded-xl object-cover shadow-sm">
                         {% else %}
@@ -191,7 +187,6 @@
                         </div>
                     </div>
                 </div>
-                {% endwith %}
             {% endfor %}
         </div>
                             
