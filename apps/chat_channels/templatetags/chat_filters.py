@@ -1,6 +1,8 @@
 import os
 import re
 from django import template
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 register = template.Library()
 
@@ -87,3 +89,49 @@ def emoji_count(value):
     )
     
     return len(emoji_pattern.findall(value))
+
+@register.filter
+def format_date_separator(value):
+    """
+    Format date for message separators (like WhatsApp/Slack).
+    Returns 'Today', 'Yesterday', or formatted date.
+    """
+    if not value:
+        return ''
+    
+    # Ensure we're working with a date object
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except:
+            return value
+    
+    # Make timezone-aware if needed
+    if timezone.is_naive(value):
+        value = timezone.make_aware(value)
+    
+    now = timezone.now()
+    today = now.date()
+    yesterday = today - timedelta(days=1)
+    message_date = value.date()
+    
+    if message_date == today:
+        return 'Today'
+    elif message_date == yesterday:
+        return 'Yesterday'
+    else:
+        # Format as "Monday, Jan 1" or "Jan 1, 2026" if different year
+        if message_date.year == today.year:
+            return value.strftime('%A, %b %d')
+        else:
+            return value.strftime('%b %d, %Y')
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Get item from dictionary using key.
+    Usage: {{ mydict|get_item:mykey }}
+    """
+    if not dictionary:
+        return None
+    return dictionary.get(key)

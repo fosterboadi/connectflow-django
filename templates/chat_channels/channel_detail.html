@@ -34,6 +34,64 @@
     
     .new-messages-indicator { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: #4f46e5; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 10px; font-weight: 800; cursor: pointer; z-index: 40; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     
+    /* Enhanced Jump to Latest FAB */
+    .jump-to-latest-fab {
+        position: fixed;
+        bottom: 120px;
+        right: 2rem;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        color: white;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 50;
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5), 0 8px 10px -6px rgba(79, 70, 229, 0.3);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.8) translateY(20px);
+    }
+    
+    .jump-to-latest-fab.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1) translateY(0);
+    }
+    
+    .jump-to-latest-fab:hover {
+        transform: scale(1.1) translateY(-2px);
+        box-shadow: 0 20px 35px -5px rgba(79, 70, 229, 0.6), 0 10px 15px -6px rgba(79, 70, 229, 0.4);
+    }
+    
+    .jump-to-latest-fab:active {
+        transform: scale(0.95) translateY(0);
+    }
+    
+    .jump-to-latest-fab .unread-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #ef4444;
+        color: white;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 9999px;
+        min-width: 20px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        animation: pulse-badge 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse-badge {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
     /* Emoji scaling */
     .emoji-large { font-size: 4rem; line-height: 1; }
 </style>
@@ -100,6 +158,14 @@
 
         <div class="message-history" id="messages-container">
             {% for message in chat_messages %}
+                {% if message.show_date_separator %}
+                    <div class="date-separator flex items-center justify-center my-4">
+                        <div class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                            {{ message.date_label|format_date_separator }}
+                        </div>
+                    </div>
+                {% endif %}
+                
                 <div class="flex space-x-3 {% if message.sender == user %}flex-row-reverse space-x-reverse{% endif %} message-wrapper" 
                      id="message-{{ message.pk }}" 
                      data-message-id="{{ message.pk }}"
@@ -121,6 +187,11 @@
                             <span class="font-bold text-xs text-gray-700 dark:text-gray-200">{{ message.sender.get_full_name }}</span>
                             {% if message.is_pinned %}<span class="text-indigo-500 pin-indicator"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z"></path></svg></span>{% endif %}
                             <span class="text-[9px] text-gray-400 font-medium">{{ message.created_at|date:"h:i A" }}</span>
+                            {% if message.is_edited %}
+                                <span class="text-[8px] text-gray-400 italic font-medium" title="Last edited {{ message.last_edited_at|date:'M d, Y h:i A' }}">
+                                    (edited)
+                                </span>
+                            {% endif %}
                         </div>
 
                         <div class="relative message-body-container" data-message-type="{{ message.message_type }}">
@@ -188,14 +259,24 @@
                         </div>
                         
                         {% if not message.is_deleted %}
-                            <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 {% if message.sender == user %}right-full mr-2{% else %}left-full ml-2{% endif %} flex items-center space-x-1 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
-                                <button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
-                                <button type="button" class="message-menu-trigger p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg></button>
+                            {# Quick reaction bar (Slack-style) #}
+                            <div class="quick-reactions opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 {% if message.sender == user %}right-full mr-2{% else %}left-full ml-2{% endif %} flex items-center space-x-0.5 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-lg p-1 z-20">
+                                <button type="button" class="quick-emoji-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-lg transition-transform hover:scale-125" data-message-id="{{ message.pk }}" data-emoji="❤️" title="React with ❤️">❤️</button>
+                                <button type="button" class="quick-emoji-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-lg transition-transform hover:scale-125" data-message-id="{{ message.pk }}" data-emoji="👍" title="React with 👍">👍</button>
+                                <button type="button" class="quick-emoji-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-lg transition-transform hover:scale-125" data-message-id="{{ message.pk }}" data-emoji="😂" title="React with 😂">😂</button>
+                                <button type="button" class="quick-emoji-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-lg transition-transform hover:scale-125" data-message-id="{{ message.pk }}" data-emoji="😮" title="React with 😮">😮</button>
+                                <button type="button" class="quick-emoji-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-lg transition-transform hover:scale-125" data-message-id="{{ message.pk }}" data-emoji="🙏" title="React with 🙏">🙏</button>
+                                <div class="w-px h-5 bg-gray-200 dark:bg-gray-600"></div>
+                                <button type="button" class="emoji-reaction-btn p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}" title="More reactions"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+                                <button type="button" class="message-menu-trigger p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400" data-message-id="{{ message.pk }}" title="More options"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg></button>
                             </div>
 
                             <div id="context-menu-{{ message.pk }}" class="hidden context-menu absolute z-[60] w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 top-0 {% if message.sender == user %}right-full mr-2{% else %}left-full ml-2{% endif %}">
                                 <ul>
                                     <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('reply', '{{ message.pk }}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l5 5m-5-5l5-5"></path></svg>Reply</button></li>
+                                    {% if message.sender == user and not message.is_deleted and message.message_type == 'TEXT' %}
+                                    <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('edit', '{{ message.pk }}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>Edit</button></li>
+                                    {% endif %}
                                     <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('react', '{{ message.pk }}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>React</button></li>
                                     <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('copy', '{{ message.pk }}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3"></path></svg>Copy Text</button></li>
                                     <li><button class="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center" onclick="handleMenuAction('forward', '{{ message.pk }}')"><svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316"></path></svg>Forward</button></li>
@@ -213,10 +294,34 @@
                             {% if message.reaction_summary %}
                                 <div class="flex flex-wrap gap-1 mt-1 {% if message.sender == user %}justify-end{% endif %}">
                                     {% for emoji, count in message.reaction_summary.items %}
-                                        <span class="inline-flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-1.5 py-0.5 rounded-full text-[10px] shadow-sm">
-                                            <span class="mr-1">{{ emoji }}</span>
-                                            <span class="font-bold text-gray-500">{{ count }}</span>
-                                        </span>
+                                        <div class="relative group/reaction">
+                                            <button type="button" class="inline-flex items-center bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 px-1.5 py-0.5 rounded-full text-[10px] shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                                                <span class="mr-1">{{ emoji }}</span>
+                                                <span class="font-bold text-gray-500">{{ count }}</span>
+                                            </button>
+                                            
+                                            {# Tooltip showing who reacted #}
+                                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover/reaction:opacity-100 group-hover/reaction:visible transition-all duration-200 pointer-events-none z-50 whitespace-nowrap min-w-max">
+                                                <div class="font-bold mb-1 border-b border-gray-700 pb-1">{{ emoji }} {{ count }} reaction{{ count|pluralize }}</div>
+                                                {% with users=message.reaction_details|default_if_none:dict %}
+                                                    {% for user_info in users|get_item:emoji|default:list %}
+                                                        <div class="flex items-center py-0.5">
+                                                            {% if user_info.avatar %}
+                                                                <img src="{{ user_info.avatar }}" class="w-4 h-4 rounded-full mr-1.5">
+                                                            {% else %}
+                                                                <div class="w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[8px] mr-1.5">
+                                                                    {{ user_info.username.0|upper }}
+                                                                </div>
+                                                            {% endif %}
+                                                            <span>{{ user_info.username }}</span>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% endwith %}
+                                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                                                    <div class="w-2 h-2 bg-gray-900 dark:bg-gray-800 transform rotate-45"></div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     {% endfor %}
                                 </div>
                             {% endif %}
@@ -265,6 +370,14 @@
             </form>
         </div>
     </main>
+
+    <!-- Jump to Latest FAB -->
+    <button id="jump-to-latest-fab" class="jump-to-latest-fab" title="Jump to latest messages">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+        </svg>
+        <span id="unread-count-badge" class="unread-badge hidden">0</span>
+    </button>
 
     <aside class="contextual-sidebar overflow-y-auto" id="info-sidebar">
         <div class="p-6">
@@ -664,27 +777,88 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function showNewMessageIndicator() {
-        if (document.getElementById('new-messages-indicator')) return;
-        const indicator = document.createElement('div');
-        indicator.id = 'new-messages-indicator';
-        indicator.className = 'new-messages-indicator';
-        indicator.textContent = 'New Messages ↓';
-        indicator.onclick = () => {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            indicator.remove();
-        };
-        messagesPanel.appendChild(indicator);
+        const fab = document.getElementById('jump-to-latest-fab');
+        const badge = document.getElementById('unread-count-badge');
+        
+        if (!fab) return;
+        
+        // Show FAB
+        fab.classList.add('visible');
+        
+        // Update unread count
+        if (badge) {
+            const currentCount = parseInt(badge.textContent) || 0;
+            badge.textContent = currentCount + 1;
+            badge.classList.remove('hidden');
+        }
     }
 
     messagesContainer.onscroll = () => {
         const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 50;
+        const fab = document.getElementById('jump-to-latest-fab');
+        const badge = document.getElementById('unread-count-badge');
+        
         if (isAtBottom) {
+            // Hide FAB when at bottom
+            if (fab) fab.classList.remove('visible');
+            if (badge) {
+                badge.classList.add('hidden');
+                badge.textContent = '0';
+            }
             document.getElementById('new-messages-indicator')?.remove();
+        } else {
+            // Show FAB when scrolled up
+            const scrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop > messagesContainer.clientHeight + 100;
+            if (scrolledUp && fab) {
+                fab.classList.add('visible');
+            }
         }
     };
+    
+    // Jump to Latest FAB click handler
+    document.getElementById('jump-to-latest-fab')?.addEventListener('click', () => {
+        messagesContainer.scrollTo({
+            top: messagesContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+        
+        const fab = document.getElementById('jump-to-latest-fab');
+        const badge = document.getElementById('unread-count-badge');
+        
+        // Hide FAB and reset count
+        setTimeout(() => {
+            if (fab) fab.classList.remove('visible');
+            if (badge) {
+                badge.classList.add('hidden');
+                badge.textContent = '0';
+            }
+        }, 300);
+    });
 
     function bindActions(el) {
         el.querySelectorAll('.edit-message-btn').forEach(b => b.onclick = () => startEditing(b.dataset.messageId));
+        
+        // Quick emoji reactions (Slack-style quick react bar)
+        el.querySelectorAll('.quick-emoji-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                const messageId = btn.dataset.messageId;
+                const emoji = btn.dataset.emoji;
+                
+                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                    chatSocket.send(JSON.stringify({
+                        type: 'message_reaction',
+                        message_id: messageId,
+                        emoji: emoji
+                    }));
+                }
+                
+                // Visual feedback
+                btn.classList.add('animate-bounce');
+                setTimeout(() => btn.classList.remove('animate-bounce'), 500);
+            };
+        });
+        
         el.querySelectorAll('.emoji-reaction-btn').forEach(b => b.onclick = (e) => showPicker(e.currentTarget, b.dataset.messageId));
         
         const toggleMenu = (messageId, e) => {
@@ -798,6 +972,98 @@ document.addEventListener("DOMContentLoaded", function () {
                 isReplying = true;
                 replyingToId = messageId;
                 messageInput.focus();
+            } else if (action === 'edit') {
+                // Start inline editing
+                cancelReplying(); // Cancel reply mode if active
+                
+                const messageEl = document.getElementById(`message-${messageId}`);
+                const contentEl = messageEl.querySelector('.message-content');
+                const originalText = contentEl.textContent.trim();
+                
+                // Create edit UI
+                const editForm = document.createElement('div');
+                editForm.className = 'edit-message-form';
+                editForm.innerHTML = `
+                    <textarea class="w-full px-3 py-2 border border-indigo-400 dark:border-indigo-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white resize-none" rows="3" id="edit-textarea-${messageId}">${originalText}</textarea>
+                    <div class="flex items-center justify-end space-x-2 mt-2">
+                        <button type="button" class="cancel-edit px-3 py-1 text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200" data-message-id="${messageId}">Cancel</button>
+                        <button type="button" class="save-edit px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700" data-message-id="${messageId}">Save</button>
+                    </div>
+                `;
+                
+                // Replace message content with edit form
+                const parentDiv = contentEl.closest('.rounded-2xl');
+                contentEl.classList.add('hidden');
+                parentDiv.appendChild(editForm);
+                
+                // Focus textarea and select all
+                const textarea = document.getElementById(`edit-textarea-${messageId}`);
+                textarea.focus();
+                textarea.select();
+                
+                // Handle save
+                editForm.querySelector('.save-edit').onclick = async () => {
+                    const newContent = textarea.value.trim();
+                    if (!newContent) {
+                        showToast('Message cannot be empty');
+                        return;
+                    }
+                    
+                    if (newContent === originalText) {
+                        // No changes, just cancel
+                        editForm.remove();
+                        contentEl.classList.remove('hidden');
+                        return;
+                    }
+                    
+                    try {
+                        // Send via WebSocket
+                        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                            chatSocket.send(JSON.stringify({
+                                type: 'message_edit',
+                                message_id: messageId,
+                                message: newContent
+                            }));
+                        }
+                        
+                        // Update UI immediately
+                        contentEl.textContent = newContent;
+                        editForm.remove();
+                        contentEl.classList.remove('hidden');
+                        
+                        // Add "edited" indicator if not already there
+                        const senderInfo = messageEl.querySelector('.sender-info');
+                        if (!senderInfo.querySelector('.italic')) {
+                            const editedSpan = document.createElement('span');
+                            editedSpan.className = 'text-[8px] text-gray-400 italic font-medium';
+                            editedSpan.textContent = '(edited)';
+                            editedSpan.title = 'Just edited';
+                            senderInfo.appendChild(editedSpan);
+                        }
+                        
+                        showToast('Message updated!');
+                    } catch (err) {
+                        showToast('Failed to update message');
+                        console.error(err);
+                    }
+                };
+                
+                // Handle cancel
+                editForm.querySelector('.cancel-edit').onclick = () => {
+                    editForm.remove();
+                    contentEl.classList.remove('hidden');
+                };
+                
+                // Handle Escape key
+                textarea.onkeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        editForm.remove();
+                        contentEl.classList.remove('hidden');
+                    } else if (e.key === 'Enter' && e.ctrlKey) {
+                        // Ctrl+Enter to save
+                        editForm.querySelector('.save-edit').click();
+                    }
+                };
             } else if (action === 'react') {
                 
                             const btn = document.querySelector(`#message-${messageId} .emoji-reaction-btn`);

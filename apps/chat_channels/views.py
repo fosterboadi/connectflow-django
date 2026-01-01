@@ -243,6 +243,21 @@ def channel_detail(request, pk):
     
     channel_messages = messages_query.order_by('-is_pinned', 'created_at')
     
+    # Add date separators info to messages
+    messages_with_dates = []
+    prev_date = None
+    for msg in channel_messages:
+        msg_date = msg.created_at.date()
+        if prev_date is None or msg_date != prev_date:
+            msg.show_date_separator = True
+            msg.date_label = msg.created_at
+        else:
+            msg.show_date_separator = False
+        prev_date = msg_date
+        messages_with_dates.append(msg)
+    
+    channel_messages = messages_with_dates
+    
     # Get active breakout rooms for this channel
     breakout_rooms = Channel.objects.filter(
         parent_channel=channel,
@@ -459,19 +474,32 @@ def message_edit(request, pk):
     if message.sender != user:
         return JsonResponse({'success': False, 'error': 'Unauthorized: Only the author can edit this message.'}, status=403)
     
+    # Cannot edit deleted messages
+    if message.is_deleted:
+        return JsonResponse({'success': False, 'error': 'Cannot edit deleted messages.'}, status=400)
+    
+    # Cannot edit voice messages or system messages
+    if message.message_type in ['VOICE', 'SYSTEM']:
+        return JsonResponse({'success': False, 'error': 'Cannot edit this type of message.'}, status=400)
+    
     new_content = request.POST.get('content')
-    if not new_content:
+    if not new_content or not new_content.strip():
         return JsonResponse({'success': False, 'error': 'Content cannot be empty.'}, status=400)
     
-    message.content = new_content
+    # Update message
+    from django.utils import timezone
+    message.content = new_content.strip()
     message.is_edited = True
+    message.last_edited_at = timezone.now()
+    message.edited_by = user
     message.save()
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
             'success': True,
             'content': message.content,
-            'message_id': str(message.id)
+            'message_id': str(message.id),
+            'edited_at': message.last_edited_at.strftime('%b %d, %I:%M %p') if message.last_edited_at else None
         })
     
     return redirect('chat_channels:channel_detail', pk=message.channel.pk)

@@ -289,6 +289,21 @@ class Message(models.Model):
         default=False,
         help_text=_("Has this message been edited?")
     )
+    
+    last_edited_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_("When the message was last edited")
+    )
+    
+    edited_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='edited_messages',
+        help_text=_("User who last edited this message (usually the sender)")
+    )
 
     is_pinned = models.BooleanField(
         default=False,
@@ -374,6 +389,19 @@ class Message(models.Model):
         """Return summary of reactions."""
         reactions = self.reactions.values('emoji').annotate(count=models.Count('id'))
         return {r['emoji']: r['count'] for r in reactions}
+    
+    @property
+    def reaction_details(self):
+        """Return detailed reactions with users who reacted."""
+        from collections import defaultdict
+        reactions_dict = defaultdict(list)
+        for reaction in self.reactions.select_related('user').all():
+            reactions_dict[reaction.emoji].append({
+                'user_id': reaction.user.id,
+                'username': reaction.user.get_full_name(),
+                'avatar': reaction.user.avatar.url if reaction.user.avatar else None
+            })
+        return dict(reactions_dict)
 
 
 class Attachment(models.Model):

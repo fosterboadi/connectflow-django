@@ -455,10 +455,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def edit_message(self, message_id, content):
+        from django.utils import timezone
         try:
             message = Message.objects.get(id=message_id, sender=self.user)
-            message.content = content
+            
+            # Cannot edit deleted messages or certain types
+            if message.is_deleted or message.message_type in ['VOICE', 'SYSTEM']:
+                return False
+            
+            if not content or not content.strip():
+                return False
+            
+            message.content = content.strip()
             message.is_edited = True
+            message.last_edited_at = timezone.now()
+            message.edited_by = self.user
             message.save()
             return True
         except Message.DoesNotExist:
