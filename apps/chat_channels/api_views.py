@@ -27,7 +27,9 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Message.objects.filter(channel__members=self.request.user)
+        # Use all_objects to include deleted messages for permission checks
+        # The soft delete filter is in the default manager, but we need access to all for delete
+        return Message.all_objects.filter(channel__members=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)

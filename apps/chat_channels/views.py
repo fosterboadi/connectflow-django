@@ -340,10 +340,23 @@ def channel_detail(request, pk):
                         'is_video': att.is_video
                     })
             except Exception as e:
+                # Log the error for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Attachment upload failed: {str(e)}", exc_info=True)
+                
                 # If attachment upload fails, permanently delete the orphan message
-                message.delete(force=True) 
+                try:
+                    message.delete(force=True)
+                except:
+                    pass  # Message might already be deleted
+                    
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({'success': False, 'error': f'Upload failed: {str(e)}'}, status=500)
+                    error_msg = str(e) if str(e) else "Unknown upload error"
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'Upload failed: {error_msg}'
+                    }, status=400)  # Changed from 500 to 400
                 messages.error(request, f'Failed to upload attachments: {e}')
                 return redirect('chat_channels:channel_detail', pk=pk)
             

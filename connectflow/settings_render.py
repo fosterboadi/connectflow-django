@@ -69,6 +69,7 @@ CHANNEL_LAYERS = {
 # WhiteNoise for serving static files
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 MIDDLEWARE.append('apps.accounts.security_middleware.SQLiteProductionCheckMiddleware')
+MIDDLEWARE.append('connectflow.permissions_middleware.PermissionsPolicyMiddleware')
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -118,6 +119,15 @@ CSP_FRAME_SRC = ("https://connectflowpro-f1202.firebaseapp.com",)
 
 # Referrer Policy
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Permissions Policy - Allow microphone for voice messages
+# This fixes the "microphone is not allowed in this document" error
+SECURE_PERMISSIONS_POLICY = {
+    'microphone': ['self'],
+    'camera': ['self'],
+    'geolocation': [],
+    'payment': [],
+}
 
 # Logging configuration for Render
 LOGGING = {
