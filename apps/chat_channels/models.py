@@ -223,13 +223,15 @@ class Message(models.Model):
     message_type = models.CharField(
         max_length=10,
         choices=MessageType.choices,
-        default=MessageType.TEXT
+        default=MessageType.TEXT,
+        db_index=True
     )
 
     status = models.CharField(
         max_length=10,
         choices=MessageStatus.choices,
-        default=MessageStatus.SENT
+        default=MessageStatus.SENT,
+        db_index=True
     )
 
     channel = models.ForeignKey(

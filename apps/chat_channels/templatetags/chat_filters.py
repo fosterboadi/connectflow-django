@@ -65,25 +65,25 @@ def is_emoji_only(value):
 @register.filter
 def emoji_count(value):
     """Count number of emojis in text."""
-    if not value:
+    if not value or not isinstance(value, str):
         return 0
     
+    # Use the same logic as is_emoji_only but count matches
     emoji_pattern = re.compile(
         "["
-        "\U0001F600-\U0001F64F"
-        "\U0001F300-\U0001F5FF"
-        "\U0001F680-\U0001F6FF"
-        "\U0001F1E0-\U0001F1FF"
-        "\U00002702-\U000027B0"
+        "\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+        "\U00002702-\U000027B0"  # dingbats
         "\U000024C2-\U0001F251"
-        "\U0001F900-\U0001F9FF"
-        "\U0001FA00-\U0001FA6F"
-        "\U00002600-\U000026FF"
-        "\U00002700-\U000027BF"
-        "\U0001F191-\U0001F19A"
-        "]+", 
+        "\U0001F900-\U0001F9FF"  # supplemental symbols
+        "\U0001FA00-\U0001FA6F"  # extended symbols
+        "\U00002600-\U000026FF"  # miscellaneous symbols
+        "\U00002700-\U000027BF"  # dingbats
+        "\U0001F191-\U0001F19A"  # enclosed characters
+        "]", 
         flags=re.UNICODE
     )
     
-    matches = emoji_pattern.findall(str(value))
-    return len(matches)
+    return len(emoji_pattern.findall(value))
