@@ -78,13 +78,17 @@
         resendBtn.textContent = "Sending...";
 
         try {
-            await sendEmailVerification(auth.currentUser);
-            feedbackMsg.textContent = "Verification email sent! Please check your inbox.";
+            await sendEmailVerification(auth.currentUser, {
+                url: window.location.origin + '/accounts/dashboard/',
+                handleCodeInApp: false
+            });
+            console.log('✅ Verification email resent to:', auth.currentUser.email);
+            feedbackMsg.textContent = "Verification email sent to " + auth.currentUser.email + "! Please check your inbox and spam folder.";
             feedbackMsg.className = "text-sm font-medium mt-4 text-green-600";
             feedbackMsg.classList.remove('hidden');
         } catch (error) {
-            console.error(error);
-            feedbackMsg.textContent = "Error sending email. Please try again later.";
+            console.error('❌ Resend failed:', error);
+            feedbackMsg.textContent = "Error: " + error.message + ". Please try again or contact support.";
             feedbackMsg.className = "text-sm font-medium mt-4 text-red-500";
             feedbackMsg.classList.remove('hidden');
             resendBtn.disabled = false;

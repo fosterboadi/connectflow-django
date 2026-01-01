@@ -250,15 +250,30 @@
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+            console.log('✅ User created in Firebase:', userCredential.user.uid);
+            
             await updateProfile(userCredential.user, {
                 displayName: `${firstNameInput.value} ${lastNameInput.value}`
             });
-            await sendEmailVerification(userCredential.user);
+            console.log('✅ Profile updated');
+            
+            try {
+                await sendEmailVerification(userCredential.user, {
+                    url: window.location.origin + '/accounts/dashboard/',
+                    handleCodeInApp: false
+                });
+                console.log('✅ Verification email sent to:', emailInput.value);
+                alert('Account created! Verification email sent to ' + emailInput.value + '. Please check your inbox and spam folder.');
+            } catch (emailError) {
+                console.error('❌ Email sending failed:', emailError);
+                alert('Account created but email failed to send. Error: ' + emailError.message);
+            }
             
             const idToken = await userCredential.user.getIdToken();
             await sendRegistrationToBackend(idToken, orgCodeInput.value, firstNameInput.value, lastNameInput.value);
             
         } catch (error) {
+            console.error('❌ Registration error:', error);
             showMessage(errorMessageDiv, error.message);
         }
     });
