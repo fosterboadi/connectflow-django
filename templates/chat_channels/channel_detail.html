@@ -1306,7 +1306,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (!contentType || !contentType.includes('application/json')) {
                         const text = await res.text();
                         console.error('Server returned non-JSON response:', text);
-                        alert('Upload failed: Server error. Please check your storage quota and try again.');
+                        
+                        // If it's a redirect (302/3xx), the upload likely succeeded
+                        if (res.redirected || res.status >= 300 && res.status < 400) {
+                            console.log('Upload succeeded - server redirected');
+                            clearVoiceRecording(); 
+                            selectedFiles = [];
+                            renderFilePreviews();
+                            messageInput.value = ''; 
+                            cancelReply();
+                            // Page will reload via redirect, or we manually reload
+                            window.location.reload();
+                            return;
+                        }
+                        
+                        // Only show error if it's actually an error status
+                        if (res.status >= 400) {
+                            alert('Upload failed: Server error. Please check your storage quota and try again.');
+                        }
+                        
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>';
                         return;
