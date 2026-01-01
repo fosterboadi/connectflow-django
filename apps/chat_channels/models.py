@@ -237,6 +237,18 @@ class Message(models.Model):
         null=True,
         blank=True
     )
+    
+    # Rich text formatting
+    formatted_content = models.TextField(
+        null=True,
+        blank=True,
+        help_text=_("HTML-formatted content from markdown")
+    )
+    
+    has_formatting = models.BooleanField(
+        default=False,
+        help_text=_("Whether message contains markdown formatting")
+    )
 
     channel = models.ForeignKey(
         Channel,
@@ -349,6 +361,22 @@ class Message(models.Model):
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        """Override save to process markdown formatting."""
+        if self.content and self.message_type == 'TEXT':
+            from .markdown_utils import convert_markdown_to_html, has_markdown_formatting
+            
+            # Check if content has markdown
+            self.has_formatting = has_markdown_formatting(self.content)
+            
+            # Convert markdown to HTML if present
+            if self.has_formatting:
+                self.formatted_content = convert_markdown_to_html(self.content)
+            else:
+                self.formatted_content = None
+        
+        super().save(*args, **kwargs)
     
     class Meta:
         db_table = 'messages'

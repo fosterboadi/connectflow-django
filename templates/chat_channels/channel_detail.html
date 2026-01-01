@@ -94,6 +94,77 @@
     
     /* Emoji scaling */
     .emoji-large { font-size: 4rem; line-height: 1; }
+    
+    /* Rich text formatting styles */
+    .formatted-message {
+        line-height: 1.6;
+    }
+    
+    .formatted-message strong {
+        font-weight: 700;
+    }
+    
+    .formatted-message em {
+        font-style: italic;
+    }
+    
+    .formatted-message code {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+    }
+    
+    .formatted-message pre {
+        background: rgba(0, 0, 0, 0.15);
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 8px 0;
+    }
+    
+    .formatted-message pre code {
+        background: none;
+        padding: 0;
+    }
+    
+    .formatted-message a {
+        text-decoration: underline;
+        font-weight: 600;
+    }
+    
+    .formatted-message blockquote {
+        border-left: 3px solid currentColor;
+        padding-left: 12px;
+        margin: 8px 0;
+        opacity: 0.8;
+    }
+    
+    .formatted-message h1,
+    .formatted-message h2,
+    .formatted-message h3 {
+        font-weight: 700;
+        margin: 8px 0 4px;
+    }
+    
+    .formatted-message h1 { font-size: 1.5em; }
+    .formatted-message h2 { font-size: 1.3em; }
+    .formatted-message h3 { font-size: 1.1em; }
+    
+    .formatted-message ul,
+    .formatted-message ol {
+        margin: 8px 0;
+        padding-left: 24px;
+    }
+    
+    .formatted-message li {
+        margin: 4px 0;
+    }
+    
+    .formatted-message del {
+        opacity: 0.6;
+    }
 </style>
 {% endblock %}
 
@@ -296,7 +367,13 @@
                                     </div>
                                 {% else %}
                                     <div class="{% if message.sender == user %}bg-indigo-600 text-white shadow-lg{% else %}bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-sm{% endif %} rounded-2xl px-4 py-3">
-                                        <p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p>
+                                        {% if message.has_formatting and message.formatted_content %}
+                                            <div class="message-content text-sm leading-relaxed formatted-message">
+                                                {{ message.formatted_content|safe }}
+                                            </div>
+                                        {% else %}
+                                            <p class="whitespace-pre-wrap break-words message-content text-sm leading-relaxed">{{ message.content }}</p>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
                             {% endif %}
@@ -419,8 +496,30 @@
                     <div id="voice-preview" class="hidden mt-2 p-2 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-between"><div class="flex items-center space-x-2"><div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div><span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Recording...</span></div><button type="button" onclick="stopVoiceRecording()" class="text-[10px] font-black text-red-600 uppercase">Stop</button></div>
                     <div id="voice-playback-preview" class="hidden mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-between border border-indigo-100 dark:border-indigo-800"><div class="flex items-center space-x-3 flex-1"><button type="button" id="play-preview-btn" class="text-indigo-600 dark:text-indigo-400 hover:scale-110 transition"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" id="preview-play-icon"><path d="M8 5v14l11-7z"/></svg><svg class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24" id="preview-pause-icon"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg></button><div id="preview-waveform" class="flex-1 h-8"></div><span id="preview-timer" class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 min-w-[30px]">0:00</span></div><button type="button" onclick="clearVoiceRecording()" class="ml-4 text-red-500 hover:text-red-700 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>
                     <div class="flex items-center justify-between mt-2 px-2">
-                        <div class="flex items-center space-x-4" id="input-actions-left"><label for="file-upload" class="text-gray-400 hover:text-indigo-600 cursor-pointer transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg></label><input type="file" name="attachments" multiple class="hidden" id="file-upload"><button type="button" id="voice-record-btn" onclick="toggleVoiceRecording()" class="text-gray-400 hover:text-red-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button><button type="button" id="emoji-input-btn" class="text-gray-400 hover:text-yellow-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button></div>
+                        <div class="flex items-center space-x-4" id="input-actions-left">
+                            <!-- Markdown formatting toolbar -->
+                            <div class="flex items-center space-x-1 border-r border-gray-200 dark:border-gray-600 pr-3">
+                                <button type="button" onclick="insertMarkdown('**', '**')" class="text-gray-400 hover:text-indigo-600 p-1 rounded transition" title="Bold (**text**)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><text x="4" y="18" font-family="serif" font-weight="bold" font-size="16">B</text></svg>
+                                </button>
+                                <button type="button" onclick="insertMarkdown('*', '*')" class="text-gray-400 hover:text-indigo-600 p-1 rounded transition italic" title="Italic (*text*)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><text x="6" y="18" font-family="serif" font-style="italic" font-size="16">I</text></svg>
+                                </button>
+                                <button type="button" onclick="insertMarkdown('`', '`')" class="text-gray-400 hover:text-indigo-600 p-1 rounded transition font-mono" title="Code (`code`)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                </button>
+                            </div>
+                            
+                            <label for="file-upload" class="text-gray-400 hover:text-indigo-600 cursor-pointer transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg></label>
+                            <input type="file" name="attachments" multiple class="hidden" id="file-upload">
+                            <button type="button" id="voice-record-btn" onclick="toggleVoiceRecording()" class="text-gray-400 hover:text-red-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
+                            <button type="button" id="emoji-input-btn" class="text-gray-400 hover:text-yellow-500 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+                        </div>
                         <button type="submit" id="submit-btn" class="bg-indigo-600 text-white p-2 rounded-xl shadow hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"><svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg><svg id="update-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></button>
+                    </div>
+                    <!-- Markdown hint -->
+                    <div class="text-[9px] text-gray-400 px-2 mt-1">
+                        <span class="font-bold">Tip:</span> Use <code class="px-1 bg-gray-200 dark:bg-gray-700 rounded">*italic*</code>, <code class="px-1 bg-gray-200 dark:bg-gray-700 rounded">**bold**</code>, or <code class="px-1 bg-gray-200 dark:bg-gray-700 rounded">`code`</code>
                     </div>
                 </div>
             </form>
@@ -1517,6 +1616,29 @@ document.getElementById('search-toggle-btn')?.addEventListener('click', () => {
 // Auto-show search bar if there's a search query
 if ('{{ search_query }}') {
     document.getElementById('search-bar')?.classList.remove('hidden');
+}
+
+// Markdown formatting helper
+function insertMarkdown(before, after) {
+    const input = document.getElementById('id_content');
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const selectedText = input.value.substring(start, end);
+    const replacement = before + (selectedText || 'text') + after;
+    
+    input.value = input.value.substring(0, start) + replacement + input.value.substring(end);
+    
+    // Set cursor position
+    if (selectedText) {
+        input.selectionStart = start;
+        input.selectionEnd = start + replacement.length;
+    } else {
+        const cursorPos = start + before.length;
+        input.selectionStart = input.selectionEnd = cursorPos;
+        input.setSelectionRange(cursorPos, cursorPos + 'text'.length);
+    }
+    
+    input.focus();
 }
 </script>
 {% endblock %}

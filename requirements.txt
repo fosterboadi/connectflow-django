@@ -56,3 +56,7 @@ google-auth-httplib2==0.2.0
 # Payments
 requests==2.31.0
 google-generativeai==0.8.3
+
+# Markdown and HTML sanitization
+bleach==6.1.0
+markdown==3.7
