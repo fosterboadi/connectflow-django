@@ -235,7 +235,7 @@
                     handleCodeInApp: false
                 });
                 console.log('✅ Verification email sent to:', emailInput.value);
-                alert('Account created! Verification email sent to ' + emailInput.value + '. Please check your inbox and spam folder.');
+                alert('✅ Account created!\n\nVerification email sent to ' + emailInput.value + '.\n\n⚠️ IMPORTANT: Check your SPAM/JUNK folder if you don\'t see it in your inbox within 2 minutes!');
             } catch (emailError) {
                 console.error('❌ Email sending failed:', emailError);
                 alert('Account created but email failed to send. Error: ' + emailError.message + '. You can resend from the verification page.');
