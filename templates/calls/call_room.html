@@ -1,0 +1,447 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ call.get_call_type_display }} Call - ConnectFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { overflow: hidden; }
+    .call-container { position: fixed; inset: 0; background: #1a1a2e; display: flex; flex-direction: column; }
+    .video-grid { flex: 1; display: grid; gap: 0.5rem; padding: 1rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    .video-tile { position: relative; background: #16213e; border-radius: 1rem; overflow: hidden; min-height: 200px; }
+    .video-tile video { width: 100%; height: 100%; object-fit: cover; }
+    .local-video { position: absolute; bottom: 1rem; right: 1rem; width: 200px; height: 150px; border-radius: 0.5rem; overflow: hidden; border: 2px solid #4f46e5; z-index: 10; }
+    .call-controls { padding: 1.5rem; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: flex; justify-content: center; gap: 1rem; }
+    .control-btn { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; border: none; }
+    .control-btn:hover { transform: scale(1.1); }
+    .control-btn.active { background: #4f46e5; }
+    .control-btn.inactive { background: #374151; }
+    .control-btn.end-call { background: #ef4444; }
+    .participant-name { position: absolute; bottom: 0.5rem; left: 0.5rem; background: rgba(0,0,0,0.7); color: white; padding: 0.25rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="call-container">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 bg-black bg-opacity-50">
+        <div>
+            <h1 class="text-white text-xl font-bold">{{ call.get_call_type_display }} Call</h1>
+            <p class="text-gray-400 text-sm" id="call-duration">00:00</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-white text-sm" id="participant-count">{{ participants.count }} participant{{ participants.count|pluralize }}</span>
+        </div>
+    </div>
+
+    <!-- Video Grid -->
+    <div class="video-grid" id="video-grid">
+        <!-- Remote videos will be added here -->
+    </div>
+
+    <!-- Local Video Preview -->
+    <div class="local-video" id="local-video-container">
+        <video id="local-video" autoplay muted playsinline></video>
+        <div class="participant-name">You</div>
+    </div>
+
+    <!-- Call Controls -->
+    <div class="call-controls">
+        <button id="toggle-audio" class="control-btn active" title="Mute/Unmute">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24" id="mic-on-icon">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+            <svg class="w-6 h-6 text-white hidden" fill="currentColor" viewBox="0 0 24 24" id="mic-off-icon">
+                <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/>
+            </svg>
+        </button>
+
+        {% if call.call_type == 'VIDEO' %}
+        <button id="toggle-video" class="control-btn active" title="Start/Stop Video">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24" id="video-on-icon">
+                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+            </svg>
+            <svg class="w-6 h-6 text-white hidden" fill="currentColor" viewBox="0 0 24 24" id="video-off-icon">
+                <path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z"/>
+            </svg>
+        </button>
+        {% endif %}
+
+        <button id="share-screen" class="control-btn inactive" title="Share Screen">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+        </button>
+
+        <button id="end-call" class="control-btn end-call" title="End Call">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.68-1.36-2.66-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
+            </svg>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const callId = '{{ call.id }}';
+const userId = '{{ user.id }}';
+const userName = '{{ user.get_full_name|default:user.username }}';
+const isInitiator = {{ is_initiator|yojson }};
+const callType = '{{ call.call_type }}';
+const iceServers = {{ ice_servers|safe }};
+
+let localStream = null;
+let peerConnections = {};
+let callSocket = null;
+let isAudioEnabled = true;
+let isVideoEnabled = true;
+let isScreenSharing = false;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async () => {
+    await initLocalStream();
+    connectWebSocket();
+    startCallTimer();
+    setupEventListeners();
+});
+
+async function initLocalStream() {
+    try {
+        const constraints = {
+            audio: true,
+            video: callType === 'VIDEO' ? { width: 1280, height: 720 } : false
+        };
+        
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        document.getElementById('local-video').srcObject = localStream;
+        
+        console.log('Local stream initialized');
+    } catch (err) {
+        console.error('Failed to get local stream:', err);
+        alert('Failed to access camera/microphone. Please check permissions.');
+    }
+}
+
+function connectWebSocket() {
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${wsScheme}://${window.location.host}/ws/call/${callId}/`;
+    
+    callSocket = new WebSocket(wsUrl);
+    
+    callSocket.onopen = () => {
+        console.log('WebSocket connected');
+        // Announce presence
+        callSocket.send(JSON.stringify({
+            type: 'join',
+            user_id: userId,
+            user_name: userName
+        }));
+    };
+    
+    callSocket.onmessage = async (e) => {
+        const data = JSON.parse(e.data);
+        console.log('WebSocket message:', data);
+        
+        switch(data.type) {
+            case 'user_joined':
+                await handleUserJoined(data);
+                break;
+            case 'user_left':
+                handleUserLeft(data);
+                break;
+            case 'webrtc_offer':
+                await handleOffer(data);
+                break;
+            case 'webrtc_answer':
+                await handleAnswer(data);
+                break;
+            case 'ice_candidate':
+                await handleIceCandidate(data);
+                break;
+            case 'call_ended':
+                handleCallEnded();
+                break;
+        }
+    };
+    
+    callSocket.onclose = () => {
+        console.log('WebSocket disconnected');
+    };
+}
+
+async function handleUserJoined(data) {
+    const peerId = data.user_id;
+    if (peerId === userId) return;
+    
+    console.log('User joined:', data.user_name);
+    
+    // Create peer connection
+    const pc = createPeerConnection(peerId, data.user_name);
+    
+    // Create and send offer
+    if (data.should_create_offer) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        callSocket.send(JSON.stringify({
+            type: 'webrtc_offer',
+            target_user_id: peerId,
+            offer: offer
+        }));
+    }
+    
+    updateParticipantCount();
+}
+
+function handleUserLeft(data) {
+    const peerId = data.user_id;
+    console.log('User left:', data.user_name);
+    
+    if (peerConnections[peerId]) {
+        peerConnections[peerId].close();
+        delete peerConnections[peerId];
+    }
+    
+    const videoElement = document.getElementById(`video-${peerId}`);
+    if (videoElement) {
+        videoElement.parentElement.remove();
+    }
+    
+    updateParticipantCount();
+}
+
+async function handleOffer(data) {
+    const peerId = data.sender_id;
+    const pc = createPeerConnection(peerId, data.sender_name);
+    
+    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    
+    callSocket.send(JSON.stringify({
+        type: 'webrtc_answer',
+        target_user_id: peerId,
+        answer: answer
+    }));
+}
+
+async function handleAnswer(data) {
+    const peerId = data.sender_id;
+    const pc = peerConnections[peerId];
+    
+    if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    }
+}
+
+async function handleIceCandidate(data) {
+    const peerId = data.sender_id;
+    const pc = peerConnections[peerId];
+    
+    if (pc && data.candidate) {
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+    }
+}
+
+function createPeerConnection(peerId, peerName) {
+    const pc = new RTCPeerConnection({ iceServers: iceServers });
+    peerConnections[peerId] = pc;
+    
+    // Add local stream tracks
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            pc.addTrack(track, localStream);
+        });
+    }
+    
+    // Handle ICE candidates
+    pc.onicecandidate = (event) => {
+        if (event.candidate) {
+            callSocket.send(JSON.stringify({
+                type: 'ice_candidate',
+                target_user_id: peerId,
+                candidate: event.candidate
+            }));
+        }
+    };
+    
+    // Handle remote stream
+    pc.ontrack = (event) => {
+        console.log('Remote track received from', peerName);
+        addRemoteVideo(peerId, peerName, event.streams[0]);
+    };
+    
+    return pc;
+}
+
+function addRemoteVideo(peerId, peerName, stream) {
+    let videoTile = document.getElementById(`video-tile-${peerId}`);
+    
+    if (!videoTile) {
+        videoTile = document.createElement('div');
+        videoTile.id = `video-tile-${peerId}`;
+        videoTile.className = 'video-tile';
+        videoTile.innerHTML = `
+            <video id="video-${peerId}" autoplay playsinline></video>
+            <div class="participant-name">${peerName}</div>
+        `;
+        document.getElementById('video-grid').appendChild(videoTile);
+    }
+    
+    const video = document.getElementById(`video-${peerId}`);
+    video.srcObject = stream;
+}
+
+function setupEventListeners() {
+    document.getElementById('toggle-audio').addEventListener('click', toggleAudio);
+    if (callType === 'VIDEO') {
+        document.getElementById('toggle-video').addEventListener('click', toggleVideo);
+    }
+    document.getElementById('share-screen').addEventListener('click', toggleScreenShare);
+    document.getElementById('end-call').addEventListener('click', endCall);
+}
+
+function toggleAudio() {
+    isAudioEnabled = !isAudioEnabled;
+    localStream.getAudioTracks().forEach(track => track.enabled = isAudioEnabled);
+    
+    const btn = document.getElementById('toggle-audio');
+    const micOn = document.getElementById('mic-on-icon');
+    const micOff = document.getElementById('mic-off-icon');
+    
+    btn.classList.toggle('active', isAudioEnabled);
+    btn.classList.toggle('inactive', !isAudioEnabled);
+    micOn.classList.toggle('hidden', !isAudioEnabled);
+    micOff.classList.toggle('hidden', isAudioEnabled);
+}
+
+function toggleVideo() {
+    isVideoEnabled = !isVideoEnabled;
+    localStream.getVideoTracks().forEach(track => track.enabled = isVideoEnabled);
+    
+    const btn = document.getElementById('toggle-video');
+    const vidOn = document.getElementById('video-on-icon');
+    const vidOff = document.getElementById('video-off-icon');
+    
+    btn.classList.toggle('active', isVideoEnabled);
+    btn.classList.toggle('inactive', !isVideoEnabled);
+    vidOn.classList.toggle('hidden', !isVideoEnabled);
+    vidOff.classList.toggle('hidden', isVideoEnabled);
+}
+
+async function toggleScreenShare() {
+    if (!isScreenSharing) {
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const screenTrack = screenStream.getVideoTracks()[0];
+            
+            // Replace video track in all peer connections
+            Object.values(peerConnections).forEach(pc => {
+                const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+                if (sender) {
+                    sender.replaceTrack(screenTrack);
+                }
+            });
+            
+            // Update local video
+            document.getElementById('local-video').srcObject = screenStream;
+            
+            screenTrack.onended = () => {
+                toggleScreenShare();
+            };
+            
+            isScreenSharing = true;
+            document.getElementById('share-screen').classList.add('active');
+            document.getElementById('share-screen').classList.remove('inactive');
+        } catch (err) {
+            console.error('Screen share error:', err);
+        }
+    } else {
+        // Restore camera
+        const videoTrack = localStream.getVideoTracks()[0];
+        Object.values(peerConnections).forEach(pc => {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+            if (sender) {
+                sender.replaceTrack(videoTrack);
+            }
+        });
+        
+        document.getElementById('local-video').srcObject = localStream;
+        isScreenSharing = false;
+        document.getElementById('share-screen').classList.remove('active');
+        document.getElementById('share-screen').classList.add('inactive');
+    }
+}
+
+async function endCall() {
+    if (confirm('End call for everyone?')) {
+        const response = await fetch(`/calls/${callId}/end/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        if (response.ok) {
+            cleanup();
+            window.location.href = '/channels/';
+        }
+    }
+}
+
+function handleCallEnded() {
+    alert('Call has ended');
+    cleanup();
+    window.location.href = '/channels/';
+}
+
+function cleanup() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    
+    Object.values(peerConnections).forEach(pc => pc.close());
+    
+    if (callSocket) {
+        callSocket.close();
+    }
+}
+
+function startCallTimer() {
+    let seconds = 0;
+    setInterval(() => {
+        seconds++;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        document.getElementById('call-duration').textContent = 
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+function updateParticipantCount() {
+    const count = Object.keys(peerConnections).length + 1;
+    document.getElementById('participant-count').textContent = 
+        `${count} participant${count !== 1 ? 's' : ''}`;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanup);
+</script>
+{% endblock %}
