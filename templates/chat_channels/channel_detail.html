@@ -165,6 +165,24 @@
     .formatted-message del {
         opacity: 0.6;
     }
+    
+    /* Typing indicator animations */
+    @keyframes bounce {
+        0%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-8px);
+        }
+    }
+    
+    .animate-bounce {
+        animation: bounce 1.4s infinite;
+    }
+    
+    #typing-indicator {
+        transition: all 0.2s ease-in-out;
+    }
 </style>
 {% endblock %}
 
@@ -716,22 +734,78 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    let typingTimeout;
+    let typingUsers = new Set();
+    let typingTimeout = {};
+    
     function handleTyping(data) {
         let typingIndicator = document.getElementById('typing-indicator');
         if (!typingIndicator) {
             typingIndicator = document.createElement('div');
             typingIndicator.id = 'typing-indicator';
-            typingIndicator.className = 'px-6 py-2 text-[10px] font-black text-gray-400 italic animate-pulse';
-            messagesContainer.after(typingIndicator);
+            typingIndicator.className = 'px-6 py-3 flex items-center space-x-2';
+            
+            // Insert before the input form
+            const inputContainer = document.querySelector('.input-section');
+            if (inputContainer) {
+                inputContainer.parentNode.insertBefore(typingIndicator, inputContainer);
+            } else {
+                messagesContainer.after(typingIndicator);
+            }
         }
         
+        const userId = data.sender_id;
+        
         if (data.is_typing) {
-            typingIndicator.textContent = `${data.sender_name} is typing...`;
-            typingIndicator.classList.remove('hidden');
+            typingUsers.add(data.sender_name);
+            
+            // Clear existing timeout for this user
+            if (typingTimeout[userId]) {
+                clearTimeout(typingTimeout[userId]);
+            }
+            
+            // Auto-clear after 5 seconds
+            typingTimeout[userId] = setTimeout(() => {
+                typingUsers.delete(data.sender_name);
+                updateTypingIndicator(typingIndicator);
+            }, 5000);
         } else {
-            typingIndicator.classList.add('hidden');
+            typingUsers.delete(data.sender_name);
         }
+        
+        updateTypingIndicator(typingIndicator);
+    }
+    
+    function updateTypingIndicator(indicator) {
+        if (typingUsers.size === 0) {
+            indicator.classList.add('hidden');
+            return;
+        }
+        
+        indicator.classList.remove('hidden');
+        
+        const names = Array.from(typingUsers);
+        let text = '';
+        
+        if (names.length === 1) {
+            text = `${names[0]} is typing`;
+        } else if (names.length === 2) {
+            text = `${names[0]} and ${names[1]} are typing`;
+        } else if (names.length === 3) {
+            text = `${names[0]}, ${names[1]}, and ${names[2]} are typing`;
+        } else {
+            text = `${names.length} people are typing`;
+        }
+        
+        indicator.innerHTML = `
+            <div class="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                </div>
+                <span class="text-xs font-medium">${text}</span>
+            </div>
+        `;
     }
 
     function handlePresence(data) {
@@ -741,14 +815,33 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Typing notification logic
-    messageInput.addEventListener('keydown', () => {
+    // Typing notification logic - improved
+    let myTypingTimeout;
+    let isTyping = false;
+    
+    messageInput.addEventListener('input', () => {
         if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-            chatSocket.send(JSON.stringify({ type: 'typing', is_typing: true }));
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
+            // Only send if not already typing
+            if (!isTyping) {
+                chatSocket.send(JSON.stringify({ type: 'typing', is_typing: true }));
+                isTyping = true;
+            }
+            
+            // Reset timeout
+            clearTimeout(myTypingTimeout);
+            myTypingTimeout = setTimeout(() => {
                 chatSocket.send(JSON.stringify({ type: 'typing', is_typing: false }));
+                isTyping = false;
             }, 3000);
+        }
+    });
+    
+    // Stop typing when message is sent
+    chatForm.addEventListener('submit', () => {
+        if (isTyping && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({ type: 'typing', is_typing: false }));
+            isTyping = false;
+            clearTimeout(myTypingTimeout);
         }
     });
 
