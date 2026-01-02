@@ -1766,14 +1766,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     
                     const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
                     
+                    console.log('Upload response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
+                    
                     // Check if response is JSON
                     const contentType = res.headers.get('content-type');
                     if (!contentType || !contentType.includes('application/json')) {
                         const text = await res.text();
-                        console.error('Server returned non-JSON response:', text);
+                        console.error('Server returned non-JSON response. Status:', res.status, 'Body preview:', text.substring(0, 200));
                         
                         // If it's a redirect (302/3xx), the upload likely succeeded
-                        if (res.redirected || res.status >= 300 && res.status < 400) {
+                        if (res.redirected || (res.status >= 300 && res.status < 400)) {
                             console.log('Upload succeeded - server redirected');
                             clearVoiceRecording(); 
                             selectedFiles = [];
@@ -1785,8 +1787,21 @@ document.addEventListener("DOMContentLoaded", function () {
                             return;
                         }
                         
+                        // If status 200 with HTML, treat as success (backwards compatibility)
+                        if (res.status === 200) {
+                            console.log('Status 200 with HTML - treating as success, reloading page');
+                            clearVoiceRecording(); 
+                            selectedFiles = [];
+                            renderFilePreviews();
+                            messageInput.value = ''; 
+                            cancelReply();
+                            window.location.reload();
+                            return;
+                        }
+                        
                         // Only show error if it's actually an error status
                         if (res.status >= 400) {
+                            console.error('Upload failed with status', res.status);
                             alert('Upload failed: Server error. Please check your storage quota and try again.');
                         }
                         
@@ -1796,8 +1811,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                     
                     const data = await res.json();
+                    console.log('Upload response data:', data);
 
                     if (res.ok && data.success) { 
+                        console.log('Upload successful!');
                         clearVoiceRecording(); 
                         selectedFiles = [];
                         renderFilePreviews();
@@ -1816,7 +1833,10 @@ document.addEventListener("DOMContentLoaded", function () {
                             attachments: data.attachments 
                         }); 
                     } else {
+                        console.error('Upload failed:', data.error || 'Unknown error');
                         alert('Upload failed: ' + (data.error || 'Unknown error'));
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>';
                     }
                 } else { 
                     const msgData = { 
@@ -1830,11 +1850,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
         } catch (err) {
-            console.error(err);
+            console.error('Upload error:', err);
             alert(`Error: ${err.message}`);
-        } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg><svg id="update-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+        } finally {
+            // Only re-enable if not in a loading state from a successful upload
+            if (submitBtn.innerHTML.includes('animate-spin')) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg><svg id="update-icon" class="hidden w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            }
             updateSendButtonState();
         }
     };
