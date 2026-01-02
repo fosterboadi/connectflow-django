@@ -356,6 +356,16 @@ def channel_detail(request, pk):
     
     # Handle message posting
     if request.method == 'POST':
+        # Check if user can post
+        if not channel.can_user_post(user):
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'You do not have permission to post in this channel.'
+                }, status=403)
+            messages.error(request, 'You do not have permission to post in this channel.')
+            return redirect('chat_channels:channel_detail', pk=pk)
+        
         # Manually ensure voice_message is in request.FILES if it was sent as such
         # This fixes issues where the widget might interfere or if sent via FormData
         if 'voice_message' in request.FILES:
