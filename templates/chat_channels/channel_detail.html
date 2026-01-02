@@ -348,7 +348,7 @@
         {% endif %}
 
         <!-- Pinned Messages Bar -->
-        {% if channel.messages.filter(is_pinned=True, is_deleted=False).exists %}
+        {% if pinned_messages.exists %}
         <div class="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-6 py-3" id="pinned-messages-bar">
             <div class="flex items-start justify-between">
                 <div class="flex items-start space-x-3 flex-1 min-w-0">
@@ -358,10 +358,10 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center space-x-2 mb-1">
                             <h3 class="text-xs font-black text-amber-800 dark:text-amber-300 uppercase tracking-wider">Pinned Messages</h3>
-                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">({{ channel.messages.filter(is_pinned=True, is_deleted=False).count }})</span>
+                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">({{ pinned_messages.count }})</span>
                         </div>
                         <div class="space-y-2">
-                            {% for pinned in channel.messages.filter(is_pinned=True, is_deleted=False)|slice:":3" %}
+                            {% for pinned in pinned_messages|slice:":3" %}
                             <div class="flex items-start space-x-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg p-2 transition" onclick="jumpToMessage('{{ pinned.id }}')">
                                 <div class="flex-shrink-0">
                                     {% if pinned.sender.avatar %}
@@ -381,9 +381,9 @@
                                 </div>
                             </div>
                             {% endfor %}
-                            {% if channel.messages.filter(is_pinned=True, is_deleted=False).count > 3 %}
+                            {% if pinned_messages.count > 3 %}
                             <button onclick="showAllPinnedMessages()" class="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-bold flex items-center space-x-1">
-                                <span>Show all {{ channel.messages.filter(is_pinned=True, is_deleted=False).count }} pinned messages</span>
+                                <span>Show all {{ pinned_messages.count }} pinned messages</span>
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -1787,8 +1787,18 @@ document.addEventListener("DOMContentLoaded", function () {
                             return;
                         }
                         
-                        // If status 200 with HTML, treat as success (backwards compatibility)
+                        // If status 200 with HTML, check if it's an error page
                         if (res.status === 200) {
+                            // Check if HTML contains error indicators
+                            if (text.includes('Server Error') || text.includes('500') || text.includes('Internal Server Error') || text.includes('Traceback')) {
+                                console.error('Got 500 error page from server');
+                                alert('Upload failed: Server error. Please refresh the page and try again.');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>';
+                                return;
+                            }
+                            
+                            // Otherwise treat as success (backwards compatibility)
                             console.log('Status 200 with HTML - treating as success, reloading page');
                             clearVoiceRecording(); 
                             selectedFiles = [];

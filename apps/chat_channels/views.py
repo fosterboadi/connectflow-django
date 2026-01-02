@@ -465,6 +465,9 @@ def channel_detail(request, pk):
     else:
         form = MessageForm()
     
+    # Get pinned messages
+    pinned_messages = channel.messages.filter(is_pinned=True, is_deleted=False).order_by('-created_at')
+    
     context = {
         'channel': channel,
         'chat_messages': channel_messages,
@@ -475,7 +478,8 @@ def channel_detail(request, pk):
         'search_query': search_query,
         'can_edit': user.is_admin or channel.created_by == user,
         'is_member': user in channel.members.all(),
-        'can_post': channel.can_user_post(user) if hasattr(channel, 'can_user_post') else user in channel.members.all()
+        'can_post': channel.can_user_post(user) if hasattr(channel, 'can_user_post') else user in channel.members.all(),
+        'pinned_messages': pinned_messages
     }
     return render(request, 'chat_channels/channel_detail.html', context)
 
