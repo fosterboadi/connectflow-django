@@ -2305,5 +2305,125 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// @mentions autocomplete
+const channelMembers = [
+    {% for member in channel.members.all %}
+    {
+        id: '{{ member.id }}',
+        name: '{{ member.get_full_name }}',
+        username: '{{ member.username }}',
+        avatar: '{{ member.avatar.url|default:'' }}'
+    },
+    {% endfor %}
+];
+
+let mentionDropdown = null;
+let mentionStartPos = -1;
+
+// Create mentions dropdown
+function createMentionDropdown() {
+    if (!mentionDropdown) {
+        mentionDropdown = document.createElement('div');
+        mentionDropdown.id = 'mention-dropdown';
+        mentionDropdown.className = 'absolute bottom-full mb-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto hidden z-50';
+        document.querySelector('.input-section').appendChild(mentionDropdown);
+    }
+    return mentionDropdown;
+}
+
+// Show mention suggestions
+function showMentionSuggestions(query) {
+    const dropdown = createMentionDropdown();
+    const filtered = channelMembers.filter(m => 
+        m.name.toLowerCase().includes(query.toLowerCase()) || 
+        m.username.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    if (filtered.length === 0) {
+        dropdown.classList.add('hidden');
+        return;
+    }
+    
+    dropdown.innerHTML = filtered.map((member, index) => `
+        <div class="mention-item p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition flex items-center space-x-3" data-index="${index}" data-username="${member.username}" data-name="${member.name}">
+            ${member.avatar ? 
+                `<img src="${member.avatar}" class="w-8 h-8 rounded-full">` :
+                `<div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">${member.name.charAt(0)}</div>`
+            }
+            <div>
+                <div class="font-bold text-sm text-gray-800 dark:text-white">${member.name}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">@${member.username}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    dropdown.classList.remove('hidden');
+    
+    // Add click listeners
+    dropdown.querySelectorAll('.mention-item').forEach(item => {
+        item.addEventListener('click', () => {
+            insertMention(item.dataset.username);
+        });
+    });
+}
+
+function insertMention(username) {
+    const input = document.getElementById('id_content');
+    const value = input.value;
+    const beforeMention = value.substring(0, mentionStartPos);
+    const afterMention = value.substring(input.selectionStart);
+    
+    input.value = beforeMention + '@' + username + ' ' + afterMention;
+    input.focus();
+    
+    const cursorPos = (beforeMention + '@' + username + ' ').length;
+    input.setSelectionRange(cursorPos, cursorPos);
+    
+    createMentionDropdown().classList.add('hidden');
+    mentionStartPos = -1;
+}
+
+// Listen for @ symbol
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('id_content');
+    if (!input) return;
+    
+    input.addEventListener('input', (e) => {
+        const value = e.target.value;
+        const cursorPos = e.target.selectionStart;
+        
+        // Find @ symbol before cursor
+        let atPos = -1;
+        for (let i = cursorPos - 1; i >= 0; i--) {
+            if (value[i] === '@') {
+                atPos = i;
+                break;
+            }
+            if (value[i] === ' ' || value[i] === '\n') {
+                break;
+            }
+        }
+        
+        if (atPos !== -1) {
+            mentionStartPos = atPos;
+            const query = value.substring(atPos + 1, cursorPos);
+            showMentionSuggestions(query);
+        } else {
+            if (mentionDropdown) {
+                mentionDropdown.classList.add('hidden');
+            }
+            mentionStartPos = -1;
+        }
+    });
+    
+    // Close on escape
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mentionDropdown && !mentionDropdown.classList.contains('hidden')) {
+            mentionDropdown.classList.add('hidden');
+            mentionStartPos = -1;
+        }
+    });
+});
 </script>
 {% endblock %}
