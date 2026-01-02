@@ -797,6 +797,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const submitBtn = document.getElementById("submit-btn");
     const csrfToken = getCookie('csrftoken');
     
+    // Auto-expand textarea as user types
+    if (messageInput) {
+        messageInput.style.height = 'auto';
+        messageInput.style.overflowY = 'hidden';
+        
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px'; // Max height 150px
+        });
+        
+        // Reset height when message is sent
+        chatForm?.addEventListener('submit', function() {
+            setTimeout(() => {
+                messageInput.style.height = 'auto';
+            }, 100);
+        });
+    }
+    
     let chatSocket = null;
     let isEditing = false;
     let editingMessageId = null;
