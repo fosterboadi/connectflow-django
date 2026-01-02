@@ -426,10 +426,10 @@ def channel_detail(request, pk):
                 attachments = request.FILES.getlist('attachments')
                 for attachment_file in attachments:
                     try:
-                        # Check file size (max 10MB)
-                        max_size = 10 * 1024 * 1024  # 10MB
+                        # Check file size (max 100MB)
+                        max_size = 100 * 1024 * 1024  # 100MB
                         if attachment_file.size > max_size:
-                            raise ValueError(f"File {attachment_file.name} is too large. Maximum size is 10MB.")
+                            raise ValueError(f"File {attachment_file.name} is too large. Maximum size is 100MB.")
                         
                         att = Attachment.objects.create(message=message, file=attachment_file)
                         processed_attachments.append({

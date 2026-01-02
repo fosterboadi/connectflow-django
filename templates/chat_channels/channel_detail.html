@@ -1875,7 +1875,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
                     
-                    const res = await fetch(chatForm.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' }});
+                    // Show uploading toast for large files
+                    const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
+                    if (totalSize > 5 * 1024 * 1024) { // > 5MB
+                        showToast('Uploading large file... This may take a moment.');
+                    }
+                    
+                    try {
+                        // Add timeout for large uploads (2 minutes)
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+                        
+                        const res = await fetch(chatForm.action, { 
+                            method: 'POST', 
+                            body: fd, 
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': '{{ csrf_token }}' },
+                            signal: controller.signal
+                        });
+                        
+                        clearTimeout(timeoutId);
                     
                     console.log('Upload response status:', res.status, 'Content-Type:', res.headers.get('content-type'));
                     
@@ -1923,12 +1941,27 @@ document.addEventListener("DOMContentLoaded", function () {
                         // Only show error if it's actually an error status
                         if (res.status >= 400) {
                             console.error('Upload failed with status', res.status);
-                            alert('Upload failed: Server error. Please check your storage quota and try again.');
+                            if (res.status === 502) {
+                                alert('Upload timed out. For large files (>10MB), the upload may still complete. Please wait a moment and refresh the page.');
+                            } else {
+                                alert('Upload failed: Server error. Please check your storage quota and try again.');
+                            }
                         }
                         
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>';
                         return;
+                    } catch (fetchError) {
+                        console.error('Fetch error:', fetchError);
+                        if (fetchError.name === 'AbortError') {
+                            alert('Upload timed out after 2 minutes. For very large files, the upload may still complete in the background. Please refresh the page in a moment.');
+                        } else {
+                            alert('Upload failed: ' + fetchError.message);
+                        }
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<svg id="send-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>';
+                        return;
+                    }
                     }
                     
                     const data = await res.json();
