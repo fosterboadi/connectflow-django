@@ -309,7 +309,7 @@ def channel_detail(request, pk):
                     message_type='VIDEO'
                 ).distinct()
     
-    channel_messages = messages_query.order_by('-is_pinned', 'created_at')
+    channel_messages = messages_query.order_by('created_at')
     
     # Add date separators info to messages
     messages_with_dates = []
