@@ -119,20 +119,35 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def create_task(self, request, pk=None):
-        message = self.get_object()
-        channel = message.channel
-        if not channel.shared_project:
-            return Response({'error': 'Channel not linked to a project'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        from apps.organizations.models import ProjectTask
-        task = ProjectTask.objects.create(
-            project=channel.shared_project,
-            creator=request.user,
-            title=f"Task from chat: {message.content[:50]}...",
-            description=message.content,
-        )
-        
-        return Response({'status': 'task_created', 'task_id': str(task.id)})
+        """Create a project task from a message."""
+        try:
+            message = self.get_object()
+            channel = message.channel
+            
+            if not channel.shared_project:
+                return Response(
+                    {'error': 'This channel is not linked to a project. Only project channels can create tasks.'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            from apps.organizations.models import ProjectTask
+            task = ProjectTask.objects.create(
+                project=channel.shared_project,
+                creator=request.user,
+                title=f"Task from chat: {message.content[:50]}...",
+                description=message.content,
+            )
+            
+            return Response({
+                'status': 'task_created', 
+                'task_id': str(task.id),
+                'message': 'Task created successfully'
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to create task: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def _broadcast(self, message, event_type):
         channel_layer = get_channel_layer()

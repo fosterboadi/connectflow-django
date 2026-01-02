@@ -1613,9 +1613,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     headers: { 'X-CSRFToken': csrfToken }
                 });
                 if (res.ok) {
+                    const data = await res.json();
                     alert('Project task created successfully!');
                 } else {
-                    throw new Error("Failed to create task");
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to create task");
                 }
             }
         } catch (err) {
