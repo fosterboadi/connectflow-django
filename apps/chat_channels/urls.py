@@ -22,4 +22,5 @@ urlpatterns = [
     path('message/<uuid:pk>/react/', views.message_react, name='message_react'),
     path('message/<uuid:pk>/thread/', views.message_thread, name='message_thread'),
     path('message/<uuid:pk>/reply/', views.message_reply, name='message_reply'),
+    path('<uuid:pk>/pinned/', views.channel_pinned_messages, name='channel_pinned_messages'),
 ]

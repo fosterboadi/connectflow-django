@@ -714,3 +714,29 @@ def message_reply(request, pk):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+
+@login_required
+def channel_pinned_messages(request, pk):
+    """Get all pinned messages in a channel."""
+    channel = get_object_or_404(Channel, pk=pk)
+    
+    # Check access
+    if not channel.members.filter(id=request.user.id).exists():
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    pinned_messages = channel.messages.filter(
+        is_pinned=True,
+        is_deleted=False
+    ).order_by('-created_at')
+    
+    return JsonResponse({
+        'pinned_messages': [{
+            'id': str(msg.id),
+            'content': msg.content,
+            'sender_name': msg.sender.get_full_name(),
+            'sender_avatar': msg.sender.avatar.url if msg.sender.avatar else None,
+            'timestamp': msg.created_at.strftime('%b %d, %I:%M %p'),
+        } for msg in pinned_messages]
+    })
+
