@@ -34,7 +34,7 @@ class SecurityHeadersMiddleware:
             response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
             
             # Permissions policy (formerly Feature Policy)
-            response['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+            response['Permissions-Policy'] = 'geolocation=(), microphone=(self), camera=(self)'
         
         return response
 
