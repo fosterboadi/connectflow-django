@@ -1563,10 +1563,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 
                         } else if (action === 'pin') {
                 
-                
                 const res = await fetch(`/api/v1/messages/${messageId}/pin/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
-                if (!res.ok) throw new Error("Failed to pin message");
-                showToast("Pin toggled!");
+                if (res.ok) {
+                    const data = await res.json();
+                    // Update UI immediately
+                    const msgEl = document.getElementById(`message-${messageId}`);
+                    if (msgEl) {
+                        if (data.is_pinned) {
+                            msgEl.classList.add('pinned');
+                        } else {
+                            msgEl.classList.remove('pinned');
+                        }
+                    }
+                    showToast(data.is_pinned ? "Message pinned!" : "Message unpinned!");
+                } else {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to pin message");
+                }
             } else if (action === 'star') {
                 const res = await fetch(`/api/v1/messages/${messageId}/star/`, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } });
                 if (res.ok) {
