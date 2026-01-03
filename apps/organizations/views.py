@@ -1296,6 +1296,12 @@ def member_edit_role(request, pk):
                 messages.error(request, f"The Auditor and Compliance Officer roles are part of the Advanced Roles suite. Please upgrade your plan ({user.organization.get_plan().name}) to access them.")
             else:
                 member.role = new_role
+                # When promoting to SUPER_ADMIN, also set is_staff flag
+                if new_role == User.Role.SUPER_ADMIN:
+                    member.is_staff = True
+                # When demoting from SUPER_ADMIN, remove is_staff flag (unless they're Django superuser)
+                elif member.role == User.Role.SUPER_ADMIN and not member.is_superuser:
+                    member.is_staff = False
                 member.save()
                 messages.success(request, f"Role for {member.get_full_name() or member.username} updated to {member.get_role_display()}.")
         else:
