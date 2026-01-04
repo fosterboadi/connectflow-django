@@ -69,15 +69,20 @@ class ChannelSerializer(serializers.ModelSerializer):
     
     def get_display_name(self, obj):
         """Get a friendly display name for the channel"""
-        request = self.context.get('request')
-        
-        # For DM channels, show the other participant's name
-        if obj.channel_type == Channel.ChannelType.DIRECT and request and request.user:
-            # Get the other member (not the current user)
-            other_member = obj.members.exclude(id=request.user.id).first()
-            if other_member:
-                return other_member.get_full_name() or other_member.username
-            return "Direct Message"
-        
-        # For other channels, use the name or description
-        return obj.name
+        try:
+            request = self.context.get('request')
+            
+            # For DM channels, show the other participant's name
+            if obj.channel_type == Channel.ChannelType.DIRECT and request and request.user:
+                # Get the other member (not the current user)
+                other_member = obj.members.exclude(id=request.user.id).first()
+                if other_member:
+                    full_name = other_member.get_full_name()
+                    return full_name if full_name else other_member.username
+                return "Direct Message"
+            
+            # For other channels, use the name or description
+            return obj.name
+        except Exception as e:
+            # Fallback to basic name if anything fails
+            return obj.name

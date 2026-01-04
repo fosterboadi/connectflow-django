@@ -17,7 +17,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
         return Channel.objects.filter(
             members=self.request.user, 
             is_archived=False
-        ).annotate(
+        ).prefetch_related('members').annotate(
             member_count=Count('members')
         ).order_by('-created_at')
 
