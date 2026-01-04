@@ -8,21 +8,35 @@ import json
 def channels_for_forward(request):
     """Simple JSON endpoint for forward modal - bypasses DRF"""
     try:
-        # Get user's channels
+        # Get user's channels with member info
         channels = Channel.objects.filter(
             members=request.user,
             is_archived=False
-        ).values('id', 'name', 'channel_type', 'description')
+        ).prefetch_related('members')
         
-        # Convert to list and add member count
+        # Build channel list with better names
         channel_list = []
         for ch in channels:
+            display_name = ch.name
+            
+            # For DM channels, show the other person's name
+            if ch.channel_type == Channel.ChannelType.DIRECT:
+                # Get the other member (not current user)
+                other_members = ch.members.exclude(id=request.user.id)
+                if other_members.exists():
+                    other_user = other_members.first()
+                    full_name = other_user.get_full_name()
+                    display_name = full_name if full_name else other_user.username
+                else:
+                    display_name = "Direct Message"
+            
             channel_list.append({
-                'id': str(ch['id']),
-                'name': ch['name'],
-                'channel_type': ch['channel_type'],
-                'description': ch.get('description', ''),
-                'member_count': 2  # Simplified for now
+                'id': str(ch.id),
+                'name': ch.name,
+                'display_name': display_name,
+                'channel_type': ch.channel_type,
+                'description': ch.description or '',
+                'member_count': ch.members.count()
             })
         
         return JsonResponse(channel_list, safe=False)

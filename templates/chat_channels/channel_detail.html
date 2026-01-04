@@ -2254,8 +2254,8 @@ async function openForwardModal(messageId) {
         
         // Render channel list
         channelList.innerHTML = availableChannels.map(ch => {
-            // Use channel name directly for now
-            let displayName = ch.name;
+            // Use display_name from API (shows participant names for DMs)
+            let displayName = ch.display_name || ch.name;
             let displayIcon = '#';
             let iconColor = 'indigo';
             
