@@ -2390,7 +2390,25 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 // Get the original message content
                 const messageEl = document.getElementById(`message-${selectedMessageToForward}`);
-                const messageText = messageEl.querySelector('.formatted-message, .message-content-text')?.textContent || '';
+                
+                // Try multiple selectors to find the message text
+                let messageText = '';
+                const contentEl = messageEl.querySelector('.message-content, .formatted-message');
+                if (contentEl) {
+                    messageText = contentEl.textContent.trim();
+                }
+                
+                // Fallback: try to get from data attribute or innerText
+                if (!messageText) {
+                    messageText = messageEl.innerText.trim();
+                }
+                
+                if (!messageText) {
+                    showToast('Could not read message content', 'error');
+                    return;
+                }
+                
+                console.log('Forwarding message:', messageText.substring(0, 50) + '...');
                 
                 // Send forwarded message via API
                 const res = await fetch(`/api/v1/messages/`, {
