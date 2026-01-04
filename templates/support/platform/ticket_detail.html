@@ -32,7 +32,7 @@
                         <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">{{ ticket.requester.get_full_name }}</h3>
                         <span class="text-[10px] text-gray-400 font-medium">{{ ticket.created_at|date:"F d, Y @ H:i" }}</span>
                     </div>
-                    <p class="text-xs text-gray-500 font-medium mb-2">{{ ticket.requester.email }} • Organization: {{ ticket.organization.name|default:"None" }}</p>
+                    <p class="text-xs text-gray-500 font-medium mb-2">{{ ticket.requester.email }} • Organization: {% if ticket.organization %}{{ ticket.organization.name }}{% else %}None{% endif %}</p>
                     <div class="flex flex-wrap gap-2">
                         <span class="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-white text-indigo-600 rounded-lg border border-indigo-100">{{ ticket.get_category_display }}</span>
                         {% if ticket.is_priority_support %}

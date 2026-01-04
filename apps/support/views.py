@@ -7,7 +7,14 @@ from .models import Ticket, TicketMessage
 from .forms import TicketForm, TicketMessageForm, TicketAdminForm
 
 def super_admin_check(user):
-    return user.is_authenticated and user.role == User.Role.SUPER_ADMIN and user.is_staff
+    """Check if user is a super admin with proper access."""
+    return (
+        user and 
+        user.is_authenticated and 
+        hasattr(user, 'role') and
+        user.role == User.Role.SUPER_ADMIN and 
+        user.is_staff
+    )
 
 @login_required
 def ticket_list(request):
@@ -128,7 +135,8 @@ def ticket_detail(request, pk):
     ticket = get_object_or_404(Ticket, pk=pk)
     
     # Access control: requester or admin
-    if ticket.requester != request.user and not request.user.is_admin:
+    is_admin = hasattr(request.user, 'is_admin') and request.user.is_admin
+    if ticket.requester != request.user and not is_admin:
         messages.error(request, "You do not have permission to view this ticket.")
         return redirect('support:ticket_list')
     
