@@ -2228,10 +2228,14 @@ async function openForwardModal(messageId) {
         
         // Handle both array response and paginated response
         const channels = Array.isArray(data) ? data : (data.results || []);
+        console.log('Total channels:', channels.length);
+        console.log('All channels:', channels.map(ch => ({ id: ch.id, name: ch.name, type: ch.channel_type })));
         
         // Filter out current channel
         const currentChannelId = '{{ channel.id }}';
         const availableChannels = channels.filter(ch => ch.id !== currentChannelId);
+        console.log('Available channels after filter:', availableChannels.length);
+        console.log('Current channel ID:', currentChannelId);
         
         if (availableChannels.length === 0) {
             channelList.innerHTML = `

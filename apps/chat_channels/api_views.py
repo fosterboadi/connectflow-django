@@ -13,7 +13,17 @@ class ChannelViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Channel.objects.filter(members=self.request.user, is_archived=False)
+        from django.db.models import Count
+        return Channel.objects.filter(
+            members=self.request.user, 
+            is_archived=False
+        ).annotate(
+            member_count=Count('members')
+        ).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        channel = serializer.save(created_by=self.request.user)
+        channel.members.add(self.request.user)
 
     @action(detail=True, methods=['get'])
     def messages(self, request, pk=None):
