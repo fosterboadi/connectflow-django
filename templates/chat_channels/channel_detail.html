@@ -2209,8 +2209,8 @@ async function openForwardModal(messageId) {
     modal.classList.remove('hidden');
     
     try {
-        // Fetch user's channels from API using session auth
-        const res = await fetch('/api/v1/channels/', {
+        // Fetch user's channels from simple Django view
+        const res = await fetch('/channels/json/forward/', {
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json',

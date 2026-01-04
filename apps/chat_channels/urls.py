@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views_json import channels_for_forward
 
 app_name = 'chat_channels'
 
@@ -8,6 +9,10 @@ urlpatterns = [
     path('create/', views.channel_create, name='channel_create'),
     path('project/<uuid:project_id>/create/', views.project_channel_create, name='project_channel_create'),
     path('direct/<int:user_id>/', views.start_direct_message, name='start_direct_message'),
+    
+    # JSON endpoint for forward modal
+    path('json/forward/', channels_for_forward, name='channels_for_forward'),
+    
     path('<uuid:pk>/', views.channel_detail, name='channel_detail'),
     path('<uuid:pk>/edit/', views.channel_edit, name='channel_edit'),
     path('<uuid:pk>/delete/', views.channel_delete, name='channel_delete'),
