@@ -2388,19 +2388,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const messageEl = document.getElementById(`message-${selectedMessageToForward}`);
                 const messageText = messageEl.querySelector('.formatted-message, .message-content-text')?.textContent || '';
                 
-                // Send forwarded message via WebSocket
-                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                    chatSocket.send(JSON.stringify({
-                        type: 'forward_message',
-                        message_id: selectedMessageToForward,
-                        target_channel: selectedChannelToForwardTo,
-                        content: messageText
-                    }));
-                    
+                // Send forwarded message via API
+                const res = await fetch(`/api/v1/messages/`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        channel: selectedChannelToForwardTo,
+                        content: messageText,
+                        forwarded_from: selectedMessageToForward
+                    })
+                });
+                
+                if (res.ok) {
                     showToast('Message forwarded successfully!', 'success');
                     closeForwardModal();
                 } else {
-                    throw new Error('WebSocket not connected');
+                    const errorData = await res.json();
+                    throw new Error(errorData.detail || 'Failed to forward message');
                 }
             } catch (error) {
                 console.error('Error forwarding message:', error);
