@@ -2192,18 +2192,25 @@ async function openForwardModal(messageId) {
     modal.classList.remove('hidden');
     
     try {
-        // Fetch user's channels from API
-        const authToken = '{{ user.auth_token.key }}';
+        // Fetch user's channels from API using session auth
         const res = await fetch('/api/v1/channels/', {
+            credentials: 'same-origin',
             headers: {
-                'Authorization': `Token ${authToken}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
             }
         });
         
-        if (!res.ok) throw new Error('Failed to load channels');
+        if (!res.ok) {
+            console.error('API Response:', res.status, res.statusText);
+            throw new Error('Failed to load channels');
+        }
         
-        const channels = await res.json();
+        const data = await res.json();
+        console.log('Channels data:', data);
+        
+        // Handle both array response and paginated response
+        const channels = Array.isArray(data) ? data : (data.results || []);
         
         // Filter out current channel
         const currentChannelId = '{{ channel.id }}';
@@ -2250,7 +2257,10 @@ async function openForwardModal(messageId) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <p class="text-sm font-bold">Error loading channels</p>
-                <p class="text-xs mt-1">Please try again</p>
+                <p class="text-xs mt-1">${error.message || 'Please try again'}</p>
+                <button onclick="openForwardModal('${messageId}')" class="mt-3 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700">
+                    Retry
+                </button>
             </div>
         `;
     }
