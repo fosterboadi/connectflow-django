@@ -126,11 +126,15 @@ def platform_ticket_detail(request, pk):
             
         messages_list = ticket.messages.all()
         
+        # Get first staff reply for response time calculation
+        first_staff_reply = ticket.messages.exclude(sender=ticket.requester).first()
+        
         return render(request, 'support/platform/ticket_detail.html', {
             'ticket': ticket,
             'messages': messages_list,
             'admin_form': admin_form,
-            'message_form': message_form
+            'message_form': message_form,
+            'first_staff_reply': first_staff_reply
         })
     except Exception as e:
         # Log the error and show a user-friendly message

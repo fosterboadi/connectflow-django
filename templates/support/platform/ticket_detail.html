@@ -153,13 +153,11 @@
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-400 font-bold">First Response Time</span>
                         <span class="font-black text-gray-800">
-                            {% with first_reply=ticket.messages.exclude(sender=ticket.requester).first %}
-                                {% if first_reply %}
-                                    {{ first_reply.created_at|timesince:ticket.created_at }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            {% endwith %}
+                            {% if first_staff_reply %}
+                                {{ first_staff_reply.created_at|timesince:ticket.created_at }}
+                            {% else %}
+                                N/A
+                            {% endif %}
                         </span>
                     </div>
                 </div>
