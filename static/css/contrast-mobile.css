@@ -476,11 +476,153 @@
 }
 
 /* ============================================
-   PRINT STYLES (Bonus: Good contrast on paper)
+   PINNED MESSAGES BAR - MOBILE COMPACT
    ============================================ */
-@media print {
-    * {
-        background: white !important;
-        color: black !important;
+@media (max-width: 768px) {
+    /* Make pinned bar more compact */
+    #pinned-messages-bar {
+        padding: 8px 12px !important;
+    }
+    
+    #pinned-messages-bar h3 {
+        font-size: 10px !important;
+    }
+    
+    #pinned-messages-bar .text-xs {
+        font-size: 10px !important;
+    }
+    
+    /* Hide pinned message previews on small screens, just show count */
+    #pinned-messages-bar .space-y-2 {
+        display: none !important;
+    }
+    
+    /* Show only header and "Show all" button */
+    #pinned-messages-bar .flex-1 {
+        padding: 4px 0 !important;
+    }
+    
+    /* Pinned message modal on mobile */
+    #pinned-modal > div {
+        margin: 16px !important;
+        max-width: calc(100vw - 32px) !important;
+        max-height: 85vh !important;
+    }
+    
+    #pinned-messages-list {
+        padding: 12px !important;
+        max-height: calc(85vh - 80px) !important;
+    }
+}
+
+/* ============================================
+   PREVENT HORIZONTAL OVERFLOW (CRITICAL)
+   ============================================ */
+@media (max-width: 768px) {
+    /* Ensure no element causes horizontal scroll */
+    body, html {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
+    }
+    
+    #messages,
+    .message-list,
+    .messages-container {
+        overflow-x: hidden !important;
+        max-width: 100% !important;
+    }
+    
+    /* Message bubbles */
+    .message-body,
+    .message-content,
+    .message-body-container {
+        max-width: calc(100vw - 100px) !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    
+    /* Context menu shouldn't overflow */
+    .context-menu,
+    [id^="context-menu-"] {
+        max-width: calc(100vw - 32px) !important;
+    }
+    
+    /* Quick reaction bar */
+    .quick-reactions {
+        max-width: calc(100vw - 100px) !important;
+        flex-wrap: wrap !important;
+    }
+}
+
+/* ============================================
+   HEADER - FIX OVERFLOW ON MOBILE
+   ============================================ */
+@media (max-width: 768px) {
+    /* Channel header shouldn't overflow */
+    header {
+        overflow-x: hidden !important;
+    }
+    
+    header h1 {
+        max-width: 50vw !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    /* Header button group */
+    header .flex.space-x-2,
+    header .flex.items-center {
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+    }
+    
+    /* Make header buttons smaller */
+    header button {
+        padding: 6px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+    }
+    
+    header button svg {
+        width: 16px !important;
+        height: 16px !important;
+    }
+}
+
+/* ============================================
+   SIDEBAR - PREVENT OVERFLOW
+   ============================================ */
+@media (max-width: 768px) {
+    .conversation-panel,
+    .contextual-sidebar {
+        overflow-x: hidden !important;
+    }
+    
+    /* Channel names shouldn't overflow */
+    .conversation-panel a span,
+    .conversation-panel p {
+        max-width: 100% !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+}
+
+/* ============================================
+   SEARCH BAR - MOBILE FIT
+   ============================================ */
+@media (max-width: 768px) {
+    #search-bar {
+        overflow-x: hidden !important;
+    }
+    
+    #search-bar form {
+        flex-wrap: wrap !important;
+    }
+    
+    #search-bar button {
+        margin-top: 8px !important;
+        min-width: 44px !important;
     }
 }
