@@ -1,0 +1,472 @@
+/* CRITICAL MOBILE FIXES - iPhone 5S (320px) Compatible */
+/* Last Updated: January 5, 2026 */
+
+/* ============================================
+   1. MINIMUM TEXT SIZES (Readability)
+   ============================================ */
+@media (max-width: 375px) {
+    /* Force readable text sizes - CRITICAL */
+    [class*="text-[8px]"],
+    [class*="text-[9px]"],
+    [class*="text-[10px]"] {
+        font-size: 11px !important;
+    }
+    
+    .text-xs {
+        font-size: 12px !important;
+    }
+    
+    .text-sm {
+        font-size: 14px !important;
+    }
+    
+    /* Headers */
+    h1, .text-xl {
+        font-size: 18px !important;
+    }
+    
+    h2, .text-lg {
+        font-size: 16px !important;
+    }
+    
+    /* Body text minimum */
+    .message-content,
+    .formatted-message,
+    p {
+        font-size: 14px !important;
+        line-height: 1.5;
+    }
+}
+
+/* ============================================
+   2. TOUCH TARGETS (44px minimum per Apple HIG)
+   ============================================ */
+@media (max-width: 375px) {
+    /* All interactive elements */
+    button:not(.no-touch-enlarge),
+    a:not(.no-touch-enlarge),
+    [onclick]:not(.no-touch-enlarge),
+    .clickable,
+    .tappable {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Icon buttons specifically */
+    button svg {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+    
+    /* List items */
+    .channel-forward-option,
+    .context-menu-item {
+        min-height: 48px !important;
+        padding: 12px 16px !important;
+        font-size: 15px !important;
+    }
+}
+
+/* ============================================
+   3. MODAL FULL WIDTH ON MOBILE
+   ============================================ */
+@media (max-width: 375px) {
+    /* Forward modal */
+    #forward-message-modal {
+        padding: 0 !important;
+    }
+    
+    #forward-message-modal > div {
+        margin: 0 !important;
+        max-height: 90vh !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+    }
+    
+    /* Modal content padding */
+    #forward-message-modal .p-6,
+    #forward-message-modal [class*="p-6"] {
+        padding: 16px !important;
+    }
+    
+    #forward-message-modal .px-6 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+    
+    /* Channel list */
+    #channel-list-forward {
+        padding: 0 8px !important;
+        max-height: 60vh !important;
+    }
+    
+    /* Search input */
+    #channel-search-input {
+        padding: 10px 12px 10px 36px !important;
+        font-size: 14px !important;
+    }
+    
+    #channel-search-input + svg {
+        left: 12px !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+}
+
+/* ============================================
+   4. HEADER RESPONSIVE
+   ============================================ */
+@media (max-width: 375px) {
+    /* Channel header */
+    header[class*="h-16"] {
+        min-height: 64px !important;
+        height: auto !important;
+        padding: 12px 16px !important;
+        flex-wrap: wrap;
+    }
+    
+    header h1 {
+        font-size: 16px !important;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    header p[class*="text-[9px]"],
+    header p[class*="text-[10px]"] {
+        font-size: 11px !important;
+    }
+    
+    /* Reduce header padding */
+    .channel-header,
+    header.px-6 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+}
+
+/* ============================================
+   5. MESSAGE BUBBLES
+   ============================================ */
+@media (max-width: 375px) {
+    .message-body-container,
+    .flex-1.max-w-2xl {
+        max-width: calc(100vw - 80px) !important;
+    }
+    
+    .message-content {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+    }
+    
+    /* Voice messages */
+    .voice-player-shell {
+        min-width: 200px !important;
+        max-width: calc(100vw - 100px) !important;
+    }
+    
+    /* Attachments */
+    .attachment-card {
+        max-width: calc(100vw - 100px) !important;
+    }
+    
+    /* Message meta info */
+    .sender-info span,
+    .message-status-indicator span {
+        font-size: 11px !important;
+    }
+}
+
+/* ============================================
+   6. CONTEXT MENU - BOTTOM SHEET ON MOBILE
+   ============================================ */
+@media (max-width: 375px) {
+    [id^="context-menu-"] {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        transform: none !important;
+        width: 100% !important;
+        max-width: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3) !important;
+        padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
+    }
+    
+    .context-menu-item {
+        padding: 16px 20px !important;
+        font-size: 16px !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        min-height: 52px !important;
+    }
+    
+    .context-menu-item:last-child {
+        border-bottom: none;
+    }
+    
+    .context-menu-item svg {
+        width: 20px !important;
+        height: 20px !important;
+    }
+}
+
+/* ============================================
+   7. INPUT FIELDS
+   ============================================ */
+@media (max-width: 375px) {
+    /* Message input area */
+    .message-input-area,
+    [class*="message-input"] {
+        padding: 12px 16px !important;
+    }
+    
+    textarea {
+        font-size: 14px !important;
+        min-height: 44px !important;
+    }
+    
+    /* Input buttons */
+    .emoji-button,
+    .attachment-button,
+    .send-button {
+        min-width: 44px !important;
+        min-height: 44px !important;
+    }
+    
+    /* Reduce input container padding */
+    .px-6.py-4 {
+        padding: 12px 16px !important;
+    }
+}
+
+/* ============================================
+   8. SIDEBAR/PANELS
+   ============================================ */
+@media (max-width: 375px) {
+    .conversation-panel,
+    .contextual-sidebar {
+        width: 85% !important;
+        max-width: 280px !important;
+    }
+    
+    /* Sidebar list items */
+    .conversation-panel a,
+    .conversation-panel button {
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+    }
+}
+
+/* ============================================
+   9. SAFE AREA SUPPORT (iPhone Notch/Home Bar)
+   ============================================ */
+@supports (padding: max(0px)) {
+    @media (max-width: 375px) {
+        body {
+            padding-left: max(env(safe-area-inset-left), 8px);
+            padding-right: max(env(safe-area-inset-right), 8px);
+        }
+        
+        .message-input-area,
+        #forward-message-modal,
+        [id^="context-menu-"],
+        .bottom-sheet {
+            padding-bottom: max(env(safe-area-inset-bottom), 16px) !important;
+        }
+        
+        .top-navbar,
+        header {
+            padding-top: max(env(safe-area-inset-top), 12px) !important;
+        }
+    }
+}
+
+/* ============================================
+   10. PREVENT HORIZONTAL SCROLL
+   ============================================ */
+@media (max-width: 375px) {
+    * {
+        max-width: 100vw;
+    }
+    
+    body, html {
+        overflow-x: hidden !important;
+    }
+    
+    /* Force text wrap */
+    .no-wrap-mobile-override {
+        white-space: normal !important;
+    }
+    
+    /* Ellipsis for long text */
+    .truncate-mobile {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+}
+
+/* ============================================
+   11. SEARCH BAR
+   ============================================ */
+@media (max-width: 375px) {
+    #search-bar {
+        padding: 12px 16px !important;
+    }
+    
+    #search-bar input {
+        font-size: 14px !important;
+        padding: 10px 12px !important;
+    }
+    
+    #search-bar button {
+        padding: 10px 16px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+    }
+}
+
+/* ============================================
+   12. THREAD PANEL
+   ============================================ */
+@media (max-width: 375px) {
+    #thread-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    #thread-panel .px-6 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+}
+
+/* ============================================
+   13. PINNED MESSAGES
+   ============================================ */
+@media (max-width: 375px) {
+    .pinned-messages-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* ============================================
+   14. EMOJI PICKER
+   ============================================ */
+@media (max-width: 375px) {
+    emoji-picker {
+        width: 100% !important;
+        max-width: calc(100vw - 32px) !important;
+        --num-columns: 6 !important;
+    }
+}
+
+/* ============================================
+   15. LOADING STATES
+   ============================================ */
+@media (max-width: 375px) {
+    .loading-spinner {
+        width: 32px !important;
+        height: 32px !important;
+    }
+}
+
+/* ============================================
+   16. NOTIFICATIONS PANEL
+   ============================================ */
+@media (max-width: 375px) {
+    #notification-settings label {
+        font-size: 14px !important;
+        min-height: 44px !important;
+        padding: 12px !important;
+    }
+}
+
+/* ============================================
+   17. UTILITY: SPACING REDUCTIONS
+   ============================================ */
+@media (max-width: 375px) {
+    /* Reduce all px-6 to px-4 */
+    .px-6 {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+    }
+    
+    /* Reduce all py-6 to py-4 */
+    .py-6 {
+        padding-top: 16px !important;
+        padding-bottom: 16px !important;
+    }
+    
+    /* Reduce margins */
+    .mx-6 {
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+    }
+    
+    /* Reduce gaps */
+    .space-x-4 > * + * {
+        margin-left: 12px !important;
+    }
+    
+    .space-y-4 > * + * {
+        margin-top: 12px !important;
+    }
+}
+
+/* ============================================
+   18. FORM ELEMENTS
+   ============================================ */
+@media (max-width: 375px) {
+    select, input[type="text"], input[type="email"], 
+    input[type="password"], input[type="search"] {
+        font-size: 16px !important; /* Prevents iOS zoom */
+        min-height: 44px !important;
+        padding: 10px 12px !important;
+    }
+    
+    label {
+        font-size: 13px !important;
+    }
+}
+
+/* ============================================
+   19. BREAKOUT ROOMS BUTTON
+   ============================================ */
+@media (max-width: 375px) {
+    form button[class*="text-[10px]"] {
+        font-size: 11px !important;
+        padding: 8px 12px !important;
+        min-height: 40px !important;
+    }
+}
+
+/* ============================================
+   20. AVATAR SIZES
+   ============================================ */
+@media (max-width: 375px) {
+    .avatar-sm {
+        width: 32px !important;
+        height: 32px !important;
+    }
+    
+    .avatar-md {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    
+    .avatar-lg {
+        width: 48px !important;
+        height: 48px !important;
+    }
+}
