@@ -479,30 +479,12 @@
    PINNED MESSAGES BAR - MOBILE COMPACT
    ============================================ */
 @media (max-width: 768px) {
-    /* Make pinned bar more compact */
+    /* HIDE the large pinned bar on mobile completely */
     #pinned-messages-bar {
-        padding: 8px 12px !important;
-    }
-    
-    #pinned-messages-bar h3 {
-        font-size: 10px !important;
-    }
-    
-    #pinned-messages-bar .text-xs {
-        font-size: 10px !important;
-    }
-    
-    /* Hide pinned message previews on small screens, just show count */
-    #pinned-messages-bar .space-y-2 {
         display: none !important;
     }
     
-    /* Show only header and "Show all" button */
-    #pinned-messages-bar .flex-1 {
-        padding: 4px 0 !important;
-    }
-    
-    /* Pinned message modal on mobile */
+    /* Modal stays full featured for when user wants to see pinned */
     #pinned-modal > div {
         margin: 16px !important;
         max-width: calc(100vw - 32px) !important;

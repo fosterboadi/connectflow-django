@@ -474,35 +474,27 @@
 /* ============================================
    21. FIX PINNED MESSAGES BAR (TOO LARGE)
    ============================================ */
-@media (max-width: 375px) {
-    /* Compact pinned bar on mobile */
+@media (max-width: 768px) {
+    /* HIDE pinned bar completely on mobile - takes too much space */
     #pinned-messages-bar {
-        padding: 8px 16px !important;
-    }
-    
-    /* Only show title, hide previews */
-    #pinned-messages-bar > div > div > div > .space-y-2 > div {
         display: none !important;
     }
     
-    /* Show just first pinned message */
-    #pinned-messages-bar > div > div > div > .space-y-2 > div:first-child {
+    /* Instead, add a small floating button to access pinned messages */
+    .pinned-messages-toggle {
+        position: fixed !important;
+        top: 80px !important;
+        right: 16px !important;
+        z-index: 40 !important;
+        background: #f59e0b !important;
+        color: white !important;
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
         display: flex !important;
-    }
-    
-    /* Smaller text */
-    #pinned-messages-bar h3 {
-        font-size: 10px !important;
-    }
-    
-    #pinned-messages-bar .text-xs {
-        font-size: 10px !important;
-    }
-    
-    /* Smaller icon */
-    #pinned-messages-bar svg {
-        width: 16px !important;
-        height: 16px !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     }
 }
 

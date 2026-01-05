@@ -360,7 +360,7 @@
         </div>
         {% endif %}
 
-        <!-- Pinned Messages Bar -->
+        <!-- Pinned Messages Bar (Desktop only, hidden on mobile) -->
         {% if pinned_messages.exists %}
         <div class="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-6 py-3" id="pinned-messages-bar">
             <div class="flex items-start justify-between">
@@ -412,6 +412,14 @@
                 </button>
             </div>
         </div>
+        
+        <!-- Mobile Floating Pinned Button (only on mobile when pinned messages exist) -->
+        <button onclick="showAllPinnedMessages()" class="md:hidden fixed top-20 right-4 z-40 bg-amber-500 hover:bg-amber-600 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all" id="mobile-pinned-btn" title="View {{ pinned_messages.count }} pinned messages">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+            </svg>
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">{{ pinned_messages.count }}</span>
+        </button>
         {% endif %}
 
         <!-- Forward Message Modal -->
