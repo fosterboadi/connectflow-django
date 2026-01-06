@@ -2656,8 +2656,8 @@ async function startCall(callType) {
         
         const data = await response.json();
         
-        // Redirect to call room
-        window.location.href = `/calls/${data.call_id}/`;
+        // Show calling modal instead of redirecting immediately
+        showOutgoingCallModal(data.call_id, callType, 'Channel Members');
     } catch (err) {
         console.error('Call initiation error:', err);
         alert('Failed to start call: ' + err.message);
