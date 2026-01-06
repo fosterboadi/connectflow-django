@@ -284,38 +284,6 @@ input:focus, textarea:focus, select:focus {
     ring-color: #4f46e5;
 }
 
-/* PWA Install Button */
-#pwa-install-btn {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #4F46E5;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 50px;
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-    cursor: pointer;
-    z-index: 1000;
-    font-weight: 600;
-    border: none;
-    animation: pulse 2s infinite;
-}
-
-#pwa-install-btn:hover {
-    background: #4338CA;
-    transform: scale(1.05);
-}
-
-@keyframes pulse {
-    0%, 100% {
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-    }
-    50% {
-        box-shadow: 0 4px 20px rgba(79, 70, 229, 0.6);
-    }
-}
-
 /* Mobile Menu Animations */
 #mobile-menu {
     max-height: 0;
@@ -459,7 +427,7 @@ button:active, .btn:active {
     transform: scale(0.98);
 }
 
-/* Loading spinner for PWA */
+/* Loading spinner */
 .loading-spinner {
     border: 3px solid #f3f3f3;
     border-top: 3px solid #4F46E5;
@@ -475,22 +443,25 @@ button:active, .btn:active {
     100% { transform: rotate(360deg); }
 }
 
-/* Offline indicator */
-.offline-indicator {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: #EF4444;
-    color: white;
-    padding: 8px;
-    text-align: center;
-    z-index: 9999;
-    display: none;
-}
-
-.offline-indicator.show {
-    display: block;
+/* iPhone Safe Area Support */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    .app-sidebar,
+    .top-navbar,
+    .conversation-panel {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    .message-input,
+    .input-area,
+    footer,
+    .bottom-nav {
+        padding-bottom: max(env(safe-area-inset-bottom), 12px);
+    }
 }
 
 /* Better mobile chat experience */
