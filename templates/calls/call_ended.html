@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ message }} - ConnectFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+    body { 
+        overflow: hidden; 
+        margin: 0;
+        padding: 0;
+    }
+    
+    .ended-container {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    
+    .ended-card {
+        background: white;
+        border-radius: 24px;
+        padding: 3rem 2rem;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .ended-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #ef4444;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+    }
+    
+    .ended-icon.missed {
+        background: #f59e0b;
+    }
+    
+    .ended-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .ended-subtitle {
+        font-size: 1rem;
+        color: #6b7280;
+        margin-bottom: 2rem;
+    }
+    
+    .ended-info {
+        background: #f3f4f6;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .ended-info-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .ended-info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .ended-info-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+    
+    .ended-info-value {
+        font-size: 0.875rem;
+        color: #1f2937;
+        font-weight: 700;
+    }
+    
+    .ended-actions {
+        display: flex;
+        gap: 1rem;
+        flex-direction: column;
+    }
+    
+    .ended-btn {
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .ended-btn-primary {
+        background: #4f46e5;
+        color: white;
+    }
+    
+    .ended-btn-primary:hover {
+        background: #4338ca;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    }
+    
+    .ended-btn-secondary {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+    
+    .ended-btn-secondary:hover {
+        background: #e5e7eb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ended-container">
+    <div class="ended-card">
+        <div class="ended-icon {% if call.status == 'MISSED' %}missed{% endif %}">
+            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {% if call.status == 'MISSED' %}
+                <!-- Missed call icon -->
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 8l-4 4m0-4l4 4"></path>
+                {% else %}
+                <!-- Call ended icon -->
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z"></path>
+                {% endif %}
+            </svg>
+        </div>
+        
+        <h1 class="ended-title">{{ message }}</h1>
+        <p class="ended-subtitle">
+            {% if call.initiator == request.user %}
+                {% if call.status == 'MISSED' %}
+                    No one answered your call
+                {% else %}
+                    Call with {{ call.channel.name|default:"participants" }}
+                {% endif %}
+            {% else %}
+                {{ call.initiator.get_full_name|default:call.initiator.username }}
+            {% endif %}
+        </p>
+        
+        <div class="ended-info">
+            <div class="ended-info-item">
+                <span class="ended-info-label">Type</span>
+                <span class="ended-info-value">{{ call.get_call_type_display }}</span>
+            </div>
+            <div class="ended-info-item">
+                <span class="ended-info-label">Time</span>
+                <span class="ended-info-value">{{ call.created_at|date:"g:i A" }}</span>
+            </div>
+            <div class="ended-info-item">
+                <span class="ended-info-label">Status</span>
+                <span class="ended-info-value">{{ call.get_status_display }}</span>
+            </div>
+            {% if call.started_at and call.ended_at %}
+            <div class="ended-info-item">
+                <span class="ended-info-label">Duration</span>
+                <span class="ended-info-value">{{ call.duration|floatformat:0 }}s</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="ended-actions">
+            {% if call.channel %}
+            <a href="{% url 'chat_channels:channel_detail' call.channel.pk %}" class="ended-btn ended-btn-primary">
+                Back to Channel
+            </a>
+            {% else %}
+            <a href="{% url 'chat_channels:channel_list' %}" class="ended-btn ended-btn-primary">
+                Back to Channels
+            </a>
+            {% endif %}
+            
+            {% if call.status == 'MISSED' and call.initiator != request.user %}
+            <button onclick="callBack()" class="ended-btn ended-btn-secondary">
+                Call Back
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function callBack() {
+    {% if call.channel %}
+        window.location.href = "{% url 'chat_channels:channel_detail' call.channel.pk %}";
+        // TODO: Auto-initiate call when page loads
+    {% endif %}
+}
+</script>
+{% endblock %}

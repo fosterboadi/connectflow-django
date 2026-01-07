@@ -127,8 +127,43 @@ def call_room(request, call_id):
     if not call.participants.filter(id=request.user.id).exists():
         return redirect('chat_channels:channel_list')
     
+    # Check if call has already ended
+    if call.status in [Call.CallStatus.ENDED, Call.CallStatus.MISSED, Call.CallStatus.REJECTED]:
+        # Call has ended - show ended page
+        participant = CallParticipant.objects.get(call=call, user=request.user)
+        
+        # Determine message based on status
+        if call.status == Call.CallStatus.MISSED:
+            if call.initiator == request.user:
+                message = "No answer"
+            else:
+                message = "Missed call"
+        elif call.status == Call.CallStatus.REJECTED:
+            message = "Call declined"
+        else:
+            message = "Call ended"
+        
+        context = {
+            'call': call,
+            'message': message,
+            'ended': True
+        }
+        return render(request, 'calls/call_ended.html', context)
+    
     # Get participant record
     participant = CallParticipant.objects.get(call=call, user=request.user)
+    
+    # Update participant status to JOINED if not already
+    if participant.status == CallParticipant.ParticipantStatus.INVITED:
+        participant.status = CallParticipant.ParticipantStatus.JOINED
+        participant.joined_at = timezone.now()
+        participant.save()
+        
+        # Update call status to ACTIVE if this is first join
+        if call.status == Call.CallStatus.RINGING:
+            call.status = Call.CallStatus.ACTIVE
+            call.started_at = timezone.now()
+            call.save()
     
     # Get all participants
     participants = CallParticipant.objects.filter(call=call).select_related('user')
@@ -146,6 +181,7 @@ def call_room(request, call_id):
         'participants': participants,
         'ice_servers': json.dumps(ice_servers),
         'is_initiator': call.initiator == request.user,
+        'ended': False
     }
     
     return render(request, 'calls/call_room.html', context)
@@ -258,6 +294,39 @@ def reject_call(request, call_id):
         if active_or_ringing == 0:
             # All participants rejected or left
             call.status = Call.CallStatus.REJECTED
+            call.ended_at = timezone.now()
+            call.save()
+        
+        return JsonResponse({'success': True})
+    
+    except CallParticipant.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Not invited to call'}, status=400)
+
+
+@login_required
+@require_POST
+def missed_call(request, call_id):
+    """Mark call as missed (timeout - no answer)."""
+    call = get_object_or_404(Call, pk=call_id)
+    
+    try:
+        participant = CallParticipant.objects.get(call=call, user=request.user)
+        participant.status = CallParticipant.ParticipantStatus.MISSED
+        participant.save()
+        
+        # Check if all participants missed/rejected
+        active_or_ringing = CallParticipant.objects.filter(
+            call=call,
+            status__in=[
+                CallParticipant.ParticipantStatus.INVITED,
+                CallParticipant.ParticipantStatus.RINGING,
+                CallParticipant.ParticipantStatus.JOINED
+            ]
+        ).exclude(user=call.initiator).count()
+        
+        if active_or_ringing == 0:
+            # All participants missed - mark call as missed
+            call.status = Call.CallStatus.MISSED
             call.ended_at = timezone.now()
             call.save()
         

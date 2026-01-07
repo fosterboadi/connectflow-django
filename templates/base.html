@@ -1155,6 +1155,8 @@
         let currentCallId = null;
         let callRingtone = null;
         let callStatusCheckInterval = null;
+        let callTimeoutTimer = null;
+        const CALL_TIMEOUT_DURATION = 60000; // 60 seconds like WhatsApp
         
         function showIncomingCallModal(data) {
             currentCallId = data.call_id;
@@ -1169,12 +1171,21 @@
             // Play ringtone
             playRingtone();
             
+            // Start checking if call was cancelled by initiator
+            startCallStatusCheck();
+            
+            // Auto-dismiss after timeout (like WhatsApp - 60 seconds)
+            callTimeoutTimer = setTimeout(() => {
+                autoMissCall();
+            }, CALL_TIMEOUT_DURATION);
+            
             // Browser notification
             if (Notification.permission === "granted") {
                 const notification = new Notification(data.title, {
                     body: data.content,
-                    tag: 'incoming-call',
-                    requireInteraction: true
+                    tag: 'incoming-call-' + currentCallId,
+                    requireInteraction: true,
+                    icon: '/static/icons/phone-icon.png'
                 });
                 
                 notification.onclick = () => {
@@ -1183,6 +1194,63 @@
                     notification.close();
                 };
             }
+        }
+        
+        function startCallStatusCheck() {
+            // Check every 2 seconds if the call was cancelled/ended by initiator
+            if (callStatusCheckInterval) return;
+            
+            callStatusCheckInterval = setInterval(async () => {
+                if (!currentCallId) {
+                    clearInterval(callStatusCheckInterval);
+                    callStatusCheckInterval = null;
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/calls/${currentCallId}/status/`);
+                    const data = await response.json();
+                    
+                    // If call was ended by initiator
+                    if (data.status === 'ENDED' || data.status === 'CANCELLED') {
+                        stopRingtone();
+                        clearInterval(callStatusCheckInterval);
+                        clearTimeout(callTimeoutTimer);
+                        callStatusCheckInterval = null;
+                        document.getElementById('incoming-call-modal').classList.add('hidden');
+                        currentCallId = null;
+                    }
+                } catch (error) {
+                    console.error('Error checking call status:', error);
+                }
+            }, 2000);
+        }
+        
+        async function autoMissCall() {
+            stopRingtone();
+            document.getElementById('incoming-call-modal').classList.add('hidden');
+            
+            if (callStatusCheckInterval) {
+                clearInterval(callStatusCheckInterval);
+                callStatusCheckInterval = null;
+            }
+            
+            if (currentCallId) {
+                try {
+                    // Mark as missed
+                    await fetch(`/calls/${currentCallId}/missed/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error marking call as missed:', error);
+                }
+            }
+            
+            currentCallId = null;
         }
         
         function showOutgoingCallModal(callId, callType, recipientName) {
@@ -1197,6 +1265,14 @@
             
             // Start checking for call status (someone joining)
             callStatusCheckInterval = setInterval(checkCallStatus, 2000);
+            
+            // Auto-end call after timeout if no one answers
+            callTimeoutTimer = setTimeout(async () => {
+                if (currentCallId) {
+                    await cancelOutgoingCall();
+                    alert('No answer');
+                }
+            }, CALL_TIMEOUT_DURATION);
         }
         
         async function checkCallStatus() {
@@ -1214,6 +1290,7 @@
                 if (hasJoined || data.status === 'ACTIVE') {
                     // Someone joined! Redirect to call room
                     clearInterval(callStatusCheckInterval);
+                    clearTimeout(callTimeoutTimer);
                     document.getElementById('outgoing-call-modal').classList.add('hidden');
                     window.location.href = `/calls/${currentCallId}/`;
                 }
@@ -1221,8 +1298,15 @@
                 // Check if call was rejected/ended
                 if (data.status === 'REJECTED' || data.status === 'ENDED' || data.status === 'MISSED') {
                     clearInterval(callStatusCheckInterval);
+                    clearTimeout(callTimeoutTimer);
                     document.getElementById('outgoing-call-modal').classList.add('hidden');
-                    alert('Call was not answered');
+                    
+                    if (data.status === 'MISSED') {
+                        alert('No answer');
+                    } else {
+                        alert('Call was not answered');
+                    }
+                    
                     currentCallId = null;
                 }
             } catch (error) {
@@ -1234,6 +1318,7 @@
             if (!currentCallId) return;
             
             clearInterval(callStatusCheckInterval);
+            clearTimeout(callTimeoutTimer);
             document.getElementById('outgoing-call-modal').classList.add('hidden');
             
             try {
@@ -1270,6 +1355,9 @@
         
         function acceptCall() {
             stopRingtone();
+            clearInterval(callStatusCheckInterval);
+            clearTimeout(callTimeoutTimer);
+            callStatusCheckInterval = null;
             document.getElementById('incoming-call-modal').classList.add('hidden');
             
             if (currentCallId) {
@@ -1279,6 +1367,9 @@
         
         async function declineCall() {
             stopRingtone();
+            clearInterval(callStatusCheckInterval);
+            clearTimeout(callTimeoutTimer);
+            callStatusCheckInterval = null;
             document.getElementById('incoming-call-modal').classList.add('hidden');
             
             if (currentCallId) {
