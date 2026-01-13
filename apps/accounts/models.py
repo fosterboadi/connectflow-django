@@ -156,6 +156,7 @@ class User(AbstractUser):
         return f"{self.first_name} {self.last_name}".strip()
     
     @property
+    @property
     def is_admin(self):
         """Check if user is an Admin (either Platform or Organization level)."""
         return self.role in [self.Role.SUPER_ADMIN, self.Role.ORG_ADMIN]
