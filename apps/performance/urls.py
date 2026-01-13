@@ -13,9 +13,13 @@ urlpatterns = [
     
     # Manager Views - Reviews
     path('team/overview/', views.team_performance_overview, name='team_overview'),
+    path('reviews/pending/', views.pending_reviews_list, name='pending_reviews'),
     path('review/create/', views.create_review, name='create_review'),
     path('review/<uuid:review_id>/', views.review_detail, name='review_detail'),
     path('review/<uuid:review_id>/finalize/', views.finalize_review, name='finalize_review'),
+    
+    # Manager Views - Member Portfolio
+    path('member/<uuid:user_id>/portfolio/', views.member_kpi_portfolio, name='member_portfolio'),
     
     # Manager Views - Score Management
     path('score/<uuid:score_id>/override/', views.override_score, name='override_score'),

@@ -12,6 +12,12 @@
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Manage KPIs and track team performance</p>
         </div>
         <div class="flex space-x-3">
+            <a href="{% url 'performance:pending_reviews' %}" class="inline-flex items-center px-4 py-2 border border-yellow-500 dark:border-yellow-600 rounded-lg shadow-sm text-sm font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/40">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Pending Reviews
+            </a>
             <a href="{% url 'performance:create_review' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -155,7 +161,10 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {{ review.reviewer.get_full_name|default:"System" }}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                            <a href="{% url 'performance:member_portfolio' review.user.id %}" class="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300">
+                                Portfolio
+                            </a>
                             <a href="{% url 'performance:review_detail' review.id %}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
                                 View Details
                             </a>

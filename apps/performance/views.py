@@ -401,6 +401,77 @@ def my_performance_history(request):
 
 
 @login_required
+def member_kpi_portfolio(request, user_id):
+    """View all KPIs assigned to a specific member (Manager view)."""
+    if not PerformancePermissions.can_view_team_performance(request.user):
+        return HttpResponseForbidden("You don't have permission to view member portfolios.")
+    
+    member = get_object_or_404(User, id=user_id, organization=request.user.organization)
+    
+    # Check if manager can view this member
+    if not PerformancePermissions.can_assign_kpi(request.user, member):
+        return HttpResponseForbidden("You don't have permission to view this member's portfolio.")
+    
+    # Get all active KPI assignments
+    assignments = KPIAssignment.objects.filter(
+        user=member
+    ).select_related('metric', 'assigned_by').order_by('-review_period', 'metric__name')
+    
+    # Group by review period
+    from collections import defaultdict
+    assignments_by_period = defaultdict(list)
+    for assignment in assignments:
+        assignments_by_period[assignment.review_period].append(assignment)
+    
+    # Get all reviews (draft and finalized)
+    reviews = PerformanceReview.objects.filter(
+        user=member
+    ).select_related('reviewer').order_by('-review_period_end')
+    
+    # Get draft reviews
+    draft_reviews = reviews.filter(status=PerformanceReview.ReviewStatus.DRAFT)
+    finalized_reviews = reviews.filter(status=PerformanceReview.ReviewStatus.FINALIZED)
+    
+    context = {
+        'member': member,
+        'assignments_by_period': dict(assignments_by_period),
+        'all_assignments': assignments,
+        'draft_reviews': draft_reviews,
+        'finalized_reviews': finalized_reviews,
+        'total_kpis': assignments.count(),
+    }
+    
+    return render(request, 'performance/member_portfolio.html', context)
+
+
+@login_required
+def pending_reviews_list(request):
+    """List all pending (draft) reviews (Manager view)."""
+    if not PerformancePermissions.can_view_team_performance(request.user):
+        return HttpResponseForbidden("You don't have permission to view pending reviews.")
+    
+    # Get all draft reviews
+    if request.user.is_admin:
+        pending_reviews = PerformanceReview.objects.filter(
+            organization=request.user.organization,
+            status=PerformanceReview.ReviewStatus.DRAFT
+        ).select_related('user', 'reviewer').order_by('-created_at')
+    else:
+        # Team managers only see their own drafts
+        pending_reviews = PerformanceReview.objects.filter(
+            reviewer=request.user,
+            status=PerformanceReview.ReviewStatus.DRAFT
+        ).select_related('user', 'reviewer').order_by('-created_at')
+    
+    context = {
+        'pending_reviews': pending_reviews,
+        'total_pending': pending_reviews.count()
+    }
+    
+    return render(request, 'performance/pending_reviews.html', context)
+
+
+@login_required
 def my_review_detail(request, review_id):
     """View a specific review (Member view)."""
     review = get_object_or_404(
