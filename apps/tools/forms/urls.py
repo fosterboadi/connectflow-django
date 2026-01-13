@@ -3,7 +3,7 @@
 from django.urls import path
 from . import views
 
-app_name = 'tools_forms'
+app_name = 'forms'
 
 urlpatterns = [
     # Form Management

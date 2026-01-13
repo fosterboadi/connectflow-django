@@ -25,7 +25,7 @@
                     You can now close this window or return to ConnectFlow.
                 </p>
                 {% if user.is_authenticated %}
-                <a href="{% url 'tools_forms:form_list' %}" 
+                <a href="{% url 'tools:forms:form_list' %}" 
                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                     Return to Forms
                 </a>
