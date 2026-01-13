@@ -6,7 +6,7 @@ services:
     region: oregon
     plan: free
     branch: main
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    buildCommand: bash build.sh
     startCommand: daphne -b 0.0.0.0 -p $PORT connectflow.asgi:application
     envVars:
       - key: PYTHON_VERSION

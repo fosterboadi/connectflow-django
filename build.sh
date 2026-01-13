@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Render.com build script
+set -o errexit
+set -o pipefail
 
 echo "Installing dependencies..."
 pip install -r requirements.txt
