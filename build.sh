@@ -8,6 +8,10 @@ echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
 echo "Running database migrations..."
-python manage.py migrate --noinput --fake-initial
+# First run the safe forms migration
+python manage.py migrate_forms_safe
+
+# Then run all other migrations
+python manage.py migrate --noinput
 
 echo "Build complete!"
