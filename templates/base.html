@@ -137,6 +137,19 @@
             </a>
             {% endif %}
 
+            <!-- Performance Section -->
+            {% if user.is_manager or user.is_admin %}
+            <a href="{% url 'performance:team_overview' %}" class="sidebar-link {% if 'performance' in request.path %}active{% endif %}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Performance
+            </a>
+            {% else %}
+            <a href="{% url 'performance:my_dashboard' %}" class="sidebar-link {% if 'performance' in request.path %}active{% endif %}">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                My Performance
+            </a>
+            {% endif %}
+
             <div class="pt-4 pb-2">
                 <p class="px-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Management</p>
             </div>
