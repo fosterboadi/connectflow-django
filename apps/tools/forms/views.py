@@ -26,11 +26,14 @@ def form_list(request):
     )
     
     # Organization-wide forms (if manager/admin)
-    org_forms = Form.objects.filter(
-        organization=user.organization
-    ).exclude(created_by=user).annotate(
-        response_count=Count('responses')
-    )
+    if user.organization:
+        org_forms = Form.objects.filter(
+            organization=user.organization
+        ).exclude(created_by=user).annotate(
+            response_count=Count('responses')
+        )
+    else:
+        org_forms = Form.objects.none()
     
     context = {
         'my_forms': my_forms,
@@ -42,6 +45,10 @@ def form_list(request):
 @login_required
 def form_create(request):
     """Create a new form"""
+    if not request.user.organization:
+        messages.error(request, 'You must be part of an organization to create forms.')
+        return redirect('accounts:dashboard')
+    
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description', '')
