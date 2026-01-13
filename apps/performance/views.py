@@ -418,6 +418,9 @@ def my_performance_history(request):
 @login_required
 def member_kpi_portfolio(request, user_id):
     """View all KPIs assigned to a specific member (Manager view)."""
+    if not request.user.organization:
+        return redirect('accounts:dashboard')
+    
     if not PerformancePermissions.can_view_team_performance(request.user):
         return HttpResponseForbidden("You don't have permission to view member portfolios.")
     
@@ -462,6 +465,9 @@ def member_kpi_portfolio(request, user_id):
 @login_required
 def pending_reviews_list(request):
     """List all pending (draft) reviews (Manager view)."""
+    if not request.user.organization:
+        return redirect('accounts:dashboard')
+    
     if not PerformancePermissions.can_view_team_performance(request.user):
         return HttpResponseForbidden("You don't have permission to view pending reviews.")
     
