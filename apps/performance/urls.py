@@ -19,7 +19,7 @@ urlpatterns = [
     path('review/<uuid:review_id>/finalize/', views.finalize_review, name='finalize_review'),
     
     # Manager Views - Member Portfolio
-    path('member/<uuid:user_id>/portfolio/', views.member_kpi_portfolio, name='member_portfolio'),
+    path('member/<int:user_id>/portfolio/', views.member_kpi_portfolio, name='member_portfolio'),
     
     # Manager Views - Score Management
     path('score/<uuid:score_id>/override/', views.override_score, name='override_score'),
