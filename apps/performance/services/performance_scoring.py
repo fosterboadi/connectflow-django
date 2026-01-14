@@ -226,9 +226,16 @@ class PerformanceScoringService:
             list: Created PerformanceScore instances
         """
         from apps.performance.models import KPIAssignment
+        from dateutil.relativedelta import relativedelta
         
         # Determine review period identifier
         review_period = f"{review.review_period_start.strftime('%Y-%m')}"
+        
+        # Expand dates to cover the full calendar months for scoring (Sum up for a month)
+        # Start from the 1st of the start month
+        full_period_start = review.review_period_start.replace(day=1)
+        # End at the last day of the end month
+        full_period_end = (review.review_period_end.replace(day=1) + relativedelta(months=1, days=-1))
         
         # Get all KPIs assigned to the user for this period
         assignments = KPIAssignment.objects.filter(
@@ -239,12 +246,12 @@ class PerformanceScoringService:
         created_scores = []
         
         for assignment in assignments:
-            # Calculate score
+            # Calculate score using expanded monthly boundaries
             calculated_score = PerformanceScoringService.calculate_metric_score(
                 user=review.user,
                 metric=assignment.metric,
-                period_start=review.review_period_start,
-                period_end=review.review_period_end
+                period_start=full_period_start,
+                period_end=full_period_end
             )
             
             # Create or update score

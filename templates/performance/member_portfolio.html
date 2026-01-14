@@ -34,10 +34,10 @@
 
     <!-- Responsibilities Checklist Section -->
     <div class="mb-8">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Responsibilities & Role Duties</h2>
             <button onclick="showAddResponsibilityModal()" 
-                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -45,13 +45,13 @@
             </button>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
+            <div class="divide-y divide-gray-200 dark:divide-gray-700 min-w-full">
                 {% if pending_responsibilities %}
                     {% for resp in pending_responsibilities %}
-                    <div class="p-6 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition" id="resp-{{ resp.id }}">
+                    <div class="p-6 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition gap-4" id="resp-{{ resp.id }}">
                         <div class="flex-1">
-                            <div class="flex items-center space-x-3">
+                            <div class="flex flex-wrap items-center gap-3">
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ resp.title }}</h3>
                                 {% if resp.status == 'OVERDUE' %}
                                 <span class="px-2 py-0.5 text-xs font-bold rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">OVERDUE</span>
@@ -68,7 +68,7 @@
                             </div>
                         </div>
                         <button onclick="completeResponsibility('{{ resp.id }}')"
-                                class="ml-4 inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm text-sm">
+                                class="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm text-sm whitespace-nowrap">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
