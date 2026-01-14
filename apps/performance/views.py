@@ -93,6 +93,43 @@ def complete_responsibility(request, responsibility_id):
 
 
 @login_required
+@require_http_methods(["POST"])
+def edit_responsibility(request, responsibility_id):
+    """Edit responsibility details, including retroactive completion (Manager view)."""
+    responsibility = get_object_or_404(
+        Responsibility.objects.select_related('user'), 
+        id=responsibility_id
+    )
+    
+    if not PerformancePermissions.can_assign_kpi(request.user, responsibility.user):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    responsibility.title = request.POST.get('title', responsibility.title)
+    responsibility.description = request.POST.get('description', responsibility.description)
+    responsibility.deadline = request.POST.get('deadline', responsibility.deadline)
+    
+    status = request.POST.get('status')
+    if status in Responsibility.Status.values:
+        responsibility.status = status
+        if status == Responsibility.Status.COMPLETED:
+            comp_date = request.POST.get('completed_at')
+            if comp_date:
+                responsibility.completed_at = comp_date
+            elif not responsibility.completed_at:
+                responsibility.completed_at = timezone.now()
+            
+            if not responsibility.completed_by:
+                responsibility.completed_by = request.user
+        else:
+            responsibility.completed_at = None
+            responsibility.completed_by = None
+            
+    responsibility.save()
+    
+    return JsonResponse({'success': True})
+
+
+@login_required
 def kpi_metric_list(request):
     """List all KPI metrics for the organization (Manager view)."""
     if not request.user.organization:

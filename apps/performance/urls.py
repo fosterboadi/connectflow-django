@@ -21,6 +21,7 @@ urlpatterns = [
     # Manager Views - Member Portfolio
     path('member/<int:user_id>/portfolio/', views.member_kpi_portfolio, name='member_portfolio'),
     path('member/<int:user_id>/responsibility/add/', views.add_responsibility, name='add_responsibility'),
+    path('responsibility/<uuid:responsibility_id>/edit/', views.edit_responsibility, name='edit_responsibility'),
     path('responsibility/<uuid:responsibility_id>/complete/', views.complete_responsibility, name='complete_responsibility'),
     
     # Manager Views - Score Management
