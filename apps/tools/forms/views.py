@@ -22,7 +22,7 @@ def form_list(request):
     
     # Forms created by user
     my_forms = Form.objects.filter(created_by=user).annotate(
-        response_count=Count('responses')
+        total_responses=Count('responses')
     )
     
     # Organization-wide forms (if manager/admin)
@@ -30,7 +30,7 @@ def form_list(request):
         org_forms = Form.objects.filter(
             organization=user.organization
         ).exclude(created_by=user).annotate(
-            response_count=Count('responses')
+            total_responses=Count('responses')
         )
     else:
         org_forms = Form.objects.none()
