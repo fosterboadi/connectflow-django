@@ -1,4 +1,3 @@
-from django import military_time_validators as _ # This was a mistake in my thought, I will use regular imports
 from django import forms
 from .models import Announcement
 
