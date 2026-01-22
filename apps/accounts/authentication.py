@@ -145,4 +145,21 @@ class FirebaseBackend:
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return None
-`nclass EmailBackend(object):`n    def authenticate(self, request, username=None, password=None, **kwargs):`n        try:`n            user = User.objects.get(email=username)`n            if user.check_password(password):`n                return user`n        except User.DoesNotExist:`n            return None`n`n    def get_user(self, user_id):`n        try:`n            return User.objects.get(pk=user_id)`n        except User.DoesNotExist:`n            return None
+
+class EmailBackend(object):
+    """
+    Custom authentication backend that allows users to log in with their email address.
+    """
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        try:
+            user = User.objects.get(email=username)
+            if user.check_password(password):
+                return user
+        except User.DoesNotExist:
+            return None
+
+    def get_user(self, user_id):
+        try:
+            return User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return None
