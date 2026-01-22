@@ -57,33 +57,39 @@ class MessageSerializer(serializers.ModelSerializer):
         return False
 
 class ChannelSerializer(serializers.ModelSerializer):
-    member_count = serializers.IntegerField(read_only=True)
+    member_count = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField(required=False)
     
     class Meta:
         model = Channel
         fields = [
             'id', 'name', 'description', 'channel_type', 'organization', 
-            'is_private', 'read_only', 'member_count', 'created_at'
+            'is_private', 'read_only', 'member_count', 'created_at', 'display_name'
         ]
+
+    def get_member_count(self, obj):
+        # Prefer annotated value if available (more efficient)
+        if hasattr(obj, 'member_count_annotated'):
+            return obj.member_count_annotated
+        # Fallback to model property
+        return obj.member_count
     
-    # Temporarily removing display_name to fix 500 error
-    # def get_display_name(self, obj):
-    #     """Get a friendly display name for the channel"""
-    #     try:
-    #         request = self.context.get('request')
-    #         
-    #         # For DM channels, show the other participant's name
-    #         if obj.channel_type == Channel.ChannelType.DIRECT and request and request.user:
-    #             # Get the other member (not the current user)
-    #             other_member = obj.members.exclude(id=request.user.id).first()
-    #             if other_member:
-    #                 full_name = other_member.get_full_name()
-    #                 return full_name if full_name else other_member.username
-    #             return "Direct Message"
-    #         
-    #         # For other channels, use the name or description
-    #         return obj.name
-    #     except Exception as e:
-    #         # Fallback to basic name if anything fails
-    #         return obj.name
+    def get_display_name(self, obj):
+        """Get a friendly display name for the channel"""
+        try:
+            request = self.context.get('request')
+            
+            # For DM channels, show the other participant's name
+            if obj.channel_type == Channel.ChannelType.DIRECT and request and request.user:
+                # Get the other member (not the current user)
+                other_member = obj.members.exclude(id=request.user.id).first()
+                if other_member:
+                    full_name = other_member.get_full_name()
+                    return full_name if full_name else other_member.username
+                return "Direct Message"
+            
+            # For other channels, use the name or description
+            return obj.name
+        except Exception as e:
+            # Fallback to basic name if anything fails
+            return obj.name

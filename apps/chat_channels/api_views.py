@@ -18,7 +18,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
             members=self.request.user, 
             is_archived=False
         ).prefetch_related('members').annotate(
-            member_count=Count('members')
+            member_count_annotated=Count('members')
         ).order_by('-created_at')
 
     def perform_create(self, serializer):
