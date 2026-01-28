@@ -387,9 +387,16 @@ def form_submit_page(request, share_link):
             user_agent=request.META.get('HTTP_USER_AGENT', '')
         )
         
-        # TODO: Send notification email if enabled
-        # if form.send_email_on_submit and form.notification_emails:
-        #     send_form_notification_email(form, response)
+        # Send notification email if enabled
+        if form.send_email_on_submit and form.notification_emails:
+            try:
+                from .emails import send_form_submission_notification
+                send_form_submission_notification(form, response)
+            except Exception as e:
+                # Log error but don't fail submission
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Failed to send form notification: {str(e)}')
         
         messages.success(request, 'Your response has been submitted!')
         return redirect('form_submit_success', share_link=share_link)
