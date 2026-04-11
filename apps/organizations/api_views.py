@@ -1,8 +1,19 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Organization, Department, Team, SharedProject
-from .serializers import OrganizationSerializer, DepartmentSerializer, TeamSerializer, SharedProjectSerializer
+from .models import (
+    Organization, Department, Team, SharedProject, ProjectTask, 
+    ProjectMilestone, ProjectFile, ProjectMeeting, ProjectRiskRegister,
+    SubscriptionPlan, SubscriptionTransaction, AuditTrail, ControlTest,
+    ComplianceRequirement, ComplianceEvidence
+)
+from .serializers import (
+    OrganizationSerializer, DepartmentSerializer, TeamSerializer, SharedProjectSerializer,
+    ProjectTaskSerializer, ProjectMilestoneSerializer, ProjectFileSerializer,
+    ProjectMeetingSerializer, ProjectRiskRegisterSerializer, SubscriptionPlanSerializer,
+    SubscriptionTransactionSerializer, AuditTrailSerializer, ControlTestSerializer,
+    ComplianceRequirementSerializer, ComplianceEvidenceSerializer
+)
 from .permissions import HasSubscriptionFeature
 
 class OrganizationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -51,3 +62,89 @@ class SharedProjectViewSet(viewsets.ModelViewSet):
             'task_count': project.tasks.count(),
         }
         return Response(data)
+
+class ProjectTaskViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectTaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', 'description']
+
+    def get_queryset(self):
+        return ProjectTask.objects.filter(project__members=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+class ProjectMilestoneViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectMilestoneSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ProjectMilestone.objects.filter(project__members=self.request.user)
+
+class ProjectFileViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectFileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ProjectFile.objects.filter(project__members=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(uploader=self.request.user)
+
+class ProjectMeetingViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectMeetingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ProjectMeeting.objects.filter(project__members=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(organizer=self.request.user)
+
+class ProjectRiskRegisterViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectRiskRegisterSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ProjectRiskRegister.objects.filter(project__members=self.request.user)
+
+class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SubscriptionPlan.objects.all()
+    serializer_class = SubscriptionPlanSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class SubscriptionTransactionViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SubscriptionTransactionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SubscriptionTransaction.objects.filter(organization=self.request.user.organization)
+
+class AuditTrailViewSet(viewsets.ModelViewSet):
+    serializer_class = AuditTrailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return AuditTrail.objects.filter(project__members=self.request.user)
+
+class ControlTestViewSet(viewsets.ModelViewSet):
+    serializer_class = ControlTestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ControlTest.objects.filter(project__members=self.request.user)
+
+class ComplianceRequirementViewSet(viewsets.ModelViewSet):
+    serializer_class = ComplianceRequirementSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ComplianceRequirement.objects.filter(project__members=self.request.user)
+
+class ComplianceEvidenceViewSet(viewsets.ModelViewSet):
+    serializer_class = ComplianceEvidenceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ComplianceEvidence.objects.filter(requirement__project__members=self.request.user)

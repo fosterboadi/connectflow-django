@@ -335,6 +335,29 @@ def form_delete(request, form_id):
     return redirect('tools:forms:form_list')
 
 
+@login_required
+@require_http_methods(["POST"])
+def form_field_reorder(request, form_id):
+    """Reorder fields via AJAX (SortableJS)"""
+    form = get_object_or_404(Form, id=form_id)
+    
+    # Permission check
+    if form.created_by != request.user and not request.user.is_superuser:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        field_ids = data.get('field_ids', [])
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    # Update orders
+    for index, field_id in enumerate(field_ids):
+        FormField.objects.filter(id=field_id, form=form).update(order=index)
+    
+    return JsonResponse({'success': True})
+
+
 # ============================================
 # PUBLIC FORM SUBMISSION VIEWS
 # ============================================

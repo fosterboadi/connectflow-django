@@ -1,12 +1,15 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Channel, Message
-from .serializers import ChannelSerializer, MessageSerializer
+from .models import Channel, Message, Attachment, MessageReaction, MessageReadReceipt, ChannelNotificationSettings
+from .serializers import (
+    ChannelSerializer, MessageSerializer, AttachmentSerializer, 
+    MessageReactionSerializer, MessageReadReceiptSerializer, 
+    ChannelNotificationSettingsSerializer
+)
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .models import Channel, Message, Attachment
 
 class ChannelViewSet(viewsets.ModelViewSet):
     serializer_class = ChannelSerializer
@@ -321,3 +324,40 @@ class MessageViewSet(viewsets.ModelViewSet):
             f'chat_{channel_id}',
             data
         )
+
+class AttachmentViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AttachmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Attachment.objects.filter(message__channel__members=self.request.user)
+
+class MessageReactionViewSet(viewsets.ModelViewSet):
+    serializer_class = MessageReactionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return MessageReaction.objects.filter(message__channel__members=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class MessageReadReceiptViewSet(viewsets.ModelViewSet):
+    serializer_class = MessageReadReceiptSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return MessageReadReceipt.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class ChannelNotificationSettingsViewSet(viewsets.ModelViewSet):
+    serializer_class = ChannelNotificationSettingsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ChannelNotificationSettings.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

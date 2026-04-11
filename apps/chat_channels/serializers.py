@@ -1,6 +1,18 @@
 from rest_framework import serializers
-from .models import Channel, Message, Attachment, MessageReaction
+from .models import Channel, Message, Attachment, MessageReaction, MessageReadReceipt, ChannelNotificationSettings
 from apps.accounts.serializers import UserSerializer
+
+class MessageReadReceiptSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField(source='user.username')
+    
+    class Meta:
+        model = MessageReadReceipt
+        fields = ['id', 'message', 'user', 'username', 'read_at']
+
+class ChannelNotificationSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChannelNotificationSettings
+        fields = ['id', 'channel', 'notification_level', 'is_muted', 'muted_until']
 
 class AttachmentSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()

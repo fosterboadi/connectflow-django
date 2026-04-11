@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.utils import timezone
-from .models import User
-from .serializers import UserSerializer
+from .models import User, Notification
+from .serializers import UserSerializer, NotificationSerializer
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
@@ -87,3 +87,15 @@ class UserViewSet(viewsets.ModelViewSet):
         user.theme = 'DARK' if user.theme == 'LIGHT' else 'LIGHT'
         user.save()
         return Response({'status': 'theme updated', 'theme': user.theme})
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user)
+
+    @action(detail=False, methods=['post'])
+    def mark_all_as_read(self, request):
+        self.get_queryset().update(is_read=True)
+        return Response({'status': 'all notifications marked as read'})

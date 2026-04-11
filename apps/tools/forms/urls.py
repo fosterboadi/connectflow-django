@@ -17,6 +17,7 @@ urlpatterns = [
     
     # AJAX endpoints for field management
     path('<uuid:form_id>/field/add/', views.form_field_add, name='form_field_add'),
+    path('<uuid:form_id>/field/reorder/', views.form_field_reorder, name='form_field_reorder'),
     path('<uuid:form_id>/field/<uuid:field_id>/update/', views.form_field_update, name='form_field_update'),
     path('<uuid:form_id>/field/<uuid:field_id>/delete/', views.form_field_delete, name='form_field_delete'),
 ]

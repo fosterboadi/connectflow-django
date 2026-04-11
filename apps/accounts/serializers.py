@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Notification
 
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='get_full_name', read_only=True)
@@ -17,3 +17,14 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.avatar:
             return obj.avatar.url
         return None
+
+class NotificationSerializer(serializers.ModelSerializer):
+    sender_name = serializers.ReadOnlyField(source='sender.username')
+    
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'recipient', 'sender', 'sender_name', 'notification_type', 
+            'title', 'content', 'link', 'is_read', 'created_at'
+        ]
+        read_only_fields = ['id', 'recipient', 'created_at']
