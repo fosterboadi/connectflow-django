@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/mobile-critical.css' %}">
     <link rel="stylesheet" href="{% static 'css/contrast-mobile.css' %}">
     <link rel="stylesheet" href="{% static 'css/mobile-fix-critical.css' %}">
+    <link rel="stylesheet" href="{% static 'css/professional-polish.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -48,7 +49,7 @@
             <div class="absolute top-0 left-0 w-20 h-20 bg-white rounded-2xl animate-ping opacity-20"></div>
         </div>
         
-        <h1 class="text-4xl font-black text-white tracking-tighter italic mb-2 animate-pulse">
+        <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2 animate-pulse">
             ConnectFlow<span class="text-indigo-200">Pro</span>
         </h1>
         <p class="text-indigo-200 text-sm font-medium tracking-widest uppercase">Loading Workspace...</p>
@@ -95,7 +96,7 @@
     <!-- DESKTOP SIDEBAR -->
     <aside class="app-sidebar hidden lg:flex flex-col bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700">
         <div class="p-6">
-            <a href="/" class="flex items-center space-x-2 text-2xl font-black tracking-tighter italic text-indigo-600 dark:text-indigo-400">
+            <a href="/" class="flex items-center space-x-2 text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
                 <span>ConnectFlow<span class="text-gray-900 dark:text-white">Pro</span></span>
             </a>
         </div>
@@ -244,7 +245,7 @@
         <div class="fixed inset-0 bg-gray-600/50 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
         <div class="fixed inset-y-0 left-0 max-w-xs w-full bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
             <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                <a href="/" class="text-2xl font-black tracking-tighter italic text-indigo-600">ConnectFlow Pro</a>
+                <a href="/" class="text-2xl font-bold tracking-tight text-indigo-600">ConnectFlow Pro</a>
             </div>
             <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                 {% if user|has_module_access:"dashboard" %}
@@ -308,7 +309,7 @@
         <nav class="top-navbar flex items-center justify-between px-6 shadow-lg">
             <div class="flex items-center space-x-4">
                 {% if not user.is_authenticated %}
-                    <a href="/" class="text-xl font-black tracking-tighter italic text-white">ConnectFlow Pro</a>
+                    <a href="/" class="text-xl font-bold tracking-tight text-white">ConnectFlow Pro</a>
                 {% else %}
                     <!-- Mobile Menu Button -->
                     <button id="mobile-menu-btn" class="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition">
@@ -322,11 +323,11 @@
                     </button>
                     
                     <!-- Top Nav Logo (Visible when sidebar hidden) -->
-                    <a href="/" id="top-nav-logo" class="hidden lg:items-center space-x-2 text-xl font-black tracking-tighter italic text-white ml-2">
+                    <a href="/" id="top-nav-logo" class="hidden lg:items-center space-x-2 text-xl font-bold tracking-tight text-white ml-2">
                         <span>ConnectFlow<span class="text-indigo-200">Pro</span></span>
                     </a>
                     
-                    <a href="/" class="lg:hidden text-xl font-black tracking-tighter italic text-white">CFP</a>
+                    <a href="/" class="lg:hidden text-xl font-bold tracking-tight text-white">CFP</a>
                 {% endif %}
             </div>
 

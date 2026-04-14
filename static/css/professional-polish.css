@@ -1,0 +1,86 @@
+/* Professional UI polish layer
+   Loaded after legacy mobile/theme overrides to normalize typography and hierarchy. */
+
+:root {
+    --cf-font-sans: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+    font-family: var(--cf-font-sans);
+    line-height: 1.5;
+    letter-spacing: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.01em;
+}
+
+/* Reduce "shouty" tiny uppercase UI labels while preserving hierarchy */
+.tracking-widest {
+    letter-spacing: 0.08em !important;
+}
+
+[class*="tracking-[0.2em]"] {
+    letter-spacing: 0.08em !important;
+}
+
+[class*="text-[8px]"],
+[class*="text-[9px]"],
+[class*="text-[10px]"] {
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
+}
+
+/* Normalize sidebar and top nav visual tone */
+.sidebar-link {
+    font-weight: 500;
+}
+
+.sidebar-link.active {
+    font-weight: 600;
+}
+
+.top-navbar a,
+.top-navbar button {
+    letter-spacing: 0.01em;
+}
+
+/* Improve content readability density */
+p,
+li,
+td,
+th,
+label,
+input,
+textarea,
+select {
+    font-size: 0.95rem;
+}
+
+small,
+.text-xs {
+    font-size: 0.8rem !important;
+}
+
+/* Keep utility cards/components cleaner and less "AI flashy" */
+.rounded-2xl {
+    border-radius: 0.875rem;
+}
+
+/* Neutralize aggressive mobile override that forces flex/grid into block */
+@media (max-width: 768px) {
+    .flex {
+        display: flex !important;
+    }
+
+    .grid {
+        display: grid !important;
+    }
+
+    .mobile-nav-link {
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+    }
+}
