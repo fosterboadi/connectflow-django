@@ -30,6 +30,7 @@ h1, h2, h3, h4, h5, h6 {
 [class*="text-[10px]"] {
     font-size: 0.75rem !important;
     line-height: 1rem !important;
+    font-weight: 600 !important;
 }
 
 /* Normalize sidebar and top nav visual tone */
@@ -44,6 +45,19 @@ h1, h2, h3, h4, h5, h6 {
 .top-navbar a,
 .top-navbar button {
     letter-spacing: 0.01em;
+}
+
+a.text-indigo-600,
+a.text-blue-600,
+a.text-green-600 {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+a.text-indigo-600:hover,
+a.text-blue-600:hover,
+a.text-green-600:hover {
+    text-decoration-thickness: 2px;
 }
 
 /* Improve content readability density */
@@ -79,8 +93,8 @@ small,
     }
 
     .mobile-nav-link {
-        font-size: 0.7rem;
-        letter-spacing: 0.06em;
+        font-size: 0.75rem;
+        letter-spacing: 0.02em;
         font-weight: 600;
     }
 }

@@ -153,10 +153,10 @@ body, aside, nav, main, div, p, span, h1, h2, h3, a, button {
     align-items: center;
     justify-content: center;
     color: #64748b;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
     width: 20%;
     height: 100%;
 }
@@ -279,9 +279,8 @@ body, aside, nav, main, div, p, span, h1, h2, h3, a, button {
 
 /* Form focus styles */
 input:focus, textarea:focus, select:focus {
-    outline: none;
-    ring: 2px;
-    ring-color: #4f46e5;
+    outline: 3px solid #4f46e5;
+    outline-offset: 2px;
 }
 
 /* Mobile Menu Animations */
@@ -515,4 +514,3 @@ button:active, .btn:active {
         box-shadow: 10px 0 20px rgba(0,0,0,0.1);
     }
 }
-
