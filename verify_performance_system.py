@@ -129,8 +129,7 @@ def verify_system():
     if all_passed:
         print("✅ ALL CHECKS PASSED - System is ready for use!")
         print("\n📚 Documentation:")
-        print("   - User Guide: KPI_PERFORMANCE_DOCUMENTATION.md")
-        print("   - Quick Ref: PERFORMANCE_QUICK_REFERENCE.md")
+        print("   - Public Guide: docs/performance.md")
         print("   - Dev Guide: apps/performance/README.md")
         print("\n🔗 Admin Panel:")
         print("   - http://localhost:8000/admin/performance/")

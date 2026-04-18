@@ -50,8 +50,10 @@ The platform has evolved into a production-ready SaaS with several critical hard
 
 ConnectFlow Pro is a "Headless-First" platform. All core business logic is accessible via our REST API.
 
-*   **[API Technical Reference](API_DOCUMENTATION.md):** Complete guide to authentication and endpoints.
-*   **[Deployment Checklist](DEPLOYMENT_CHECKLIST.md):** Production readiness guide.
+*   **[API Guide](docs/api.md):** Authentication and key endpoint reference.
+*   **[Deployment Guide](docs/deployment.md):** Production deployment checklist.
+*   **[Performance Module Guide](docs/performance.md):** KPI and review workflows.
+*   **[Docs Index](docs/README.md):** Full public documentation map.
 
 ---
 

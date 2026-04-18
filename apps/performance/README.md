@@ -118,7 +118,7 @@ All 11 tests passing ✅
 
 ## Documentation
 
-See `KPI_PERFORMANCE_DOCUMENTATION.md` for complete documentation.
+See `docs/performance.md` for the public performance guide.
 
 ## Admin Panel
 
