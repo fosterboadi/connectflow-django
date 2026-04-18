@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from .models import Channel, Message, Attachment, MessageReaction, MessageReadReceipt, ChannelNotificationSettings
 from .serializers import (
     ChannelSerializer, MessageSerializer, AttachmentSerializer, 
@@ -40,15 +41,14 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Use all_objects to include deleted messages for permission checks
-        # The soft delete filter is in the default manager, but we need access to all for delete
-        return Message.all_objects.filter(channel__members=self.request.user)
+        return Message.objects.filter(channel__members=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
 
     def perform_destroy(self, instance):
-        # Use our soft delete logic
+        if instance.sender != self.request.user and not self.request.user.is_admin:
+            raise PermissionDenied("Only the message author can delete this message.")
         instance.soft_delete(user=self.request.user)
         self._broadcast(instance, 'message_deleted')
 
@@ -330,7 +330,10 @@ class AttachmentViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Attachment.objects.filter(message__channel__members=self.request.user)
+        return Attachment.objects.filter(
+            message__channel__members=self.request.user,
+            message__is_deleted=False
+        )
 
 class MessageReactionViewSet(viewsets.ModelViewSet):
     serializer_class = MessageReactionSerializer

@@ -4,6 +4,7 @@ Supports basic markdown with XSS protection.
 """
 
 import re
+from urllib.parse import urlparse
 import bleach
 from django.utils.html import escape
 
@@ -20,6 +21,18 @@ ALLOWED_ATTRIBUTES = {
     'pre': ['class'],
     'span': ['class']
 }
+
+ALLOWED_SCHEMES = {'http', 'https'}
+
+
+def _is_safe_link_url(url):
+    """Allow only http(s), root-relative, and hash links."""
+    if not url:
+        return False
+    if url.startswith(('/', '#')):
+        return True
+    parsed = urlparse(url)
+    return parsed.scheme.lower() in ALLOWED_SCHEMES
 
 
 def convert_markdown_to_html(text):
@@ -58,7 +71,11 @@ def convert_markdown_to_html(text):
     # Links [text](url)
     html = re.sub(
         r'\[([^\]]+)\]\(([^\)]+)\)',
-        r'<a href="\2" target="_blank" rel="noopener noreferrer">\1</a>',
+        lambda m: (
+            f'<a href="{m.group(2)}" target="_blank" rel="noopener noreferrer">{m.group(1)}</a>'
+            if _is_safe_link_url(m.group(2))
+            else m.group(1)
+        ),
         html
     )
     

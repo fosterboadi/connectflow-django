@@ -153,9 +153,9 @@ class Channel(models.Model):
         
         # In Shared Projects, all project members can usually post unless restricted
         if self.shared_project:
-            return user in self.shared_project.members.all()
+            return self.shared_project.members.filter(pk=user.pk).exists()
             
-        return user in self.members.all()
+        return self.members.filter(pk=user.pk).exists()
     
     def can_user_view(self, user):
         """Check if user can view this channel."""
@@ -173,14 +173,14 @@ class Channel(models.Model):
         
         # Department channels - department members can view
         if self.channel_type == self.ChannelType.DEPARTMENT and self.department:
-            return user in self.department.teams.all().values_list('members', flat=True)
+            return self.department.teams.filter(members=user).exists()
         
         # Team channels - team members can view
         if self.channel_type == self.ChannelType.TEAM and self.team:
-            return user in self.team.members.all()
+            return self.team.members.filter(pk=user.pk).exists()
         
         # Private/Project/Direct/Breakout - only members can view
-        return user in self.members.all()
+        return self.members.filter(pk=user.pk).exists()
 
 
 class MessageManager(models.Manager):
@@ -835,4 +835,3 @@ class CallParticipant(models.Model):
     
     def __str__(self):
         return f"{self.user.username} in {self.call.room_id} - {self.status}"
-

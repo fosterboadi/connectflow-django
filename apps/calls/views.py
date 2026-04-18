@@ -22,6 +22,9 @@ def initiate_call(request):
         call_type = data.get('call_type', 'AUDIO')  # AUDIO or VIDEO
         channel_id = data.get('channel_id')
         user_ids = data.get('user_ids', [])  # For direct calls
+
+        if call_type not in [Call.CallType.AUDIO, Call.CallType.VIDEO]:
+            return JsonResponse({'success': False, 'error': 'Invalid call type'}, status=400)
         
         # Generate unique room ID
         room_id = secrets.token_urlsafe(16)
@@ -36,7 +39,9 @@ def initiate_call(request):
         
         # If channel call
         if channel_id:
-            channel = get_object_or_404(Channel, pk=channel_id)
+            channel = get_object_or_404(Channel, pk=channel_id, organization=request.user.organization)
+            if not channel.can_user_view(request.user):
+                return JsonResponse({'success': False, 'error': 'Access denied to this channel'}, status=403)
             call.channel = channel
             call.save()
             
@@ -49,7 +54,7 @@ def initiate_call(request):
                 )
         else:
             # Direct call with specific users
-            participants = User.objects.filter(id__in=user_ids)
+            participants = User.objects.filter(id__in=user_ids, organization=request.user.organization)
             for user in participants:
                 CallParticipant.objects.create(
                     call=call,
@@ -192,6 +197,9 @@ def call_room(request, call_id):
 def join_call(request, call_id):
     """Join an existing call."""
     call = get_object_or_404(Call, pk=call_id)
+
+    if not call.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'success': False, 'error': 'Not invited to this call'}, status=403)
     
     # Get or create participant
     participant, created = CallParticipant.objects.get_or_create(
@@ -222,6 +230,9 @@ def join_call(request, call_id):
 def leave_call(request, call_id):
     """Leave a call."""
     call = get_object_or_404(Call, pk=call_id)
+
+    if not call.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'success': False, 'error': 'Not a participant'}, status=403)
     
     try:
         participant = CallParticipant.objects.get(call=call, user=request.user)
@@ -275,6 +286,9 @@ def end_call(request, call_id):
 def reject_call(request, call_id):
     """Reject an incoming call."""
     call = get_object_or_404(Call, pk=call_id)
+
+    if not call.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'success': False, 'error': 'Not invited to this call'}, status=403)
     
     try:
         participant = CallParticipant.objects.get(call=call, user=request.user)
@@ -308,6 +322,9 @@ def reject_call(request, call_id):
 def missed_call(request, call_id):
     """Mark call as missed (timeout - no answer)."""
     call = get_object_or_404(Call, pk=call_id)
+
+    if not call.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'success': False, 'error': 'Not invited to this call'}, status=403)
     
     try:
         participant = CallParticipant.objects.get(call=call, user=request.user)
@@ -340,6 +357,9 @@ def missed_call(request, call_id):
 def call_status(request, call_id):
     """Get current call status."""
     call = get_object_or_404(Call, pk=call_id)
+
+    if not call.participants.filter(id=request.user.id).exists():
+        return JsonResponse({'error': 'Not authorized for this call'}, status=403)
     
     participants = CallParticipant.objects.filter(call=call).select_related('user')
     

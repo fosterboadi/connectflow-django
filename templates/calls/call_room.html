@@ -629,6 +629,21 @@ function connectWebSocket() {
             case 'call_ended':
                 handleCallEnded();
                 break;
+            case 'chat_message':
+                addChatMessage(data.sender_name, data.message, data.sender_id === userId);
+                break;
+            case 'poll_created':
+                polls.push(data.poll);
+                renderPolls();
+                break;
+            case 'poll_vote': {
+                const poll = polls.find(p => p.id === data.poll_id);
+                if (poll) {
+                    poll.options[data.option_index].votes++;
+                    renderPolls();
+                }
+                break;
+            }
         }
     };
     
@@ -1120,27 +1135,6 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-}
-
-// Handle chat/poll messages via WebSocket
-const originalOnMessage = callSocket ? callSocket.onmessage : null;
-if (callSocket) {
-    callSocket.addEventListener('message', (e) => {
-        const data = JSON.parse(e.data);
-        
-        if (data.type === 'chat_message') {
-            addChatMessage(data.sender_name, data.message, data.sender_id === userId);
-        } else if (data.type === 'poll_created') {
-            polls.push(data.poll);
-            renderPolls();
-        } else if (data.type === 'poll_vote') {
-            const poll = polls.find(p => p.id === data.poll_id);
-            if (poll) {
-                poll.options[data.option_index].votes++;
-                renderPolls();
-            }
-        }
-    });
 }
 
 // Enter to send message
