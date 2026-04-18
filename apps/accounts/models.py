@@ -191,7 +191,22 @@ def delete_old_avatar_on_change(sender, instance, **kwargs):
         return False
 
     new_avatar = instance.avatar
-    if old_avatar and old_avatar != new_avatar:
+
+    def _avatar_ref(value):
+        """
+        Return a stable comparable identifier for Cloudinary-stored avatars.
+        Falls back to string value for legacy/local values.
+        """
+        if not value:
+            return ''
+        return getattr(value, 'public_id', None) or getattr(value, 'name', None) or str(value)
+
+    old_ref = _avatar_ref(old_avatar)
+    new_ref = _avatar_ref(new_avatar)
+
+    # Only delete when the avatar truly changed. Object identity/equality on
+    # Cloudinary resources can be unreliable across saves.
+    if old_ref and old_ref != new_ref:
         try:
             cloudinary.uploader.destroy(old_avatar.public_id)
         except Exception:

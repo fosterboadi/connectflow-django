@@ -28,10 +28,23 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure=True
     )
     
-    # Add only 'cloudinary' to installed apps
+    # Ensure both cloudinary apps are present in production settings
     INSTALLED_APPS = list(INSTALLED_APPS)
     if 'cloudinary' not in INSTALLED_APPS:
         INSTALLED_APPS.append('cloudinary')
+    if 'cloudinary_storage' not in INSTALLED_APPS:
+        INSTALLED_APPS.append('cloudinary_storage')
+
+    # Use Cloudinary storage for media in production on Render
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.RawMediaCloudinaryStorage"
 else:
     # Fallback to local storage (development/testing)
     MEDIA_URL = '/media/'

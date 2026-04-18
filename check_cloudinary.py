@@ -38,7 +38,13 @@ print("\n2. DJANGO SETTINGS:")
 file_storage = getattr(settings, 'DEFAULT_FILE_STORAGE', 'Not set')
 print(f"   DEFAULT_FILE_STORAGE: {file_storage}")
 
-if 'cloudinary' in file_storage.lower():
+try:
+    default_backend = settings.STORAGES['default']['BACKEND']
+except Exception:
+    default_backend = 'Not set'
+print(f"   STORAGES['default']['BACKEND']: {default_backend}")
+
+if 'cloudinary' in str(file_storage).lower() or 'cloudinary' in str(default_backend).lower():
     print("   ✅ Using Cloudinary storage")
 else:
     print("   ❌ NOT using Cloudinary (still using local storage)")
@@ -91,7 +97,7 @@ print("=" * 60)
 # Summary
 print("\n🎯 SUMMARY:")
 if cloud_name and api_key and api_secret:
-    if 'cloudinary' in file_storage.lower():
+    if 'cloudinary' in str(file_storage).lower() or 'cloudinary' in str(default_backend).lower():
         print("✅ Cloudinary is CONFIGURED and ACTIVE!")
         print("\n📝 Next steps:")
         print("   1. Upload a NEW profile image")
