@@ -4,6 +4,11 @@
 
 {% block content %}
 <style>
+    /* Keep auth screens immediately interactive on slower mobile networks */
+    #app-loader {
+        display: none !important;
+    }
+
     /* ==================== ANIMATIONS ==================== */
     @keyframes blob {
         0% { transform: translate(0px, 0px) scale(1); }
@@ -119,6 +124,41 @@
     
     @keyframes spin {
         to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .animate-blob,
+        .animate-float {
+            animation: none !important;
+        }
+
+        .login-container {
+            min-height: calc(100dvh - 56px);
+            align-items: flex-start;
+            padding: 1rem 0.75rem 2rem;
+        }
+
+        .login-card {
+            padding: 1.25rem;
+            border-radius: 1rem;
+            backdrop-filter: none;
+            box-shadow: 0 12px 28px -16px rgba(0, 0, 0, 0.35);
+        }
+
+        .login-card h2 {
+            font-size: 1.75rem !important;
+        }
+
+        #firebase-auth-container input {
+            min-height: 48px;
+            font-size: 16px !important;
+        }
+
+        #login-button,
+        #google-login-button {
+            min-height: 48px;
+            transform: none !important;
+        }
     }
 </style>
 
@@ -258,6 +298,11 @@
 
 {% block extra_js %}
 <script type="module">
+    const loader = document.getElementById('app-loader');
+    if (loader) {
+        loader.style.display = 'none';
+    }
+
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
