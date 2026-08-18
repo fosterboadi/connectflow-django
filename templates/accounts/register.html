@@ -4,6 +4,11 @@
 
 {% block content %}
 <style>
+    /* Keep auth screens interactive on slower mobile networks */
+    #app-loader {
+        display: none !important;
+    }
+
     /* ==================== ANIMATIONS ==================== */
     @keyframes blob {
         0% { transform: translate(0px, 0px) scale(1); }
@@ -119,6 +124,41 @@
     
     @keyframes spin {
         to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+        .animate-blob,
+        .animate-float {
+            animation: none !important;
+        }
+
+        .register-container {
+            min-height: calc(100dvh - 56px);
+            align-items: flex-start;
+            padding: 1rem 0.75rem 2rem;
+        }
+
+        .register-card {
+            padding: 1.25rem;
+            border-radius: 1rem;
+            backdrop-filter: none;
+            box-shadow: 0 12px 28px -16px rgba(0, 0, 0, 0.35);
+        }
+
+        .register-card h2 {
+            font-size: 1.75rem !important;
+        }
+
+        #firebase-auth-container input {
+            min-height: 48px;
+            font-size: 16px !important;
+        }
+
+        #register-button,
+        #google-register-button {
+            min-height: 48px;
+            transform: none !important;
+        }
     }
 </style>
 
@@ -291,6 +331,11 @@
 
 {% block extra_js %}
 <script type="module">
+    const loader = document.getElementById('app-loader');
+    if (loader) {
+        loader.style.display = 'none';
+    }
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
@@ -319,6 +364,15 @@
     const errorMessageDiv = document.getElementById('error-message');
     const successMessageDiv = document.getElementById('success-message');
 
+    function setButtonLoading(button, isLoading) {
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.classList.add('btn-loading');
+            return;
+        }
+        button.classList.remove('btn-loading');
+    }
+
     function showMessage(div, message) {
         div.textContent = message;
         div.classList.remove('hidden');
@@ -326,6 +380,8 @@
 
     async function sendRegistrationToBackend(idToken, orgCode, firstName, lastName) {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         try {
             const response = await fetch("{% url 'accounts:register_api' %}", {
                 method: 'POST',
@@ -335,7 +391,8 @@
                     org_code: orgCode,
                     first_name: firstName,
                     last_name: lastName
-                })
+                }),
+                signal: controller.signal
             });
 
             if (response.ok) {
@@ -346,45 +403,45 @@
                 showMessage(errorMessageDiv, errorData.error || 'Registration failed.');
             }
         } catch (error) {
+            if (error.name === 'AbortError') {
+                showMessage(errorMessageDiv, 'Registration is taking too long. Please try again.');
+                return;
+            }
             showMessage(errorMessageDiv, 'An unexpected error occurred.');
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 
     registerButton.addEventListener('click', async () => {
         errorMessageDiv.classList.add('hidden');
         successMessageDiv.classList.add('hidden');
-        registerButton.classList.add('btn-loading');
-        registerButton.disabled = true;
+        setButtonLoading(registerButton, true);
 
         // Validation
         if (!firstNameInput.value.trim() || !lastNameInput.value.trim()) {
             showMessage(errorMessageDiv, "Please enter your First and Last Name.");
-            registerButton.classList.remove('btn-loading');
-            registerButton.disabled = false;
+            setButtonLoading(registerButton, false);
             return;
         }
         if (!emailInput.value.trim()) {
             showMessage(errorMessageDiv, "Email is required.");
-            registerButton.classList.remove('btn-loading');
-            registerButton.disabled = false;
+            setButtonLoading(registerButton, false);
             return;
         }
         if (!orgCodeInput.value.trim()) {
             showMessage(errorMessageDiv, "Organization Code is required.");
-            registerButton.classList.remove('btn-loading');
-            registerButton.disabled = false;
+            setButtonLoading(registerButton, false);
             return;
         }
         if (!passwordInput.value) {
             showMessage(errorMessageDiv, "Password is required.");
-            registerButton.classList.remove('btn-loading');
-            registerButton.disabled = false;
+            setButtonLoading(registerButton, false);
             return;
         }
         if (passwordInput.value !== confirmPasswordInput.value) {
             showMessage(errorMessageDiv, "Passwords do not match.");
-            registerButton.classList.remove('btn-loading');
-            registerButton.disabled = false;
+            setButtonLoading(registerButton, false);
             return;
         }
 
@@ -415,20 +472,18 @@
         } catch (error) {
             console.error('❌ Registration error:', error);
             showMessage(errorMessageDiv, error.message);
-            registerButton.classList.remove('btn-loading');
-            registerButton.disabled = false;
+        } finally {
+            setButtonLoading(registerButton, false);
         }
     });
 
     googleRegisterButton.addEventListener('click', async () => {
         errorMessageDiv.classList.add('hidden');
         successMessageDiv.classList.add('hidden');
-        googleRegisterButton.classList.add('btn-loading');
-        googleRegisterButton.disabled = true;
+        setButtonLoading(googleRegisterButton, true);
         if (!orgCodeInput.value) {
             showMessage(errorMessageDiv, "Please enter your Organization Code before signing up with Google.");
-            googleRegisterButton.classList.remove('btn-loading');
-            googleRegisterButton.disabled = false;
+            setButtonLoading(googleRegisterButton, false);
             return;
         }
         try {
@@ -437,8 +492,8 @@
             await sendRegistrationToBackend(idToken, orgCodeInput.value);
         } catch (error) {
             showMessage(errorMessageDiv, error.message);
-            googleRegisterButton.classList.remove('btn-loading');
-            googleRegisterButton.disabled = false;
+        } finally {
+            setButtonLoading(googleRegisterButton, false);
         }
     });
 
