@@ -27,6 +27,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
+    {% if not user.is_authenticated %}
     <!-- App Loading Screen -->
     <div id="app-loader" class="fixed inset-0 z-[9999] bg-gradient-to-br from-indigo-600 to-purple-700 flex flex-col items-center justify-center transition-opacity duration-500">
         <script>
@@ -86,6 +87,7 @@
         // Aggressive fallback: Remove loader quickly if stuck
         setTimeout(hideLoader, 2500);
     </script>
+    {% endif %}
 
     
     <!-- Navigation Bar -->
@@ -238,7 +240,7 @@
 
     <!-- MOBILE MENU OVERLAY -->
     {% if user.is_authenticated %}
-    <div id="mobile-menu" class="hidden fixed inset-0 z-40 lg:hidden">
+    <div id="mobile-menu" class="hidden fixed inset-0 z-40 lg:hidden" style="display:none;" aria-hidden="true">
         <div class="fixed inset-0 bg-gray-600/50 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
         <div class="fixed inset-y-0 left-0 max-w-xs w-full bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col">
             <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
@@ -913,19 +915,40 @@
         const closeIcon = document.getElementById('close-icon');
         
         if (mobileMenuBtn && mobileMenu) {
+            const openMobileMenu = () => {
+                mobileMenu.style.display = 'block';
+                mobileMenu.classList.remove('hidden');
+                mobileMenu.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                hamburgerIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+            };
+
+            const closeMobileMenu = () => {
+                mobileMenu.style.display = 'none';
+                mobileMenu.classList.add('hidden');
+                mobileMenu.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                hamburgerIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            };
+
+            closeMobileMenu();
+
             mobileMenuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                mobileMenu.classList.toggle('hidden');
-                hamburgerIcon.classList.toggle('hidden');
-                closeIcon.classList.toggle('hidden');
+                const isOpen = mobileMenu.style.display !== 'none' && !mobileMenu.classList.contains('hidden');
+                if (isOpen) {
+                    closeMobileMenu();
+                } else {
+                    openMobileMenu();
+                }
             });
             
             // Close mobile menu when clicking outside
             document.addEventListener('click', (e) => {
                 if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                    mobileMenu.classList.add('hidden');
-                    hamburgerIcon.classList.remove('hidden');
-                    closeIcon.classList.add('hidden');
+                    closeMobileMenu();
                 }
             });
             
@@ -933,10 +956,14 @@
             const mobileMenuLinks = mobileMenu.querySelectorAll('a');
             mobileMenuLinks.forEach(link => {
                 link.addEventListener('click', () => {
-                    mobileMenu.classList.add('hidden');
-                    hamburgerIcon.classList.remove('hidden');
-                    closeIcon.classList.add('hidden');
+                    closeMobileMenu();
                 });
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeMobileMenu();
+                }
             });
         }
 
