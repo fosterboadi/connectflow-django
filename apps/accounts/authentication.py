@@ -4,8 +4,15 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework import authentication, exceptions
 import os
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+def _set_auth_error(request, code, message):
+    if request is not None:
+        setattr(request, 'firebase_auth_error', {'code': code, 'message': message})
 
 def initialize_firebase():
     """Initialize Firebase Admin SDK if not already initialized."""
@@ -23,9 +30,9 @@ def initialize_firebase():
                 firebase_admin.initialize_app(cred)
                 return
             except json.JSONDecodeError:
-                print("Error: FIREBASE_CREDENTIALS_JSON is not valid JSON.")
+                logger.error("FIREBASE_CREDENTIALS_JSON is not valid JSON.")
             except Exception as e:
-                print(f"Error initializing Firebase from env var: {e}")
+                logger.exception("Error initializing Firebase from FIREBASE_CREDENTIALS_JSON: %s", e)
 
         # Priority 2: Check for file path in settings (Development)
         if hasattr(settings, 'FIREBASE_CREDENTIALS_PATH') and settings.FIREBASE_CREDENTIALS_PATH:
@@ -88,19 +95,38 @@ class FirebaseBackend:
     def authenticate(self, request, id_token=None, first_name=None, last_name=None):
         if not id_token:
             return None
-            
+
+        _set_auth_error(request, None, None)
+
         try:
             initialize_firebase()
             decoded_token = auth.verify_id_token(id_token)
         except Exception as e:
-            print(f"Firebase verification failed: {e}")
+            error_text = str(e).lower()
+            if any(term in error_text for term in ('timed out', 'timeout', 'connection', 'certificate', 'fetch')):
+                _set_auth_error(
+                    request,
+                    'firebase_service_unavailable',
+                    'Authentication service is temporarily unavailable. Please try again.',
+                )
+            else:
+                _set_auth_error(
+                    request,
+                    'invalid_or_expired_token',
+                    'Your sign-in token is invalid or expired. Please sign in again.',
+                )
+            logger.warning("Firebase token verification failed: %s", e)
             return None
 
         email = decoded_token.get('email')
-        uid = decoded_token.get('uid')
         email_verified = decoded_token.get('email_verified', False)
 
         if not email:
+            _set_auth_error(
+                request,
+                'missing_email_claim',
+                'Authentication token does not include an email address.',
+            )
             return None
 
         try:

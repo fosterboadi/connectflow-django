@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 import json
 import os
+import logging
 from django.contrib.auth import get_user_model
 from .forms import ProfileSettingsForm
 from .models import Notification
@@ -19,6 +20,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class GlobalSearchView(View):
     """
@@ -194,6 +196,14 @@ class LoginView(View):
             messages.success(request, f'Welcome back, {user.username}!')
             return JsonResponse({'status': 'ok'})
         else:
+            auth_error = getattr(request, 'firebase_auth_error', None) or {}
+            error_code = auth_error.get('code')
+
+            if error_code == 'firebase_service_unavailable':
+                return JsonResponse({'error': auth_error.get('message')}, status=503)
+            if error_code in ('invalid_or_expired_token', 'missing_email_claim'):
+                return JsonResponse({'error': auth_error.get('message')}, status=401)
+
             return JsonResponse({'error': 'Invalid token or user not found.'}, status=403)
 
 

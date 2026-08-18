@@ -287,8 +287,37 @@
     const forgotPasswordLink = document.getElementById('forgot-password');
     const errorMessageDiv = document.getElementById('error-message');
 
+    function setButtonLoading(button, isLoading) {
+        button.disabled = isLoading;
+        if (isLoading) {
+            button.classList.add('btn-loading');
+            return;
+        }
+        button.classList.remove('btn-loading');
+    }
+
+    function normalizeFirebaseError(error) {
+        const message = error?.message || '';
+        if (message.includes('auth/invalid-credential')) {
+            return 'Incorrect email or password.';
+        }
+        if (message.includes('auth/user-not-found')) {
+            return 'No account found for that email.';
+        }
+        if (message.includes('auth/wrong-password')) {
+            return 'Incorrect email or password.';
+        }
+        if (message.includes('auth/too-many-requests')) {
+            return 'Too many login attempts. Please wait a moment and try again.';
+        }
+        return message || 'Login failed. Please try again.';
+    }
+
     async function sendTokenToBackend(idToken) {
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
         try {
             const response = await fetch("{% url 'accounts:login' %}", {
                 method: 'POST',
@@ -296,18 +325,26 @@
                     'Content-Type': 'application/json',
                     'X-CSRFToken': csrfToken
                 },
-                body: JSON.stringify({ id_token: idToken })
+                body: JSON.stringify({ id_token: idToken }),
+                signal: controller.signal
             });
 
             if (response.ok) {
                 // Redirect on success
                 window.location.href = "{% url 'accounts:dashboard' %}";
+                return;
             } else {
                 const errorData = await response.json();
                 showError(errorData.error || 'Login failed. Please try again.');
             }
         } catch (error) {
+            if (error.name === 'AbortError') {
+                showError('Login is taking too long. Please try again.');
+                return;
+            }
             showError('An unexpected error occurred. Please check your connection and try again.');
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 
@@ -318,33 +355,31 @@
 
     loginButton.addEventListener('click', async () => {
         errorMessageDiv.classList.add('hidden');
-        loginButton.classList.add('btn-loading');
-        loginButton.disabled = true;
+        setButtonLoading(loginButton, true);
         
         try {
             const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
             const idToken = await userCredential.user.getIdToken();
             await sendTokenToBackend(idToken);
         } catch (error) {
-            showError(error.message);
-            loginButton.classList.remove('btn-loading');
-            loginButton.disabled = false;
+            showError(normalizeFirebaseError(error));
+        } finally {
+            setButtonLoading(loginButton, false);
         }
     });
 
     googleLoginButton.addEventListener('click', async () => {
         errorMessageDiv.classList.add('hidden');
-        googleLoginButton.classList.add('btn-loading');
-        googleLoginButton.disabled = true;
+        setButtonLoading(googleLoginButton, true);
         
         try {
             const result = await signInWithPopup(auth, provider);
             const idToken = await result.user.getIdToken();
             await sendTokenToBackend(idToken);
         } catch (error) {
-            showError(error.message);
-            googleLoginButton.classList.remove('btn-loading');
-            googleLoginButton.disabled = false;
+            showError(normalizeFirebaseError(error));
+        } finally {
+            setButtonLoading(googleLoginButton, false);
         }
     });
 
@@ -365,7 +400,7 @@
             errorMessageDiv.textContent = "Password reset email sent! Please check your inbox.";
             errorMessageDiv.classList.remove('hidden');
         } catch (error) {
-            showError(error.message);
+            showError(normalizeFirebaseError(error));
         }
     });
 
@@ -380,4 +415,3 @@
 
 </script>
 {% endblock %}
-
