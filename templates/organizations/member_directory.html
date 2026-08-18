@@ -45,7 +45,8 @@
                                 </div>
                             {% endif %}
                             <!-- Status Indicator -->
-                            <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white dark:border-gray-800 {% if member.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-400{% endif %}"
+                            <div class="status-dot absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-4 border-white dark:border-gray-800 {% if member.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-400{% endif %}"
+                                 data-user-id="{{ member.id }}"
                                  title="{{ member.get_status_display }}"></div>
                         </div>
                         

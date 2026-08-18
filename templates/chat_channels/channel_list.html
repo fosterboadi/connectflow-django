@@ -153,7 +153,7 @@
                                                     {{ member.first_name.0|default:member.username.0|upper }}
                                                 </div>
                                             {% endif %}
-                                            <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-800 {% if member.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-300{% endif %}"></div>
+                                            <div class="status-dot absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-800 {% if member.status == 'ONLINE' %}bg-green-500{% else %}bg-gray-300{% endif %}" data-user-id="{{ member.id }}"></div>
                                         {% endif %}
                                     {% endfor %}
                                 </div>

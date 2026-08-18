@@ -833,10 +833,14 @@
 
             function updateUserStatus(userId, status) {
                 // Update all status dots for this user across the page
-                const statusDots = document.querySelectorAll(`[data-user-id="${userId}"] .status-dot, .status-dot[data-user-id="${userId}"]`);
+                const statusDots = document.querySelectorAll(
+                    `[data-user-id="${userId}"] .status-dot, ` +
+                    `.status-dot[data-user-id="${userId}"], ` +
+                    `.status-indicator[data-user-id="${userId}"]`
+                );
                 statusDots.forEach(dot => {
                     // Remove old status classes
-                    dot.classList.remove('bg-green-500', 'bg-gray-300', 'bg-yellow-500', 'bg-red-500');
+                    dot.classList.remove('bg-green-500', 'bg-gray-300', 'bg-gray-400', 'bg-yellow-500', 'bg-red-500');
                     
                     // Add new status class
                     if (status === 'ONLINE') {
