@@ -8,11 +8,29 @@ class MessageReadReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = MessageReadReceipt
         fields = ['id', 'message', 'user', 'username', 'read_at']
+        read_only_fields = ['user', 'read_at']
+
+    def validate_message(self, message):
+        request = self.context.get('request')
+        if request and not message.channel.members.filter(pk=request.user.pk).exists():
+            raise serializers.ValidationError(
+                'You do not have access to this message.'
+            )
+        return message
 
 class ChannelNotificationSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChannelNotificationSettings
         fields = ['id', 'channel', 'notification_level', 'is_muted', 'muted_until']
+        read_only_fields = ['user']
+
+    def validate_channel(self, channel):
+        request = self.context.get('request')
+        if request and not channel.members.filter(pk=request.user.pk).exists():
+            raise serializers.ValidationError(
+                'You do not have access to this channel.'
+            )
+        return channel
 
 class AttachmentSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
@@ -30,6 +48,15 @@ class MessageReactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = MessageReaction
         fields = ['emoji', 'user', 'username']
+        read_only_fields = ['user']
+
+    def validate_message(self, message):
+        request = self.context.get('request')
+        if request and not message.channel.members.filter(pk=request.user.pk).exists():
+            raise serializers.ValidationError(
+                'You do not have access to this message.'
+            )
+        return message
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_details = UserSerializer(source='sender', read_only=True)
@@ -49,6 +76,14 @@ class MessageSerializer(serializers.ModelSerializer):
             'created_at', 'attachments', 'reactions'
         ]
         read_only_fields = ['sender', 'is_edited', 'is_deleted', 'created_at', 'is_pinned']
+
+    def validate_channel(self, channel):
+        request = self.context.get('request')
+        if request and not channel.members.filter(pk=request.user.pk).exists():
+            raise serializers.ValidationError(
+                'You do not have access to this channel.'
+            )
+        return channel
 
     def get_parent_details(self, obj):
         if obj.parent_message:
@@ -78,6 +113,14 @@ class ChannelSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'channel_type', 'organization', 
             'is_private', 'read_only', 'member_count', 'created_at', 'display_name'
         ]
+        read_only_fields = ['organization']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        organization = getattr(request.user, 'organization', None) if request else None
+        if organization is not None:
+            attrs['organization'] = organization
+        return attrs
 
     def get_member_count(self, obj):
         # Prefer annotated value if available (more efficient)

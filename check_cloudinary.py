@@ -22,16 +22,10 @@ api_key = os.environ.get('CLOUDINARY_API_KEY')
 api_secret = os.environ.get('CLOUDINARY_API_SECRET')
 
 print(f"   CLOUDINARY_CLOUD_NAME: {'✅ SET' if cloud_name else '❌ NOT SET'}")
-if cloud_name:
-    print(f"      Value: {cloud_name}")
 
 print(f"   CLOUDINARY_API_KEY: {'✅ SET' if api_key else '❌ NOT SET'}")
-if api_key:
-    print(f"      Value: {api_key[:5]}...{api_key[-5:]}")
 
 print(f"   CLOUDINARY_API_SECRET: {'✅ SET' if api_secret else '❌ NOT SET'}")
-if api_secret:
-    print(f"      Value: {api_secret[:3]}...{api_secret[-3:]}")
 
 # Check Django settings
 print("\n2. DJANGO SETTINGS:")
