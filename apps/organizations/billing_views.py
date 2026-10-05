@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.urls import reverse
 from .models import SubscriptionPlan, Organization, SubscriptionTransaction
+from apps.accounts.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,9 @@ def billing_select_plan(request):
 @login_required
 def paystack_checkout(request, plan_id):
     """Initiate Paystack Transaction."""
+    if not (request.user.is_admin or request.user.role == User.Role.SUPER_ADMIN):
+        return HttpResponseForbidden("Only organization administrators can start checkout.")
+
     plan = get_object_or_404(SubscriptionPlan, id=plan_id)
     org = request.user.organization
     
