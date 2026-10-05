@@ -29,7 +29,10 @@
             {% if is_admin %}
             <div class="flex items-center gap-3 text-sm">
                 <a href="{% url 'tools:announcements:edit' announcement.pk %}" class="font-semibold text-blue-700 hover:text-blue-800">Edit</a>
-                <a href="{% url 'tools:announcements:delete' announcement.pk %}" onclick="return confirm('Delete this announcement?')" class="font-semibold text-red-700 hover:text-red-800">Delete</a>
+                <form method="post" action="{% url 'tools:announcements:delete' announcement.pk %}" class="inline" onsubmit="return confirm('Delete this announcement?')">
+                    {% csrf_token %}
+                    <button type="submit" class="font-semibold text-red-700 hover:text-red-800">Delete</button>
+                </form>
             </div>
             {% endif %}
         </div>

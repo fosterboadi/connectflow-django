@@ -48,6 +48,42 @@ def resource_create(request):
         
     return render(request, 'tools/bookings/resource_form.html', {'form': form, 'title': 'Add Resource'})
 
+
+@login_required
+def resource_edit(request, pk):
+    """Edit a bookable resource (Admin only)."""
+    if not (request.user.is_admin or request.user.role == 'SUPER_ADMIN'):
+        messages.error(request, "Permission denied.")
+        return redirect('tools:bookings:index')
+
+    resource = get_object_or_404(Resource, pk=pk, organization=request.user.organization)
+    form = ResourceForm(request.POST or None, instance=resource)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, "Resource updated successfully.")
+        return redirect('tools:bookings:index')
+
+    return render(request, 'tools/bookings/resource_form.html', {
+        'form': form,
+        'title': 'Edit Resource',
+        'resource': resource,
+    })
+
+
+@login_required
+def resource_delete(request, pk):
+    """Deactivate a bookable resource (Admin only)."""
+    if not (request.user.is_admin or request.user.role == 'SUPER_ADMIN'):
+        messages.error(request, "Permission denied.")
+        return redirect('tools:bookings:index')
+
+    resource = get_object_or_404(Resource, pk=pk, organization=request.user.organization)
+    if request.method == 'POST':
+        resource.is_active = False
+        resource.save(update_fields=['is_active', 'updated_at'])
+        messages.success(request, "Resource removed from the booking list.")
+    return redirect('tools:bookings:index')
+
 @login_required
 def booking_create(request, resource_id):
     """Create a new booking for a specific resource"""
@@ -80,11 +116,33 @@ def booking_create(request, resource_id):
         'title': f'Book {resource.name}'
     })
 
+
+@login_required
+def booking_edit(request, pk):
+    """Edit a user's pending booking."""
+    booking = get_object_or_404(Booking, pk=pk, user=request.user)
+    if booking.status != Booking.Status.PENDING:
+        messages.error(request, "Only pending bookings can be edited.")
+        return redirect('tools:bookings:index')
+
+    form = BookingForm(request.POST or None, instance=booking)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, "Booking updated successfully.")
+        return redirect('tools:bookings:index')
+
+    return render(request, 'tools/bookings/booking_form.html', {
+        'form': form,
+        'resource': booking.resource,
+        'title': f'Edit {booking.resource.name} booking',
+        'booking': booking,
+    })
+
 @login_required
 def booking_cancel(request, pk):
     """Cancel a booking"""
     booking = get_object_or_404(Booking, pk=pk, user=request.user)
-    if booking.status in [Booking.Status.PENDING, Booking.Status.CONFIRMED]:
+    if request.method == 'POST' and booking.status in [Booking.Status.PENDING, Booking.Status.CONFIRMED]:
         booking.status = Booking.Status.CANCELLED
         booking.save()
         messages.success(request, "Booking cancelled.")

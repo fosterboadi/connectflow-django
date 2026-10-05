@@ -41,35 +41,86 @@ def leave_list(request):
 @login_required
 def leave_request_create(request):
     """Submit a new leave request"""
-    if request.method == 'POST':
-        form = _organization_leave_request_form(request)
-        if form.is_valid():
-            leave_request = form.save(commit=False)
-            leave_request.user = request.user
-            
-            # Simple day calculation (ignoring holidays/weekends for MVP)
-            delta = leave_request.end_date - leave_request.start_date
-            leave_request.total_days = Decimal(delta.days + 1)
-            
-            # Check balance
-            if leave_request.leave_type.counts_as_leave:
-                balance = LeaveBalance.objects.filter(
-                    user=request.user,
-                    leave_type=leave_request.leave_type,
-                    year=leave_request.start_date.year
-                ).first()
-                
-                if balance and balance.remaining < leave_request.total_days:
-                    messages.error(request, f"Insufficient balance. You have {balance.remaining} days remaining.")
-                    return render(request, 'tools/timeoff/request_form.html', {'form': form, 'title': 'Request Time Off'})
+    form = _organization_leave_request_form(request)
+    if request.method == 'POST' and form.is_valid():
+        leave_request = form.save(commit=False)
+        leave_request.user = request.user
+        leave_request.total_days = Decimal(
+            (leave_request.end_date - leave_request.start_date).days + 1
+        )
+        if leave_request.leave_type.counts_as_leave:
+            balance = LeaveBalance.objects.filter(
+                user=request.user,
+                leave_type=leave_request.leave_type,
+                year=leave_request.start_date.year,
+            ).first()
+            if balance and balance.remaining < leave_request.total_days:
+                messages.error(request, f"Insufficient balance. You have {balance.remaining} days remaining.")
+                return render(request, 'tools/timeoff/request_form.html', {'form': form, 'title': 'Request Time Off'})
+        leave_request.save()
+        messages.success(request, "Leave request submitted.")
+        return redirect('tools:timeoff:index')
 
-            leave_request.save()
-            messages.success(request, "Leave request submitted.")
-            return redirect('tools:timeoff:index')
-    else:
-        form = _organization_leave_request_form(request)
-        
     return render(request, 'tools/timeoff/request_form.html', {'form': form, 'title': 'Request Time Off'})
+
+
+@login_required
+def leave_request_edit(request, pk):
+    """Edit a user's pending leave request."""
+    leave_request = get_object_or_404(LeaveRequest, pk=pk, user=request.user)
+    if leave_request.status != LeaveRequest.Status.PENDING:
+        messages.error(request, "Only pending leave requests can be edited.")
+        return redirect('tools:timeoff:index')
+
+    form = _organization_leave_request_form(request)
+    if request.method == 'GET':
+        form.initial = {
+            'leave_type': leave_request.leave_type,
+            'start_date': leave_request.start_date,
+            'end_date': leave_request.end_date,
+            'reason': leave_request.reason,
+        }
+    elif form.is_valid():
+        leave_request.leave_type = form.cleaned_data['leave_type']
+        leave_request.start_date = form.cleaned_data['start_date']
+        leave_request.end_date = form.cleaned_data['end_date']
+        leave_request.reason = form.cleaned_data['reason']
+        leave_request.total_days = Decimal(
+            (leave_request.end_date - leave_request.start_date).days + 1
+        )
+        if leave_request.leave_type.counts_as_leave:
+            balance = LeaveBalance.objects.filter(
+                user=request.user,
+                leave_type=leave_request.leave_type,
+                year=leave_request.start_date.year,
+            ).first()
+            if balance and balance.remaining < leave_request.total_days:
+                messages.error(request, f"Insufficient balance. You have {balance.remaining} days remaining.")
+                return render(request, 'tools/timeoff/request_form.html', {
+                    'form': form,
+                    'title': 'Edit Time Off Request',
+                    'leave_request': leave_request,
+                })
+        leave_request.save()
+        messages.success(request, "Leave request updated.")
+        return redirect('tools:timeoff:index')
+
+    return render(request, 'tools/timeoff/request_form.html', {
+        'form': form,
+        'title': 'Edit Time Off Request',
+        'leave_request': leave_request,
+    })
+
+
+@login_required
+def leave_request_cancel(request, pk):
+    """Withdraw a user's pending leave request."""
+    leave_request = get_object_or_404(LeaveRequest, pk=pk, user=request.user)
+    if request.method == 'POST' and leave_request.status == LeaveRequest.Status.PENDING:
+        leave_request.status = LeaveRequest.Status.CANCELLED
+        leave_request.save(update_fields=['status', 'updated_at'])
+        messages.success(request, "Leave request withdrawn.")
+    return redirect('tools:timeoff:index')
 
 @login_required
 def leave_approve(request, pk, action):

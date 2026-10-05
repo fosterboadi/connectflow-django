@@ -96,7 +96,9 @@ def announcement_delete(request, pk):
     """Delete an announcement (Admin only)"""
     announcement = get_object_or_404(Announcement, pk=pk, organization=request.user.organization)
     
-    if not (request.user.is_admin or request.user.role == 'SUPER_ADMIN'):
+    if request.method != 'POST':
+        messages.error(request, "Use the delete action to remove this announcement.")
+    elif not (request.user.is_admin or request.user.role == 'SUPER_ADMIN'):
         messages.error(request, "You don't have permission to delete announcements.")
     else:
         announcement.delete()

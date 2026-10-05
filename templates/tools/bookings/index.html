@@ -73,6 +73,15 @@
                         <span class="rounded-full bg-green-50 px-2 py-1 text-[11px] font-semibold text-green-700">Instant booking</span>
                         {% endif %}
                     </div>
+                    {% if is_admin %}
+                    <div class="mt-3 flex items-center gap-3 text-xs">
+                        <a href="{% url 'tools:bookings:resource_edit' resource.pk %}" class="font-semibold text-blue-700 hover:text-blue-800">Edit resource</a>
+                        <form method="post" action="{% url 'tools:bookings:resource_delete' resource.pk %}" class="inline" onsubmit="return confirm('Remove this resource from the booking list?')">
+                            {% csrf_token %}
+                            <button type="submit" class="font-semibold text-red-700 hover:text-red-800">Remove</button>
+                        </form>
+                    </div>
+                    {% endif %}
                     <p class="mt-4 flex-1 text-sm leading-6 text-gray-600">{{ resource.description|default:"No description provided."|truncatechars:100 }}</p>
                     <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
                         <span>{{ resource.location|default:"Location not set" }}</span>
@@ -104,7 +113,13 @@
                     <p class="mt-1 text-sm text-gray-600">{{ booking.resource.name }}</p>
                     <p class="mt-2 text-xs font-medium text-gray-500">{{ booking.start_time|date:"M d, Y · H:i" }}–{{ booking.end_time|date:"H:i" }}</p>
                     {% if booking.status == 'CONFIRMED' or booking.status == 'PENDING' %}
-                    <a href="{% url 'tools:bookings:booking_cancel' booking.pk %}" onclick="return confirm('Cancel this booking?')" class="mt-3 inline-block text-xs font-semibold text-red-700 hover:text-red-800">Cancel booking</a>
+                    {% if booking.status == 'PENDING' %}
+                    <a href="{% url 'tools:bookings:booking_edit' booking.pk %}" class="mt-3 mr-3 inline-block text-xs font-semibold text-blue-700 hover:text-blue-800">Edit</a>
+                    {% endif %}
+                    <form method="post" action="{% url 'tools:bookings:booking_cancel' booking.pk %}" class="inline" onsubmit="return confirm('Cancel this booking?')">
+                        {% csrf_token %}
+                        <button type="submit" class="mt-3 text-xs font-semibold text-red-700 hover:text-red-800">Cancel booking</button>
+                    </form>
                     {% endif %}
                 </div>
                 {% empty %}

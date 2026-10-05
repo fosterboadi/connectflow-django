@@ -23,7 +23,7 @@
         {% endfor %}
         <div class="flex justify-end gap-3">
             <a href="{% url 'tools:bookings:index' %}" class="rounded-xl px-4 py-3 text-sm font-bold text-gray-500 hover:bg-gray-50">Cancel</a>
-            <button type="submit" class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700">Save resource</button>
+            <button type="submit" class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700">{{ title }}</button>
         </div>
     </form>
 </div>
