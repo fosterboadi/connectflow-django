@@ -28,6 +28,12 @@ class FormFieldViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return self.queryset.filter(form__organization=self.request.user.organization)
 
+    def perform_create(self, serializer):
+        form = serializer.validated_data['form']
+        if form.organization_id != self.request.user.organization_id:
+            raise permissions.PermissionDenied('This form is outside your organization.')
+        serializer.save()
+
 class FormResponseViewSet(viewsets.ModelViewSet):
     queryset = FormResponse.objects.all()
     serializer_class = FormResponseSerializer
@@ -38,3 +44,9 @@ class FormResponseViewSet(viewsets.ModelViewSet):
         if self.request.user.role in ['SUPER_ADMIN', 'DEPT_HEAD']:
             return self.queryset.filter(form__organization=self.request.user.organization)
         return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(
+            user=self.request.user,
+            is_anonymous=False,
+        )

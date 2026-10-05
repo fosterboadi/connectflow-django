@@ -22,6 +22,19 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Managers see all in org, users see their own
-        if self.request.user.role in ['SUPER_ADMIN', 'DEPT_HEAD']:
+        if self.request.user.role in ['SUPER_ADMIN', 'ORG_ADMIN', 'DEPT_HEAD']:
             return self.queryset.filter(resource__organization=self.request.user.organization)
         return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        resource = serializer.validated_data['resource']
+        if resource.organization_id != self.request.user.organization_id:
+            raise permissions.PermissionDenied('This resource is outside your organization.')
+        serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role in ['SUPER_ADMIN', 'DEPT_HEAD']):
+            raise permissions.PermissionDenied(
+                'Only authorized managers can update bookings.'
+            )
+        serializer.save()

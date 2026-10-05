@@ -9,6 +9,7 @@ class ResourceSerializer(serializers.ModelSerializer):
             'id', 'organization', 'name', 'resource_type', 'description', 
             'location', 'capacity', 'is_active', 'requires_approval'
         ]
+        read_only_fields = ['organization']
 
 class BookingSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
@@ -22,3 +23,12 @@ class BookingSerializer(serializers.ModelSerializer):
             'title', 'description', 'start_time', 'end_time', 'status', 
             'approved_by', 'approved_by_details', 'approval_notes', 'created_at'
         ]
+        read_only_fields = ['user', 'status', 'approved_by', 'approval_notes', 'created_at']
+
+    def validate_resource(self, resource):
+        request = self.context.get('request')
+        if request and resource.organization_id != request.user.organization_id:
+            raise serializers.ValidationError(
+                'This resource does not belong to your organization.'
+            )
+        return resource

@@ -6,6 +6,7 @@ class LeaveTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveType
         fields = ['id', 'organization', 'name', 'description', 'requires_approval', 'counts_as_leave', 'color']
+        read_only_fields = ['organization']
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
@@ -19,6 +20,17 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             'start_date', 'end_date', 'total_days', 'reason', 'status', 
             'approved_by', 'approved_by_details', 'rejection_reason', 'created_at'
         ]
+        read_only_fields = [
+            'user', 'total_days', 'status', 'approved_by', 'rejection_reason', 'created_at'
+        ]
+
+    def validate_leave_type(self, leave_type):
+        request = self.context.get('request')
+        if request and leave_type.organization_id != request.user.organization_id:
+            raise serializers.ValidationError(
+                'This leave type does not belong to your organization.'
+            )
+        return leave_type
 
 class LeaveBalanceSerializer(serializers.ModelSerializer):
     leave_type_details = LeaveTypeSerializer(source='leave_type', read_only=True)
@@ -31,3 +43,12 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
             'id', 'user', 'leave_type', 'leave_type_details', 'year', 
             'total_allocated', 'used', 'remaining', 'percent_used'
         ]
+        read_only_fields = ['user', 'used', 'remaining', 'percent_used']
+
+    def validate_leave_type(self, leave_type):
+        request = self.context.get('request')
+        if request and leave_type.organization_id != request.user.organization_id:
+            raise serializers.ValidationError(
+                'This leave type does not belong to your organization.'
+            )
+        return leave_type

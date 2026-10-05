@@ -18,6 +18,18 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             'is_pinned', 'created_by', 'creator_details', 
             'is_active', 'created_at'
         ]
+        read_only_fields = ['organization', 'created_by', 'created_at']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        organization = getattr(request.user, 'organization', None) if request else None
+        for field_name in ('target_department', 'target_team'):
+            target = attrs.get(field_name)
+            if target and organization and target.organization_id != organization.id:
+                raise serializers.ValidationError(
+                    {field_name: 'This target must belong to your organization.'}
+                )
+        return attrs
 
 class AnnouncementReadReceiptSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
@@ -25,3 +37,12 @@ class AnnouncementReadReceiptSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnnouncementReadReceipt
         fields = ['id', 'announcement', 'user', 'user_details', 'read_at', 'acknowledged_at']
+        read_only_fields = ['user', 'read_at', 'acknowledged_at']
+
+    def validate_announcement(self, announcement):
+        request = self.context.get('request')
+        if request and announcement.organization_id != request.user.organization_id:
+            raise serializers.ValidationError(
+                'You cannot acknowledge an announcement from another organization.'
+            )
+        return announcement

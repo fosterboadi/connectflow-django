@@ -371,7 +371,10 @@ def form_submit_page(request, share_link):
         return render(request, 'tools/forms/form_closed.html', {'form': form})
     
     # Check login requirement
-    if form.require_login and not request.user.is_authenticated:
+    if (
+        not request.user.is_authenticated
+        and (form.require_login or not form.allow_anonymous)
+    ):
         messages.warning(request, 'Please login to submit this form.')
         return redirect('accounts:login')
     

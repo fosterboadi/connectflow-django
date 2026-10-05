@@ -6,10 +6,18 @@ class FormFieldSerializer(serializers.ModelSerializer):
     class Meta:
         model = FormField
         fields = [
-            'id', 'label', 'field_type', 'is_required', 'placeholder', 
+            'id', 'form', 'label', 'field_type', 'is_required', 'placeholder',
             'help_text', 'options', 'min_value', 'max_value', 
             'max_length', 'pattern', 'show_if_field', 'show_if_value', 'order'
         ]
+
+    def validate_form(self, form):
+        request = self.context.get('request')
+        if request and form.organization_id != request.user.organization_id:
+            raise serializers.ValidationError(
+                'You cannot add a field to a form from another organization.'
+            )
+        return form
 
 class FormSerializer(serializers.ModelSerializer):
     fields = FormFieldSerializer(many=True, read_only=True)
@@ -25,7 +33,7 @@ class FormSerializer(serializers.ModelSerializer):
             'send_email_on_submit', 'notification_emails', 'created_by', 
             'creator_details', 'fields', 'response_count', 'created_at'
         ]
-        read_only_fields = ['share_link', 'created_at']
+        read_only_fields = ['organization', 'created_by', 'share_link', 'created_at']
 
 class FormResponseSerializer(serializers.ModelSerializer):
     user_details = UserSerializer(source='user', read_only=True)
@@ -37,4 +45,12 @@ class FormResponseSerializer(serializers.ModelSerializer):
             'id', 'form', 'user', 'user_details', 'is_anonymous', 
             'respondent_email', 'answers', 'submitted_at', 'respondent_name'
         ]
-        read_only_fields = ['submitted_at']
+        read_only_fields = ['user', 'is_anonymous', 'submitted_at']
+
+    def validate_form(self, form):
+        request = self.context.get('request')
+        if request and form.organization_id != request.user.organization_id:
+            raise serializers.ValidationError(
+                'You cannot submit a form from another organization.'
+            )
+        return form

@@ -15,10 +15,28 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(organization=self.request.user.organization)
 
     def perform_create(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied(
+                'Only organization administrators can create announcements.'
+            )
         serializer.save(
             created_by=self.request.user,
             organization=self.request.user.organization
         )
+
+    def perform_update(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied(
+                'Only organization administrators can edit announcements.'
+            )
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied(
+                'Only organization administrators can delete announcements.'
+            )
+        instance.delete()
 
 class AnnouncementReadReceiptViewSet(viewsets.ModelViewSet):
     queryset = AnnouncementReadReceipt.objects.all()
@@ -26,4 +44,10 @@ class AnnouncementReadReceiptViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return self.queryset.filter(announcement__organization=self.request.user.organization)
+        return self.queryset.filter(
+            announcement__organization=self.request.user.organization,
+            user=self.request.user,
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
