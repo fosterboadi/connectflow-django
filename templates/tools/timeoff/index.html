@@ -1,135 +1,94 @@
 {% extends "tools/base.html" %}
 
+{% block title %}Time off - ConnectFlow Pro{% endblock %}
+
 {% block tool_content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-    <div>
-        <p class="text-xs text-gray-500 text-uppercase font-weight-bold mb-1">Workspace tools</p>
-        <h2 class="h4 mb-0 text-gray-800">Time off</h2>
-    </div>
-    <a href="{% url 'tools:timeoff:request' %}" class="btn btn-primary">
-        <i class="fas fa-plus mr-1"></i> Request Time Off
-    </a>
-</div>
-
-<div class="row">
-    <!-- Leave Balances -->
-    <div class="col-12 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h6 class="m-0 font-weight-bold text-primary">Your Balances ({{ now|date:"Y" }})</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% for balance in my_balances %}
-                    <div class="col-md-3 mb-3">
-                        <div class="border rounded p-3 text-center">
-                            <h6 class="font-weight-bold text-dark mb-1">{{ balance.leave_type.name }}</h6>
-                            <div class="h3 font-weight-bold text-primary mb-0">{{ balance.remaining|floatformat:1 }}</div>
-                            <small class="text-muted uppercase font-weight-bold">Days Left</small>
-                            <div class="progress mt-3" style="height: 5px;">
-                                <div class="progress-bar" style="width: {{ balance.percent_used }}%; background-color: {{ balance.leave_type.color }};"></div>
-                            </div>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="col-12 text-center py-3 text-muted">
-                        No leave balances found for the current year.
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-8">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">Workspace tools</p>
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">Time off</h1>
+            <p class="mt-2 text-base text-gray-500">Review your leave balance and manage requests.</p>
         </div>
+        <a href="{% url 'tools:timeoff:request' %}" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Request time off
+        </a>
     </div>
 
-    <!-- Approval Queue (for Managers/Admins) -->
+    <section class="mb-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div class="border-b border-gray-200 px-5 py-4">
+            <h2 class="text-base font-semibold text-gray-900">Your balances</h2>
+            <p class="mt-1 text-sm text-gray-500">Available leave for {{ now|date:"Y" }}.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
+            {% for balance in my_balances %}
+            <div class="rounded-lg border border-gray-200 p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <h3 class="text-sm font-semibold text-gray-900">{{ balance.leave_type.name }}</h3>
+                    <span class="h-3 w-3 rounded-full" style="background-color: {{ balance.leave_type.color }};"></span>
+                </div>
+                <p class="mt-4 text-2xl font-bold text-gray-900">{{ balance.remaining|floatformat:1 }} <span class="text-sm font-medium text-gray-500">days</span></p>
+                <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full" style="width: {{ balance.percent_used }}%; background-color: {{ balance.leave_type.color }};"></div></div>
+                <p class="mt-2 text-xs text-gray-500">{{ balance.used|floatformat:1 }} used of {{ balance.total_allocated|floatformat:1 }}</p>
+            </div>
+            {% empty %}
+            <div class="sm:col-span-2 lg:col-span-4 py-8 text-center">
+                <h3 class="font-semibold text-gray-900">No leave balances found</h3>
+                <p class="mt-1 text-sm text-gray-500">Your organization has not assigned balances for this year.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
     {% if pending_approvals %}
-    <div class="col-12 mb-4">
-        <div class="card border-left-warning shadow-sm">
-            <div class="card-header bg-white">
-                <h6 class="m-0 font-weight-bold text-warning"><i class="fas fa-tasks mr-2"></i> Pending Leave Approvals</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Employee</th>
-                                <th>Type</th>
-                                <th>Dates</th>
-                                <th>Days</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for req in pending_approvals %}
-                            <tr>
-                                <td>{{ req.user.get_full_name|default:req.user.username }}</td>
-                                <td><span class="badge" style="background-color: {{ req.leave_type.color }}; color: white;">{{ req.leave_type.name }}</span></td>
-                                <td>{{ req.start_date|date:"M d" }} - {{ req.end_date|date:"M d, Y" }}</td>
-                                <td>{{ req.total_days|floatformat:1 }}</td>
-                                <td>
-                                    <a href="{% url 'tools:timeoff:approve' req.pk 'approve' %}" class="btn btn-sm btn-success">Approve</a>
-                                    <a href="{% url 'tools:timeoff:approve' req.pk 'reject' %}" class="btn btn-sm btn-outline-danger">Reject</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <section class="mb-8 rounded-xl border border-amber-200 bg-amber-50/60 overflow-hidden">
+        <div class="border-b border-amber-200 px-5 py-4">
+            <h2 class="text-base font-semibold text-gray-900">Pending approvals</h2>
+            <p class="mt-1 text-sm text-gray-600">Leave requests requiring your review.</p>
         </div>
-    </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-amber-200">
+                <thead><tr><th class="px-5 py-3 text-left">Employee</th><th class="px-5 py-3 text-left">Leave type</th><th class="px-5 py-3 text-left">Dates</th><th class="px-5 py-3 text-left">Days</th><th class="px-5 py-3 text-right">Actions</th></tr></thead>
+                <tbody class="divide-y divide-amber-100 bg-white/70">
+                    {% for req in pending_approvals %}
+                    <tr>
+                        <td class="px-5 py-4 text-sm font-medium text-gray-900">{{ req.user.get_full_name|default:req.user.username }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ req.leave_type.name }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ req.start_date|date:"M d" }}–{{ req.end_date|date:"M d, Y" }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ req.total_days|floatformat:1 }}</td>
+                        <td class="px-5 py-4 text-right whitespace-nowrap"><a href="{% url 'tools:timeoff:approve' req.pk 'approve' %}" class="mr-3 text-sm font-semibold text-green-700">Approve</a><a href="{% url 'tools:timeoff:approve' req.pk 'reject' %}" class="text-sm font-semibold text-red-700">Decline</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
     {% endif %}
 
-    <!-- My Requests -->
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h6 class="m-0 font-weight-bold text-primary">Your Requests History</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>Type</th>
-                                <th>Period</th>
-                                <th>Total Days</th>
-                                <th>Status</th>
-                                <th>Submitted</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for req in my_requests %}
-                            <tr>
-                                <td><span class="font-weight-bold">{{ req.leave_type.name }}</span></td>
-                                <td>{{ req.start_date|date:"M d, Y" }} - {{ req.end_date|date:"M d, Y" }}</td>
-                                <td>{{ req.total_days|floatformat:1 }}</td>
-                                <td>
-                                    {% if req.status == 'APPROVED' %}
-                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Approved</span>
-                                    {% elif req.status == 'PENDING' %}
-                                        <span class="badge badge-warning"><i class="fas fa-clock mr-1"></i> Pending</span>
-                                    {% elif req.status == 'REJECTED' %}
-                                        <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Rejected</span>
-                                    {% else %}
-                                        <span class="badge badge-secondary">{{ req.status }}</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-muted small">{{ req.created_at|date:"M d, Y" }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    You haven't submitted any leave requests yet.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <section class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div class="border-b border-gray-200 px-5 py-4">
+            <h2 class="text-base font-semibold text-gray-900">Request history</h2>
+            <p class="mt-1 text-sm text-gray-500">A record of your submitted time-off requests.</p>
         </div>
-    </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead><tr><th class="px-5 py-3 text-left">Leave type</th><th class="px-5 py-3 text-left">Period</th><th class="px-5 py-3 text-left">Days</th><th class="px-5 py-3 text-left">Status</th><th class="px-5 py-3 text-left">Submitted</th></tr></thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for req in my_requests %}
+                    <tr>
+                        <td class="px-5 py-4 text-sm font-medium text-gray-900">{{ req.leave_type.name }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ req.start_date|date:"M d, Y" }}–{{ req.end_date|date:"M d, Y" }}</td>
+                        <td class="px-5 py-4 text-sm text-gray-600">{{ req.total_days|floatformat:1 }}</td>
+                        <td class="px-5 py-4"><span class="rounded-full px-2 py-1 text-[11px] font-semibold {% if req.status == 'APPROVED' %}bg-green-50 text-green-700{% elif req.status == 'PENDING' %}bg-amber-50 text-amber-700{% elif req.status == 'REJECTED' %}bg-red-50 text-red-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ req.get_status_display }}</span></td>
+                        <td class="px-5 py-4 text-sm text-gray-500">{{ req.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-5 py-12 text-center"><h3 class="font-semibold text-gray-900">No requests yet</h3><p class="mt-1 text-sm text-gray-500">Your submitted leave requests will appear here.</p></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 {% endblock %}
