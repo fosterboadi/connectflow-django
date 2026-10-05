@@ -56,7 +56,9 @@ def form_create(request):
         
         if not title:
             messages.error(request, 'Form title is required.')
-            return render(request, 'tools/forms/form_create.html')
+            return render(request, 'tools/forms/form_create.html', {
+                'form_types': Form.FormType.choices,
+            })
         
         form = Form.objects.create(
             organization=request.user.organization,

@@ -45,6 +45,9 @@ def folder_create(request, parent_id=None):
         
     if request.method == 'POST':
         form = FolderForm(request.POST)
+        form.fields['parent'].queryset = Folder.objects.filter(
+            organization=request.user.organization
+        )
         if form.is_valid():
             folder = form.save(commit=False)
             folder.organization = request.user.organization
@@ -56,6 +59,9 @@ def folder_create(request, parent_id=None):
             return redirect('tools:documents:index_with_folder', folder_id=folder.id) if folder.parent else redirect('tools:documents:index')
     else:
         form = FolderForm(initial={'parent': parent})
+        form.fields['parent'].queryset = Folder.objects.filter(
+            organization=request.user.organization
+        )
         
     return render(request, 'tools/documents/folder_form.html', {'form': form, 'title': 'Create Folder'})
 
@@ -91,6 +97,9 @@ def document_upload(request, folder_id=None):
             return redirect('tools:documents:index_with_folder', folder_id=folder.id) if folder else redirect('tools:documents:index')
     else:
         form = DocumentUploadForm(initial={'folder': folder})
+        form.fields['folder'].queryset = Folder.objects.filter(
+            organization=request.user.organization
+        )
         
     return render(request, 'tools/documents/upload_form.html', {'form': form, 'title': 'Upload Document'})
 
