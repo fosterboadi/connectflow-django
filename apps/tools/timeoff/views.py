@@ -6,6 +6,14 @@ from .models import LeaveType, LeaveRequest, LeaveBalance
 from .forms import LeaveRequestForm, LeaveTypeForm
 from decimal import Decimal
 
+
+def _organization_leave_request_form(request):
+    form = LeaveRequestForm(request.POST or None)
+    form.fields['leave_type'].queryset = LeaveType.objects.filter(
+        organization=request.user.organization
+    )
+    return form
+
 @login_required
 def leave_list(request):
     """View user's leave requests and balances"""
@@ -34,7 +42,7 @@ def leave_list(request):
 def leave_request_create(request):
     """Submit a new leave request"""
     if request.method == 'POST':
-        form = LeaveRequestForm(request.POST)
+        form = _organization_leave_request_form(request)
         if form.is_valid():
             leave_request = form.save(commit=False)
             leave_request.user = request.user
@@ -59,9 +67,7 @@ def leave_request_create(request):
             messages.success(request, "Leave request submitted.")
             return redirect('tools:timeoff:index')
     else:
-        form = LeaveRequestForm()
-        # Filter leave types for this org
-        form.fields['leave_type'].queryset = LeaveType.objects.filter(organization=request.user.organization)
+        form = _organization_leave_request_form(request)
         
     return render(request, 'tools/timeoff/request_form.html', {'form': form, 'title': 'Request Time Off'})
 
@@ -74,7 +80,7 @@ def leave_approve(request, pk, action):
         
     leave_request = get_object_or_404(LeaveRequest, pk=pk, leave_type__organization=request.user.organization)
     
-    if action == 'approve':
+    if action == 'approve' and leave_request.status == LeaveRequest.Status.PENDING:
         leave_request.status = LeaveRequest.Status.APPROVED
         leave_request.approved_by = request.user
         
@@ -89,10 +95,14 @@ def leave_approve(request, pk, action):
             balance.save()
             
         messages.success(request, f"Leave for {leave_request.user.get_full_name()} approved.")
-    elif action == 'reject':
+    elif action == 'reject' and leave_request.status == LeaveRequest.Status.PENDING:
         leave_request.status = LeaveRequest.Status.REJECTED
         leave_request.approved_by = request.user
         messages.warning(request, f"Leave for {leave_request.user.get_full_name()} rejected.")
         
+    elif leave_request.status != LeaveRequest.Status.PENDING:
+        messages.info(request, "This leave request has already been processed.")
+        return redirect('tools:timeoff:index')
+
     leave_request.save()
     return redirect('tools:timeoff:index')

@@ -1,8 +1,11 @@
 {% extends "tools/base.html" %}
 
 {% block tool_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="h4 mb-0 text-gray-800"><i class="fas fa-umbrella-beach mr-2"></i> Time Off</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <p class="text-xs text-gray-500 text-uppercase font-weight-bold mb-1">Workspace tools</p>
+        <h2 class="h4 mb-0 text-gray-800">Time off</h2>
+    </div>
     <a href="{% url 'tools:timeoff:request' %}" class="btn btn-primary">
         <i class="fas fa-plus mr-1"></i> Request Time Off
     </a>

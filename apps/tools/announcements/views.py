@@ -5,6 +5,21 @@ from django.utils import timezone
 from django.db import models
 from .models import Announcement, AnnouncementReadReceipt
 from .forms import AnnouncementForm
+from apps.organizations.models import Department, Team
+
+
+def _organization_announcement_form(request, instance=None):
+    form = AnnouncementForm(request.POST or None, instance=instance)
+    organization = request.user.organization
+    form.fields['target_department'].queryset = Department.objects.filter(
+        organization=organization,
+        is_active=True,
+    )
+    form.fields['target_team'].queryset = Team.objects.filter(
+        department__organization=organization,
+        is_active=True,
+    )
+    return form
 
 @login_required
 def announcement_list(request):
@@ -36,7 +51,7 @@ def announcement_create(request):
         return redirect('tools:announcements:index')
         
     if request.method == 'POST':
-        form = AnnouncementForm(request.POST)
+        form = _organization_announcement_form(request)
         if form.is_valid():
             announcement = form.save(commit=False)
             announcement.organization = request.user.organization
@@ -45,7 +60,7 @@ def announcement_create(request):
             messages.success(request, "Announcement created successfully.")
             return redirect('tools:announcements:index')
     else:
-        form = AnnouncementForm()
+        form = _organization_announcement_form(request)
         
     return render(request, 'tools/announcements/form.html', {
         'form': form,
@@ -62,13 +77,13 @@ def announcement_edit(request, pk):
         return redirect('tools:announcements:index')
         
     if request.method == 'POST':
-        form = AnnouncementForm(request.POST, instance=announcement)
+        form = _organization_announcement_form(request, instance=announcement)
         if form.is_valid():
             form.save()
             messages.success(request, "Announcement updated successfully.")
             return redirect('tools:announcements:index')
     else:
-        form = AnnouncementForm(instance=announcement)
+        form = _organization_announcement_form(request, instance=announcement)
         
     return render(request, 'tools/announcements/form.html', {
         'form': form,

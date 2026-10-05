@@ -105,6 +105,55 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom: 1px solid var(--cf-border);
 }
 
+.form-control,
+select.form-control,
+textarea.form-control,
+input.form-control {
+    min-height: 42px;
+    border: 1px solid #d0d5dd;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: var(--cf-ink);
+    box-shadow: none;
+}
+
+.form-control:focus {
+    border-color: var(--cf-brand);
+    box-shadow: 0 0 0 3px rgba(49, 87, 166, 0.12);
+}
+
+.table thead th {
+    color: #667085;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--cf-border);
+}
+
+.table td {
+    vertical-align: middle;
+    color: #475467;
+}
+
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    font-size: 0.8rem;
+}
+
+.border-left-primary,
+.border-left-info,
+.border-left-warning,
+.border-bottom-info {
+    border-left-width: 3px !important;
+}
+
 .btn,
 button,
 a[class*="bg-blue-"],
@@ -190,6 +239,11 @@ small,
 .shadow-xl,
 .shadow-2xl {
     box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08) !important;
+}
+
+.bg-gradient-to-r {
+    background-image: none !important;
+    background-color: #172b4d !important;
 }
 
 /* Neutralize aggressive mobile override that forces flex/grid into block */

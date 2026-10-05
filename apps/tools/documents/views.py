@@ -74,6 +74,9 @@ def document_upload(request, folder_id=None):
         
     if request.method == 'POST':
         form = DocumentUploadForm(request.POST, request.FILES)
+        form.fields['folder'].queryset = Folder.objects.filter(
+            organization=request.user.organization
+        )
         if form.is_valid():
             document = form.save(commit=False)
             document.organization = request.user.organization

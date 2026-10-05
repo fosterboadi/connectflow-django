@@ -28,19 +28,19 @@
     <div class="space-y-6">
         {% for announcement in announcements %}
         <div class="bg-white rounded-lg shadow-sm overflow-hidden {% if announcement.is_pinned %}ring-2 ring-purple-500{% endif %}">
-            <div class="px-6 py-4 bg-gradient-to-r {% if announcement.priority == 'CRITICAL' %}from-red-500 to-red-600{% elif announcement.priority == 'URGENT' %}from-orange-500 to-orange-600{% elif announcement.priority == 'IMPORTANT' %}from-blue-500 to-blue-600{% else %}from-gray-500 to-gray-600{% endif %} flex items-center justify-between">
-                <div class="flex items-center space-x-3">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     {% if announcement.is_pinned %}
                     <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L11 4.323V3a1 1 0 011-1z"/>
                     </svg>
                     {% endif %}
-                    <h2 class="text-lg font-semibold text-white">{{ announcement.title }}</h2>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white bg-opacity-30 text-white">
+                    <h2 class="text-lg font-semibold text-gray-900">{{ announcement.title }}</h2>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                         {{ announcement.get_priority_display }}
                     </span>
                 </div>
-                <div class="flex items-center space-x-3 text-white text-sm">
+                <div class="flex items-center gap-3 text-gray-500 text-sm">
                     <span>{{ announcement.created_at|date:"M d, Y H:i" }}</span>
                     {% if is_admin %}
                     <div class="relative group">
