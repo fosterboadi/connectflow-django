@@ -3,6 +3,12 @@
 
 :root {
     --cf-font-sans: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --cf-ink: #172033;
+    --cf-muted: #667085;
+    --cf-border: #e4e7ec;
+    --cf-surface: #ffffff;
+    --cf-canvas: #f5f7fa;
+    --cf-brand: #3157a6;
 }
 
 html,
@@ -10,10 +16,22 @@ body {
     font-family: var(--cf-font-sans);
     line-height: 1.5;
     letter-spacing: 0;
+    background: var(--cf-canvas);
+    color: var(--cf-ink);
 }
 
 h1, h2, h3, h4, h5, h6 {
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    color: var(--cf-ink);
+}
+
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+    color: #e2e8f0;
 }
 
 /* Reduce "shouty" tiny uppercase UI labels while preserving hierarchy */
@@ -31,6 +49,88 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.75rem !important;
     line-height: 1rem !important;
     font-weight: 600 !important;
+}
+
+/* Keep the application calm and consistent across legacy Bootstrap and utility views. */
+.top-navbar {
+    background: #172b4d !important;
+    box-shadow: 0 1px 0 rgba(16, 24, 40, 0.18) !important;
+}
+
+.app-sidebar {
+    background: var(--cf-surface) !important;
+    border-color: var(--cf-border) !important;
+}
+
+.sidebar-link {
+    border-radius: 0.625rem;
+    color: #475467;
+}
+
+.sidebar-link:hover {
+    transform: none;
+    background: #f2f5fa;
+    color: var(--cf-brand);
+}
+
+.sidebar-link.active {
+    background: #eaf0ff !important;
+    color: #24458d !important;
+    box-shadow: inset 3px 0 0 var(--cf-brand);
+}
+
+.sidebar-link.active svg {
+    color: var(--cf-brand) !important;
+}
+
+.main-content-wrapper > main {
+    max-width: 1440px;
+}
+
+/* The older tool views use Bootstrap class names; give them the same product surface. */
+.card,
+.bg-white.rounded-lg,
+.bg-white.rounded-xl,
+.bg-white.rounded-2xl,
+.bg-white.rounded-3xl {
+    border: 1px solid var(--cf-border);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+.card {
+    border-radius: 0.75rem;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--cf-border);
+}
+
+.btn,
+button,
+a[class*="bg-blue-"],
+a[class*="bg-indigo-"],
+a[class*="bg-purple-"],
+a[class*="bg-green-"] {
+    transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.btn-primary,
+a.bg-blue-600,
+a.bg-indigo-600 {
+    background-color: var(--cf-brand) !important;
+    border-color: var(--cf-brand) !important;
+    box-shadow: 0 1px 2px rgba(49, 87, 166, 0.18) !important;
+}
+
+.btn-primary:hover,
+a.bg-blue-600:hover,
+a.bg-indigo-600:hover {
+    background-color: #284989 !important;
+}
+
+.text-uppercase,
+.uppercase {
+    letter-spacing: 0.045em;
 }
 
 /* Normalize sidebar and top nav visual tone */
@@ -79,7 +179,17 @@ small,
 
 /* Keep utility cards/components cleaner and less "AI flashy" */
 .rounded-2xl {
+    border-radius: 0.75rem;
+}
+
+.rounded-3xl,
+.rounded-\[2rem\] {
     border-radius: 0.875rem;
+}
+
+.shadow-xl,
+.shadow-2xl {
+    box-shadow: 0 10px 24px rgba(16, 24, 40, 0.08) !important;
 }
 
 /* Neutralize aggressive mobile override that forces flex/grid into block */
