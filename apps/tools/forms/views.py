@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden, HttpResponse
+from django.db import transaction
 from django.db.models import Count, Q, Max
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
@@ -9,6 +10,10 @@ from .models import Form, FormField, FormResponse
 from apps.organizations.models import Organization
 import json
 import csv
+import re
+from datetime import datetime
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 
 # ============================================
@@ -390,7 +395,7 @@ def form_submit_page(request, share_link):
                 continue
             
             field_name = f'field_{field.id}'
-            answer = request.POST.get(field_name)
+            answer = request.POST.get(field_name, '').strip()
             
             # Validation
             if field.is_required and not answer:
@@ -398,6 +403,37 @@ def form_submit_page(request, share_link):
                 continue
             
             if answer:
+                try:
+                    if field.field_type == FormField.FieldType.NUMBER:
+                        number = float(answer)
+                        if field.min_value is not None and number < field.min_value:
+                            errors.append(f'{field.label} must be at least {field.min_value}.')
+                        if field.max_value is not None and number > field.max_value:
+                            errors.append(f'{field.label} must be at most {field.max_value}.')
+                    elif field.field_type == FormField.FieldType.EMAIL:
+                        validate_email(answer)
+                    elif field.field_type == FormField.FieldType.DATE:
+                        datetime.strptime(answer, '%Y-%m-%d')
+                    elif field.field_type == FormField.FieldType.TIME:
+                        datetime.strptime(answer, '%H:%M')
+                    elif field.field_type in (
+                        FormField.FieldType.MULTIPLE_CHOICE,
+                        FormField.FieldType.DROPDOWN,
+                    ) and answer not in field.options:
+                        errors.append(f'{field.label} has an invalid selection.')
+                    elif field.field_type == FormField.FieldType.CHECKBOXES:
+                        selections = request.POST.getlist(field_name)
+                        if any(selection not in field.options for selection in selections):
+                            errors.append(f'{field.label} has an invalid selection.')
+                        answer = selections
+                    if field.max_length and isinstance(answer, str) and len(answer) > field.max_length:
+                        errors.append(f'{field.label} must be {field.max_length} characters or fewer.')
+                    if field.pattern and isinstance(answer, str) and not re.fullmatch(field.pattern, answer):
+                        errors.append(f'{field.label} has an invalid format.')
+                except (ValueError, ValidationError):
+                    errors.append(f'{field.label} has an invalid value.')
+
+            if not any(error.startswith(f'{field.label} ') for error in errors):
                 answers[str(field.id)] = answer
         
         if errors:
@@ -405,15 +441,21 @@ def form_submit_page(request, share_link):
                 messages.error(request, error)
             return redirect('form_submit', share_link=share_link)
         
-        # Create response
-        response = FormResponse.objects.create(
-            form=form,
-            user=request.user if request.user.is_authenticated else None,
-            is_anonymous=form.allow_anonymous,
-            answers=answers,
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
+        # Lock the form row while enforcing the response limit so concurrent
+        # submissions cannot both pass the final capacity check.
+        with transaction.atomic():
+            locked_form = Form.objects.select_for_update().get(pk=form.pk)
+            if not locked_form.is_accepting_responses:
+                messages.error(request, 'This form is no longer accepting responses.')
+                return redirect('form_submit', share_link=share_link)
+            response = FormResponse.objects.create(
+                form=locked_form,
+                user=request.user if request.user.is_authenticated else None,
+                is_anonymous=locked_form.allow_anonymous,
+                answers=answers,
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
         
         # Send notification email if enabled
         if form.send_email_on_submit and form.notification_emails:

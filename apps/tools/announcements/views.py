@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.db import models
+from django.views.decorators.http import require_POST
 from .models import Announcement, AnnouncementReadReceipt
 from .forms import AnnouncementForm
 from apps.organizations.models import Department, Team
@@ -107,6 +108,7 @@ def announcement_delete(request, pk):
     return redirect('tools:announcements:index')
 
 @login_required
+@require_POST
 def acknowledge_announcement(request, pk):
     """Acknowledge reading an announcement"""
     announcement = get_object_or_404(Announcement, pk=pk, organization=request.user.organization)

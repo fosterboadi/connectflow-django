@@ -27,18 +27,47 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def _require_admin(self):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied('Only organization administrators can manage departments.')
+
     def get_queryset(self):
         return Department.objects.filter(organization=self.request.user.organization)
 
     def perform_create(self, serializer):
+        self._require_admin()
         serializer.save(organization=self.request.user.organization)
+
+    def perform_update(self, serializer):
+        self._require_admin()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._require_admin()
+        instance.delete()
 
 class TeamViewSet(viewsets.ModelViewSet):
     serializer_class = TeamSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def _require_admin(self):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied('Only organization administrators can manage teams.')
+
     def get_queryset(self):
         return Team.objects.filter(department__organization=self.request.user.organization)
+
+    def perform_create(self, serializer):
+        self._require_admin()
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._require_admin()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._require_admin()
+        instance.delete()
 
 class SharedProjectViewSet(viewsets.ModelViewSet):
     serializer_class = SharedProjectSerializer
@@ -50,6 +79,26 @@ class SharedProjectViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user, host_organization=self.request.user.organization)
+
+    def perform_update(self, serializer):
+        if (
+            serializer.instance.created_by_id != self.request.user.id
+            and serializer.instance.host_organization_id != self.request.user.organization_id
+        ):
+            raise permissions.PermissionDenied(
+                'Only the project creator or host organization can edit this project.'
+            )
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if (
+            instance.created_by_id != self.request.user.id
+            and instance.host_organization_id != self.request.user.organization_id
+        ):
+            raise permissions.PermissionDenied(
+                'Only the project creator or host organization can delete this project.'
+            )
+        instance.delete()
 
     @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated, HasSubscriptionFeature('has_analytics')])
     def analytics(self, request, pk=None):

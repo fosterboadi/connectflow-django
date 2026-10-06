@@ -99,6 +99,8 @@ class CallConsumer(AsyncWebsocketConsumer):
     async def handle_offer(self, data):
         """Handle WebRTC offer."""
         to_user_id = data.get('to_user_id') or data.get('target_user_id')
+        if not await self.is_call_participant(to_user_id):
+            return
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -114,6 +116,8 @@ class CallConsumer(AsyncWebsocketConsumer):
     async def handle_answer(self, data):
         """Handle WebRTC answer."""
         to_user_id = data.get('to_user_id') or data.get('target_user_id')
+        if not await self.is_call_participant(to_user_id):
+            return
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -129,6 +133,8 @@ class CallConsumer(AsyncWebsocketConsumer):
     async def handle_ice_candidate(self, data):
         """Handle ICE candidate."""
         to_user_id = data.get('to_user_id') or data.get('target_user_id')
+        if not await self.is_call_participant(to_user_id):
+            return
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -393,3 +399,10 @@ class CallConsumer(AsyncWebsocketConsumer):
             return call.participants.filter(pk=self.user.pk).exists()
         except Call.DoesNotExist:
             return False
+
+    @database_sync_to_async
+    def is_call_participant(self, user_id):
+        return bool(user_id) and CallParticipant.objects.filter(
+            call_id=self.call_id,
+            user_id=user_id,
+        ).exists()

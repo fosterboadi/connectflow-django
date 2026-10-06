@@ -11,7 +11,19 @@ class LeaveTypeViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(organization=self.request.user.organization)
 
     def perform_create(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role in ['SUPER_ADMIN', 'ORG_ADMIN', 'DEPT_HEAD']):
+            raise permissions.PermissionDenied('Only authorized managers can manage leave types.')
         serializer.save(organization=self.request.user.organization)
+
+    def perform_update(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role in ['SUPER_ADMIN', 'ORG_ADMIN', 'DEPT_HEAD']):
+            raise permissions.PermissionDenied('Only authorized managers can manage leave types.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not (self.request.user.is_admin or self.request.user.role in ['SUPER_ADMIN', 'ORG_ADMIN', 'DEPT_HEAD']):
+            raise permissions.PermissionDenied('Only authorized managers can manage leave types.')
+        instance.delete()
 
 class LeaveRequestViewSet(viewsets.ModelViewSet):
     queryset = LeaveRequest.objects.all()
@@ -32,6 +44,13 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
                 'Only authorized managers can update leave requests.'
             )
         serializer.save()
+
+    def perform_destroy(self, instance):
+        if self.request.user.role not in ['SUPER_ADMIN', 'DEPT_HEAD', 'ORG_ADMIN'] and not self.request.user.is_admin:
+            raise permissions.PermissionDenied(
+                'Only authorized managers can delete leave balances.'
+            )
+        instance.delete()
 
 class LeaveBalanceViewSet(viewsets.ModelViewSet):
     queryset = LeaveBalance.objects.all()

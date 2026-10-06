@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse, FileResponse
+from django.views.decorators.http import require_POST
 from .models import Folder, Document, DocumentVersion
 from .forms import FolderForm, DocumentUploadForm, DocumentVersionForm
 import os
@@ -120,6 +121,7 @@ def document_download(request, pk):
     return response
 
 @login_required
+@require_POST
 def document_delete(request, pk):
     """Delete a document"""
     document = get_object_or_404(Document, pk=pk, organization=request.user.organization)

@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 import json
@@ -26,52 +27,56 @@ def initiate_call(request):
         if call_type not in [Call.CallType.AUDIO, Call.CallType.VIDEO]:
             return JsonResponse({'success': False, 'error': 'Invalid call type'}, status=400)
         
-        # Generate unique room ID
-        room_id = secrets.token_urlsafe(16)
-        
-        # Create call
-        call = Call.objects.create(
-            initiator=request.user,
-            call_type=call_type,
-            room_id=room_id,
-            status=Call.CallStatus.INITIATING
-        )
-        
-        # If channel call
-        if channel_id:
-            channel = get_object_or_404(Channel, pk=channel_id, organization=request.user.organization)
-            if not channel.can_user_view(request.user):
-                return JsonResponse({'success': False, 'error': 'Access denied to this channel'}, status=403)
-            call.channel = channel
-            call.save()
-            
-            # Add all channel members as participants
-            for member in channel.members.all():
-                CallParticipant.objects.create(
-                    call=call,
-                    user=member,
-                    status=CallParticipant.ParticipantStatus.INVITED
+        with transaction.atomic():
+            channel = None
+            if channel_id:
+                channel = get_object_or_404(
+                    Channel,
+                    pk=channel_id,
+                    organization=request.user.organization,
                 )
-        else:
-            # Direct call with specific users
-            participants = User.objects.filter(id__in=user_ids, organization=request.user.organization)
-            for user in participants:
-                CallParticipant.objects.create(
+                if not channel.can_user_view(request.user):
+                    return JsonResponse(
+                        {'success': False, 'error': 'Access denied to this channel'},
+                        status=403,
+                    )
+
+            call = Call.objects.create(
+                initiator=request.user,
+                call_type=call_type,
+                room_id=secrets.token_urlsafe(16),
+                status=Call.CallStatus.INITIATING,
+                channel=channel,
+            )
+
+            if channel:
+                participants = channel.members.all()
+            else:
+                participants = User.objects.filter(
+                    id__in=user_ids,
+                    organization=request.user.organization,
+                )
+
+            CallParticipant.objects.bulk_create([
+                CallParticipant(
                     call=call,
                     user=user,
-                    status=CallParticipant.ParticipantStatus.INVITED
+                    status=(
+                        CallParticipant.ParticipantStatus.JOINED
+                        if user == request.user
+                        else CallParticipant.ParticipantStatus.INVITED
+                    ),
                 )
-            
-            # Add initiator
+                for user in participants
+                if user != request.user
+            ])
             CallParticipant.objects.get_or_create(
                 call=call,
                 user=request.user,
-                defaults={'status': CallParticipant.ParticipantStatus.JOINED}
+                defaults={'status': CallParticipant.ParticipantStatus.JOINED},
             )
-        
-        # Update call status to ringing
-        call.status = Call.CallStatus.RINGING
-        call.save()
+            call.status = Call.CallStatus.RINGING
+            call.save(update_fields=['status'])
         
         # Send notifications to all participants (except initiator)
         from apps.accounts.models import Notification

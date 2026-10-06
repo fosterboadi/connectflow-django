@@ -18,7 +18,7 @@ class CallSerializer(serializers.ModelSerializer):
     channel_name = serializers.ReadOnlyField(source='channel.name')
 
     class Meta:
-        model = Call,
+        model = Call
         fields = [
             'id', 'call_type', 'status', 'initiator', 'initiator_details', 
             'channel', 'channel_name', 'participants_details', 'room_id', 

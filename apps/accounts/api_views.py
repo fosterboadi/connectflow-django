@@ -69,12 +69,18 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'put', 'patch', 'head', 'options']
 
     def get_queryset(self):
         # Users can only see others in their organization
         if self.request.user.is_authenticated:
             return User.objects.filter(organization=self.request.user.organization)
         return User.objects.none()
+
+    def get_object(self):
+        if self.kwargs.get(self.lookup_field) != str(self.request.user.pk):
+            raise permissions.PermissionDenied('You can only update your own profile.')
+        return self.request.user
 
     @action(detail=False, methods=['get'])
     def me(self, request):

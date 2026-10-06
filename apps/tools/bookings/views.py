@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from .models import Resource, Booking
 from .forms import ResourceForm, BookingForm
 
@@ -149,6 +150,7 @@ def booking_cancel(request, pk):
     return redirect('tools:bookings:index')
 
 @login_required
+@require_POST
 def booking_approve(request, pk, action):
     """Approve or reject a booking (Admin only)"""
     if not (request.user.is_admin or request.user.role == 'SUPER_ADMIN'):

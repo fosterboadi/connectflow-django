@@ -6,6 +6,7 @@ class CallViewSet(viewsets.ModelViewSet):
     queryset = Call.objects.all()
     serializer_class = CallSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head', 'options']
     filter_backends = [filters.OrderingFilter]
     ordering_fields = ['created_at']
     ordering = ['-created_at']
@@ -20,6 +21,7 @@ class CallParticipantViewSet(viewsets.ModelViewSet):
     queryset = CallParticipant.objects.all()
     serializer_class = CallParticipantSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head', 'options']
 
     def get_queryset(self):
         # Participants can see their own status and others in the same calls

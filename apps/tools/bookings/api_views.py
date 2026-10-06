@@ -11,7 +11,19 @@ class ResourceViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(organization=self.request.user.organization)
 
     def perform_create(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied('Only organization administrators can manage resources.')
         serializer.save(organization=self.request.user.organization)
+
+    def perform_update(self, serializer):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied('Only organization administrators can manage resources.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not (self.request.user.is_admin or self.request.user.role == 'SUPER_ADMIN'):
+            raise permissions.PermissionDenied('Only organization administrators can manage resources.')
+        instance.delete()
 
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()

@@ -8,7 +8,8 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.db import transaction
 from django.contrib import messages
 from django.urls import reverse
 from .models import SubscriptionPlan, Organization, SubscriptionTransaction
@@ -38,7 +39,7 @@ def paystack_checkout(request, plan_id):
     if not (request.user.is_admin or request.user.role == User.Role.SUPER_ADMIN):
         return HttpResponseForbidden("Only organization administrators can start checkout.")
 
-    plan = get_object_or_404(SubscriptionPlan, id=plan_id)
+    plan = get_object_or_404(SubscriptionPlan, id=plan_id, is_active=True)
     org = request.user.organization
     
     if not plan.paystack_plan_code:
@@ -47,7 +48,7 @@ def paystack_checkout(request, plan_id):
 
     url = "https://api.paystack.co/transaction/initialize"
     headers = {
-        "Authorization": f"Bearer {os.environ.get('PAYSTACK_SECRET_KEY')}",
+        "Authorization": "Bearer " + os.environ.get("PAYSTACK_SECRET_KEY", ""),
         "Content-Type": "application/json"
     }
     payload = {
@@ -115,30 +116,41 @@ def paystack_webhook(request):
     # Handle subscription creation event
     if data.get('event') == 'subscription.create':
         try:
-            org_id = data['data']['metadata']['org_id']
-            plan_id = data['data']['metadata']['plan_id']
-            
-            org = Organization.objects.get(id=org_id)
-            plan = SubscriptionPlan.objects.get(id=plan_id)
-            
-            org.subscription_plan = plan
-            org.paystack_customer_id = data['data']['customer']['customer_code']
-            org.paystack_subscription_code = data['data']['subscription_code']
-            org.subscription_status = 'active'
-            org.save()
-            
-            # Record Transaction
-            amount_kobo = data['data'].get('amount', 0)
-            final_amount = (amount_kobo / 100) if amount_kobo > 0 else plan.price_monthly
-            
-            SubscriptionTransaction.objects.create(
-                organization=org,
-                plan=plan,
-                amount=final_amount,
-                reference=data['data'].get('subscription_code'),
-                provider='paystack',
-                status='success'
-            )
+            payload = data['data']
+            metadata = payload['metadata']
+            org = Organization.objects.get(id=metadata['org_id'])
+            plan = SubscriptionPlan.objects.get(id=metadata['plan_id'], is_active=True)
+            reference = payload.get('reference') or payload.get('subscription_code')
+
+            if not reference:
+                raise KeyError('reference')
+
+            with transaction.atomic():
+                transaction_record, created = SubscriptionTransaction.objects.get_or_create(
+                    reference=reference,
+                    defaults={
+                        'organization': org,
+                        'plan': plan,
+                        'amount': (
+                            payload.get('amount', 0) / 100
+                            if payload.get('amount', 0) > 0
+                            else plan.price_monthly
+                        ),
+                        'provider': 'paystack',
+                        'status': 'success',
+                    },
+                )
+                if created:
+                    org.subscription_plan = plan
+                    org.paystack_customer_id = payload['customer']['customer_code']
+                    org.paystack_subscription_code = payload['subscription_code']
+                    org.subscription_status = 'active'
+                    org.save(update_fields=[
+                        'subscription_plan',
+                        'paystack_customer_id',
+                        'paystack_subscription_code',
+                        'subscription_status',
+                    ])
             
             logger.info(f"Subscription created for org {org.id}")
             
@@ -153,6 +165,14 @@ def paystack_webhook(request):
 
 @login_required
 def billing_success(request):
+    reference = request.GET.get('reference') or request.GET.get('trxref')
+    if not reference or not SubscriptionTransaction.objects.filter(
+        reference=reference,
+        organization=request.user.organization,
+        status='success',
+    ).exists():
+        messages.error(request, "Payment could not be verified.")
+        return redirect('organizations:billing_select_plan')
     messages.success(request, "Your subscription has been updated successfully!")
     return redirect('organizations:overview')
 
