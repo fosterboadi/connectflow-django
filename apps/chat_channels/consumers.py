@@ -417,7 +417,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         parent = None
         if parent_id:
             try:
-                parent = Message.objects.get(id=parent_id)
+                parent = Message.objects.get(id=parent_id, channel=channel)
             except Message.DoesNotExist:
                 pass
         
@@ -504,11 +504,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def mark_message_read(self, message_id):
         from .models import MessageReadReceipt
         try:
-            message = Message.objects.get(id=message_id)
+            message = Message.objects.get(id=message_id, channel_id=self.channel_id)
             MessageReadReceipt.objects.get_or_create(
                 message=message,
                 user=self.user
             )
+            if message.sender_id != self.user.id:
+                Message.objects.filter(
+                    id=message.id,
+                    status__in=[Message.MessageStatus.SENDING, Message.MessageStatus.SENT,
+                                Message.MessageStatus.DELIVERED],
+                ).update(status=Message.MessageStatus.READ)
             return True
         except Message.DoesNotExist:
             return False
@@ -548,7 +554,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def toggle_reaction(self, message_id, emoji):
         from .models import MessageReaction
         try:
-            message = Message.objects.get(id=message_id)
+            message = Message.objects.get(id=message_id, channel_id=self.channel_id)
             reaction, created = MessageReaction.objects.get_or_create(
                 message=message,
                 user=self.user,

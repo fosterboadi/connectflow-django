@@ -47,7 +47,7 @@ class MessageReactionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = MessageReaction
-        fields = ['emoji', 'user', 'username']
+        fields = ['id', 'message', 'emoji', 'user', 'username', 'created_at']
         read_only_fields = ['user']
 
     def validate_message(self, message):
@@ -70,6 +70,7 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = [
             'id', 'channel', 'sender', 'sender_details', 'content', 
+            'message_type', 'status',
             'parent_message', 'parent_details', 'voice_message', 'voice_duration', 
             'is_edited', 'is_pinned', 'forwarded_from', 'star_count', 'is_starred',
             'is_deleted', 'deleted_at', 'deleted_by',

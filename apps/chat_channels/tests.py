@@ -1,7 +1,8 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from apps.organizations.models import Organization
-from apps.chat_channels.models import Channel, Message
+from apps.chat_channels.models import Channel, Message, MessageReaction
+from apps.chat_channels.serializers import MessageReactionSerializer
 from rest_framework.test import APIClient
 from rest_framework import status
 import uuid
@@ -16,7 +17,8 @@ class PinMessageTests(TestCase):
             email='test@example.com',
             password='password123',
             first_name='Test',
-            last_name='User'
+            last_name='User',
+            email_verified=True,
         )
         
         # Create organization
@@ -81,3 +83,25 @@ class PinMessageTests(TestCase):
             self.fail(f"_broadcast raised KeyError: {e}")
         except Exception as e:
             self.fail(f"_broadcast raised unexpected exception: {e}")
+
+    def test_web_delete_soft_deletes_message(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            f'/channels/message/{self.message.id}/delete/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            Message.all_objects.filter(id=self.message.id, is_deleted=True).exists()
+        )
+        self.assertFalse(Message.objects.filter(id=self.message.id).exists())
+
+    def test_reaction_serializer_accepts_message_reference(self):
+        serializer = MessageReactionSerializer(
+            data={'message': str(self.message.id), 'emoji': '👍'},
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        reaction = serializer.save(user=self.user)
+        self.assertEqual(reaction.message_id, self.message.id)

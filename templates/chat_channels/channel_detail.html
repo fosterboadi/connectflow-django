@@ -210,7 +210,12 @@
                     <div class="space-y-0.5">
                         {% for uc in user_channels %}
                             <a href="{% url 'chat_channels:channel_detail' uc.pk %}" class="flex items-center px-3 py-2 rounded-lg text-sm font-bold {% if uc.pk == channel.pk %}bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %} transition">
-                                <span class="mr-2 opacity-50">{% if uc.channel_type == 'OFFICIAL' %}📢{% elif uc.channel_type == 'BREAKOUT' %}⚡{% elif uc.is_private %}🔒{% else %}#{% endif %}</span> <span class="truncate">{{ uc.name }}</span>
+                                <span class="mr-2 opacity-50">{% if uc.channel_type == 'OFFICIAL' %}📢{% elif uc.channel_type == 'BREAKOUT' %}⚡{% elif uc.is_private %}🔒{% else %}#{% endif %}</span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate">{{ uc.name }}</span>
+                                    {% if uc.last_message_preview %}<span class="block truncate text-[9px] font-normal text-gray-400">{{ uc.last_message_preview|truncatechars:32 }}</span>{% endif %}
+                                </span>
+                                {% if uc.unread_count %}<span class="ml-2 min-w-5 rounded-full bg-indigo-600 px-1.5 py-0.5 text-center text-[9px] font-black text-white">{{ uc.unread_count }}</span>{% endif %}
                             </a>
                         {% endfor %}
                     </div>
@@ -219,7 +224,14 @@
                     <p class="px-3 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Direct Messages</p>
                     <div class="space-y-0.5">
                         {% for dm in direct_messages %}
-                            <a href="{% url 'chat_channels:channel_detail' dm.pk %}" class="flex items-center px-3 py-2 rounded-lg text-sm font-bold {% if dm.pk == channel.pk %}bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %} transition"><div class="w-2 h-2 rounded-full {% if dm.is_active %}bg-green-500{% else %}bg-gray-300{% endif %} mr-2"></div><span class="truncate">{% for m in dm.members.all %}{% if m != user %}{{ m.get_full_name }}{% endif %}{% endfor %}</span></a>
+                            <a href="{% url 'chat_channels:channel_detail' dm.pk %}" class="flex items-center px-3 py-2 rounded-lg text-sm font-bold {% if dm.pk == channel.pk %}bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{% endif %} transition">
+                                <div class="w-2 h-2 rounded-full {% if dm.is_active %}bg-green-500{% else %}bg-gray-300{% endif %} mr-2"></div>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate">{% for m in dm.members.all %}{% if m != user %}{{ m.get_full_name }}{% endif %}{% endfor %}</span>
+                                    {% if dm.last_message_preview %}<span class="block truncate text-[9px] font-normal text-gray-400">{{ dm.last_message_preview|truncatechars:32 }}</span>{% endif %}
+                                </span>
+                                {% if dm.unread_count %}<span class="ml-2 min-w-5 rounded-full bg-indigo-600 px-1.5 py-0.5 text-center text-[9px] font-black text-white">{{ dm.unread_count }}</span>{% endif %}
+                            </a>
                         {% endfor %}
                     </div>
                 </div>
@@ -479,6 +491,13 @@
 
         <div class="message-history" id="messages-container">
             {% for message in chat_messages %}
+                {% if message.show_unread_divider %}
+                    <div class="flex items-center gap-3 my-2" aria-label="Unread messages">
+                        <div class="h-px flex-1 bg-red-200 dark:bg-red-900"></div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-red-500">Unread messages</span>
+                        <div class="h-px flex-1 bg-red-200 dark:bg-red-900"></div>
+                    </div>
+                {% endif %}
                 {% if message.show_date_separator %}
                     <div class="date-separator flex items-center justify-center my-4">
                         <div class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
@@ -1153,9 +1172,17 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function handlePresence(data) {
-        const statusDots = document.querySelectorAll(`[data-user-id="${data.user_id}"] .status-dot`);
+        const statusDots = document.querySelectorAll(
+            `[data-user-id="${data.user_id}"] .status-dot, .status-dot[data-user-id="${data.user_id}"]`
+        );
         statusDots.forEach(dot => {
-            dot.className = `absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${data.status === 'ONLINE' ? 'bg-green-500' : 'bg-gray-300'}`;
+            const statusClass = {
+                ONLINE: 'bg-green-500',
+                AWAY: 'bg-yellow-500',
+                BUSY: 'bg-red-500',
+                OFFLINE: 'bg-gray-300'
+            }[data.status] || 'bg-gray-300';
+            dot.className = `status-dot absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${statusClass}`;
         });
     }
 

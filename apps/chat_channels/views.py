@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Count, Q, OuterRef, Subquery
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from .models import Channel, Message, MessageReaction, Attachment
@@ -325,6 +325,20 @@ def channel_detail(request, pk):
         messages_with_dates.append(msg)
     
     channel_messages = messages_with_dates
+    read_message_ids = set(
+        channel.messages.filter(
+            read_receipts__user=user
+        ).values_list('id', flat=True)
+    )
+    unread_divider_added = False
+    for msg in channel_messages:
+        msg.show_unread_divider = (
+            not unread_divider_added
+            and msg.sender_id != user.id
+            and msg.id not in read_message_ids
+        )
+        if msg.show_unread_divider:
+            unread_divider_added = True
     
     # Get active breakout rooms for this channel
     breakout_rooms = Channel.objects.filter(
@@ -334,16 +348,38 @@ def channel_detail(request, pk):
     )
     
     # Get sidebar conversation list
+    latest_message = Message.objects.filter(
+        channel=OuterRef('pk')
+    ).order_by('-created_at')
+    conversation_annotations = {
+        'last_message_preview': Subquery(latest_message.values('content')[:1]),
+        'last_message_at': Subquery(latest_message.values('created_at')[:1]),
+        'unread_count': Count(
+            'messages',
+            filter=(
+                ~Q(messages__sender=user)
+                & ~Q(messages__read_receipts__user=user)
+            ),
+            distinct=True,
+        ),
+    }
+
     user_channels_query = Channel.objects.filter(
         organization=user.organization,
         is_archived=False,
         members=user
-    ).exclude(channel_type=Channel.ChannelType.DIRECT).distinct()
+    ).exclude(channel_type=Channel.ChannelType.DIRECT).annotate(
+        **conversation_annotations
+    ).distinct()
 
     # If the current channel is not a DM and not in user_channels (e.g. admin viewing it), add it to the list
     if channel.channel_type != Channel.ChannelType.DIRECT and channel not in user_channels_query:
         # Convert to list to allow appending
         user_channels = list(user_channels_query)
+        channel.last_message_preview = Message.objects.filter(
+            channel=channel
+        ).values_list('content', flat=True).first()
+        channel.unread_count = 0
         user_channels.append(channel)
     else:
         user_channels = user_channels_query
@@ -352,7 +388,7 @@ def channel_detail(request, pk):
         organization=user.organization,
         channel_type=Channel.ChannelType.DIRECT,
         members=user
-    ).distinct()
+    ).annotate(**conversation_annotations).distinct()
     
     # Handle message posting
     if request.method == 'POST':
@@ -617,7 +653,7 @@ def message_delete(request, pk):
     
     # Only sender or admin can delete
     if message.sender == user or user.is_admin:
-        message.delete(user=user) # Uses soft delete
+        message.soft_delete(user=user)
         
         # Broadcast via WebSocket
         from channels.layers import get_channel_layer
@@ -640,7 +676,13 @@ def message_delete(request, pk):
                 'deleted_at': message.deleted_at.isoformat() if message.deleted_at else None,
                 'deleted_by': user.id
             })
-    
+        return redirect('chat_channels:channel_detail', pk=message.channel.pk)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(
+            {'success': False, 'error': 'You do not have permission to delete this message.'},
+            status=403,
+        )
     return redirect('chat_channels:channel_detail', pk=message.channel.pk)
 
 
@@ -667,6 +709,16 @@ def message_react(request, pk):
         action = 'added'
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+        async_to_sync(get_channel_layer().group_send)(
+            f'chat_{message.channel_id}',
+            {
+                'type': 'message_reaction_update',
+                'message_id': str(message.id),
+                'reactions': message.reaction_summary,
+            }
+        )
         # Return JSON for AJAX requests
         return JsonResponse({
             'success': True,
@@ -866,4 +918,3 @@ def unmute_channel(request, pk):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-

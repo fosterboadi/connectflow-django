@@ -11,17 +11,38 @@ from .serializers import (
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.db.models import Q
 
 class ChannelViewSet(viewsets.ModelViewSet):
     serializer_class = ChannelSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @staticmethod
+    def get_queryset_for_user(user):
+        visibility = Q(members=user)
+        if user.organization_id:
+            visibility |= Q(
+                organization_id=user.organization_id,
+                channel_type=Channel.ChannelType.OFFICIAL,
+            )
+            visibility |= Q(
+                organization_id=user.organization_id,
+                channel_type=Channel.ChannelType.DEPARTMENT,
+                department__teams__members=user,
+            )
+            visibility |= Q(
+                organization_id=user.organization_id,
+                channel_type=Channel.ChannelType.TEAM,
+                team__members=user,
+            )
+            visibility |= Q(shared_project__members=user)
+            if user.is_admin:
+                visibility |= Q(organization_id=user.organization_id)
+        return Channel.objects.filter(visibility, is_archived=False).distinct()
+
     def get_queryset(self):
         from django.db.models import Count
-        return Channel.objects.filter(
-            members=self.request.user, 
-            is_archived=False
-        ).prefetch_related('members').annotate(
+        return self.get_queryset_for_user(self.request.user).prefetch_related('members').annotate(
             member_count_annotated=Count('members')
         ).order_by('-created_at')
 
@@ -33,7 +54,7 @@ class ChannelViewSet(viewsets.ModelViewSet):
     def messages(self, request, pk=None):
         channel = self.get_object()
         messages = Message.objects.filter(channel=channel, parent_message__isnull=True).order_by('-is_pinned', 'created_at')
-        serializer = MessageSerializer(messages, many=True)
+        serializer = MessageSerializer(messages, many=True, context={'request': request})
         return Response(serializer.data)
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -41,7 +62,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Message.objects.filter(channel__members=self.request.user)
+        return Message.objects.filter(channel__in=ChannelViewSet().get_queryset_for_user(self.request.user))
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
