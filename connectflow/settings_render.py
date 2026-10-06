@@ -117,12 +117,14 @@ SECURE_HSTS_PRELOAD = True
 # CSRF trusted origins - specify exact domains
 CSRF_TRUSTED_ORIGINS = [
     'https://*.onrender.com',
+    'https://*.app.github.dev',
 ]
 
 # CORS settings - Fix wildcard issue
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.onrender\.com$",
+    r"^https://.*\.app\.github\.dev$",
 ]
 
 # Content Security Policy
